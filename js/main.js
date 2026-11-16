@@ -120,7 +120,7 @@ function importSave(text) {
 }
 const skArr = () => SKILLS.map(k => ME.sk[k][0]);
 const skLv = () => { const o = {}; for (const k of SKILLS) o[k] = ME.sk[k][0]; return o; };
-function helloMsg() { return { t: 'hi', uid: ME.uid, name: ME.name, voc: ME.voc, lvl: ME.lvl, x: ME.x, y: ME.y, sk: skArr() }; }
+function helloMsg() { return { t: 'hi', uid: ME.uid, name: ME.name, voc: ME.voc, lvl: ME.lvl, x: ME.x, y: ME.y, sk: skArr(), col: ME.col }; }
 function skGain(k, amt) {
   if (!ME || !SKV[ME.voc].includes(k)) return;
   const s = ME.sk[k];
@@ -140,6 +140,8 @@ function startGame(voc) {
   ME.lvl = levelFor(ME.xp);
   ME.hp = clamp(sv.hp || maxHp(), 1, maxHp()); ME.mp = clamp(sv.mp != null ? sv.mp : maxMp(), 0, maxMp());
   if (!isFinite(ME.x) || !isFinite(ME.y) || hitCircle(ME.x, ME.y, 0.28, false)) { ME.x = TEMPLO.x; ME.y = TEMPLO.y; }
+  ME.col = Array.isArray(sv.color) ? sv.color : null;
+  ME.look = lookFor(voc, ME.col);
   STORE.last = voc;
   saveGame();
   $('login').classList.add('hidden');
@@ -185,18 +187,18 @@ function clientRecv(m) {
 function applySnap(s) {
   const st = ++snapN;
   for (const a of s.m) {
-    const [id, ti, x, y, hp, face, fl] = a, type = MTK[ti];
+    const [id, ti, x, y, hp, face, fl, dir] = a, type = MTK[ti];
     let m = MON.get(id);
     if (!m) { m = { id, type, x: x / 100, y: y / 100, walk: 0, atkT: 0 }; MON.set(id, m); }
-    m.tx = x / 100; m.ty = y / 100; m.hp = hp; m.face = face; m.mvF = fl & 1; if ((fl & 2) && m.atkT <= 0) m.atkT = 0.35; m.seen = st;
+    m.tx = x / 100; m.ty = y / 100; m.hp = hp; m.face = face; m.dir = dir == null ? (face > 0 ? 1 : 3) : dir; m.mvF = fl & 1; if ((fl & 2) && m.atkT <= 0) m.atkT = 0.35; m.seen = st;
   }
   for (const [id, m] of MON) if (m.seen !== st) MON.delete(id);
   for (const a of s.p) {
-    const [uid, name, voc, lvl, x, y, dir, hp, fl] = a;
+    const [uid, name, voc, lvl, x, y, dir, hp, fl, col] = a;
     if (uid === ME.uid) continue;
     let p = REM.get(uid);
     if (!p) { p = { uid, x: x / 100, y: y / 100, walk: 0, atkT: 0 }; REM.set(uid, p); }
-    Object.assign(p, { name, voc, lvl, tx: x / 100, ty: y / 100, dir, hp, mvF: fl & 1, dead: !!(fl & 4), seen: st });
+    Object.assign(p, { name, voc, lvl, tx: x / 100, ty: y / 100, dir, hp, mvF: fl & 1, dead: !!(fl & 4), seen: st, look: lookFor(voc, col) });
     if ((fl & 2) && p.atkT <= 0) p.atkT = 0.3;
   }
   for (const [uid, p] of REM) if (p.seen !== st) REM.delete(uid);
@@ -486,7 +488,13 @@ function addEvent(e, now) {
   // efeitos próprios já foram mostrados localmente; ignora o eco da rede
   if (e.uid && ME && e.uid === ME.uid && (e.k === 'heal' || e.k === 'lvl' || e.k === 'pdie')) return;
   switch (e.k) {
-    case 'dmg': addText(e.x, e.y - 0.6, String(e.v), e.c); burst(e.x, e.y - 0.4, 6, [[200, 20, 20], [140, 10, 10]], 90, 0.4, { add: false, grav: 300, s: 2.5 }); break;
+    case 'dmg': {
+      let best = null, bd = 0.9;
+      const cands = [...MON.values(), ...REM.values()]; if (ME && e.pl) cands.push(ME);
+      for (const o of cands) { const d = Math.hypot((o.tx != null ? o.tx : o.x) - e.x, (o.ty != null ? o.ty : o.y) - e.y); if (d < bd) { bd = d; best = o; } }
+      if (best) best.hurtT = 0.2;
+    }
+      addText(e.x, e.y - 0.6, String(e.v), e.c); burst(e.x, e.y - 0.4, 6, [[200, 20, 20], [140, 10, 10]], 90, 0.4, { add: false, grav: 300, s: 2.5 }); break;
     case 'txt': addText(e.x, e.y - 0.6, e.v, e.c); break;
     case 'proj': FX.push({ k: 'proj', f: e.f, x0: e.x, y0: e.y, x1: e.x1, y1: e.y1, t0: now, dur: Math.max(110, Math.hypot(e.x1 - e.x, e.y1 - e.y) * (e.f === 'flecha' ? 45 : 70)), big: e.big }); break;
     case 'slash': FX.push({ k: 'slash', x: e.x, y: e.y, a: e.a, big: e.big, t0: now, dur: 240 }); break;
@@ -542,8 +550,9 @@ function updateRemote(dt) {
 // ------------------------------------------------------------
 //  Render
 // ------------------------------------------------------------
-let firstFrame = true;
+let firstFrame = true, frameDt = 0.016;
 function render(now, dt) {
+  frameDt = dt || 0.016;
   const cw = cv.width, ch = cv.height, S = zoom * dpr / TS;
   let camX, camY;
   if (playing) { camX = ME.x; camY = ME.y - 0.5; }
@@ -623,9 +632,9 @@ function render(now, dt) {
   }
   for (const p of PROPS) if (p.x > tx0 - 2 && p.x < tx1 + 2 && p.y > ty0 && p.y < ty1 + 3) D.push({ y: p.y, k: 3, p });
   for (const n of NPCS) D.push({ y: n.y, k: 4, e: n, look: n.look, dir: 2 });
-  for (const m of MON.values()) D.push({ y: m.y, k: 4, e: m, look: m.type, mon: true });
-  for (const p of REM.values()) if (!p.dead) D.push({ y: p.y, k: 4, e: p, look: p.voc, dir: p.dir });
-  if (playing && !ME.dead) D.push({ y: ME.y, k: 4, e: ME, look: ME.voc, dir: ME.dir, me: true });
+  for (const m of MON.values()) D.push({ y: m.y, k: 4, e: m, look: m.type, mon: true, dir: m.dir });
+  for (const p of REM.values()) if (!p.dead) D.push({ y: p.y, k: 4, e: p, look: p.look || p.voc, dir: p.dir });
+  if (playing && !ME.dead) D.push({ y: ME.y, k: 4, e: ME, look: ME.look || ME.voc, dir: ME.dir, me: true });
   D.sort((a, b) => a.y - b.y);
   for (const it of D) {
     if (it.k === 1) drawObj(it, now);
@@ -699,8 +708,8 @@ function drawProp(p, t, lights) {
 }
 function entFrame(it) {
   const e = it.e, L = LOOKS[it.look];
-  let dir = it.dir;
-  if (it.mon || it.look === 'goblin') dir = (e.face || 1) > 0 ? 1 : 3;
+  let dir = it.dir == null ? 2 : it.dir;
+  if (L.type === 'golem' || L.type === 'dummy') dir = (e.face || 1) > 0 ? 1 : 3;
   let fi = 0;
   const atkT = e.atkT || 0;
   if (atkT > 0) fi = 9 + clamp(Math.floor((1 - atkT / 0.35) * 3), 0, 2);
@@ -721,9 +730,22 @@ function drawEnt(it, now, t, lights) {
   const sc = it.look === 'golem' ? 1.25 : 1;
   ctx.fillStyle = 'rgba(0,0,0,.32)';
   ctx.beginPath(); ctx.ellipse(x, y - 1, (L.type === 'quad' ? L.len * 0.55 : 15) * sc, 6 * sc, 0, 0, 7); ctx.fill();
-  const fr = getFrame(it.look, dir, fi);
-  ctx.save(); ctx.translate(x, y);
-  if (dir === 3) ctx.scale(-1, 1);
+  // virada suave: a escala horizontal passa por zero ao trocar de lado
+  const want = dir === 3 ? -1 : dir === 1 ? 1 : (e.fs == null ? 1 : Math.sign(e.fs) || 1);
+  if (e.fs == null) e.fs = want;
+  e.fs += clamp(want - e.fs, -frameDt * 9, frameDt * 9);
+  const fs = Math.abs(e.fs) < 0.25 ? 0.25 * (Math.sign(e.fs) || 1) : e.fs;
+  // avanço do ataque na direção que está olhando
+  let lx = 0, ly = 0;
+  if ((e.atkT || 0) > 0 && L.type !== 'dummy') {
+    const k = Math.sin((1 - e.atkT / 0.35) * Math.PI) * (L.type === 'quad' ? 9 : 6);
+    lx = [0, 1, 0, -1][dir] * k; ly = [-1, 0, 1, 0][dir] * k * 0.6;
+  }
+  if (e.hurtT > 0) { e.hurtT -= frameDt; lx += (Math.random() - 0.5) * 3; }
+  const fr = e.hurtT > 0 ? getTint(it.look, dir, fi) : getFrame(it.look, dir, fi);
+  ctx.save(); ctx.translate(x + lx, y + ly);
+  if (dir === 1 || dir === 3 || L.type === 'golem' || L.type === 'dummy') ctx.scale(fs, 1);
+  if (L.type === 'dummy' && e.hurtT > 0) ctx.rotate(Math.sin(now / 30) * 0.08);
   if (sc !== 1) ctx.scale(sc, sc);
   ctx.drawImage(fr, -FAX, -FAY);
   // fogo vivo

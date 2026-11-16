@@ -56,6 +56,7 @@ function hostRecv(uid, d) {
       p.name = String(d.name || 'Viajante').slice(0, 16); p.voc = VOC[d.voc] ? d.voc : 'guerreiro'; p.lvl = clamp(d.lvl | 0, 1, 999);
       if (typeof d.x === 'number') { p.x = d.x; p.y = d.y; }
       p.sk = parseSk(d.sk);
+      p.col = Array.isArray(d.col) ? d.col.slice(0, 3).map(v => clamp(v | 0, -1, 20)) : null;
       p.seen = now;
       SIM.players.set(uid, p);
       if (isNew && uid !== ME.uid) broadcast({ t: 'sys', text: `${p.name} entrou no mundo.`, c: 'sys' });
@@ -258,7 +259,7 @@ function hostTick(dt) {
     if (p && (p.dead || p.pz || dist(m, p) > (t.dummy ? 3.2 : 14))) { p = null; m.tgt = null; }
     if (t.dummy) { // boneco: parado, só revida
       if (!p && m.scan <= 0) { m.scan = 0.5; let bd = t.aggro; for (const q of plist) { if (q.dead || q.pz) continue; const d = dist(m, q); if (d < bd) { bd = d; p = q; } } if (p) m.tgt = p.uid; }
-      if (p) { m.face = p.x >= m.x ? 1 : -1; if (dist(m, p) <= t.range + 0.6 && m.acd <= 0) { m.acd = t.aspd; monAttack(m, p); } }
+      if (p) { m.face = p.x >= m.x ? 1 : -1; m.dir = m.face > 0 ? 1 : 3; if (dist(m, p) <= t.range + 0.6 && m.acd <= 0) { m.acd = t.aspd; monAttack(m, p); } }
       m.mv = false;
       continue;
     }
@@ -310,6 +311,9 @@ function hostTick(dt) {
     if (want > 0 && moved < want * 0.3) { m.stuck += dt; if (m.stuck > 0.4 && m.det <= 0) { m.det = 0.7; m.detA = (R() < 0.5 ? 1 : -1) * (Math.PI / 2); m.stuck = 0; } }
     else m.stuck = 0;
     if (!p && Math.abs(vx) > 0.2) m.face = vx > 0 ? 1 : -1;
+    // direção (0 cima, 1 direita, 2 baixo, 3 esquerda): olha para o alvo ou para onde anda
+    const fx = p ? p.x - m.x : (m.mv ? m.x - ox : 0), fy = p ? p.y - m.y : (m.mv ? m.y - oy : 0);
+    if (fx || fy) m.dir = Math.abs(fx) >= Math.abs(fy) * 0.9 ? (fx > 0 ? 1 : 3) : (fy > 0 ? 2 : 0);
   }
   SIM.snapT -= dt;
   if (SIM.snapT <= 0) { SIM.snapT = 0.08; hostSnapshot(); }
@@ -317,12 +321,12 @@ function hostTick(dt) {
 function hostSnapshot() {
   const evs = SIM.ev; SIM.ev = [];
   const ps = [];
-  for (const p of SIM.players.values()) ps.push([p.uid, p.name, p.voc, p.lvl, Math.round(p.x * 100), Math.round(p.y * 100), p.dir, Math.round(100 * clamp(p.hp / p.mhp, 0, 1)), (p.mv ? 1 : 0) | (p.atkT > 0 ? 2 : 0) | (p.dead ? 4 : 0)]);
+  for (const p of SIM.players.values()) ps.push([p.uid, p.name, p.voc, p.lvl, Math.round(p.x * 100), Math.round(p.y * 100), p.dir, Math.round(100 * clamp(p.hp / p.mhp, 0, 1)), (p.mv ? 1 : 0) | (p.atkT > 0 ? 2 : 0) | (p.dead ? 4 : 0), p.col]);
   for (const p of SIM.players.values()) {
     const ms = [];
     for (const m of SIM.mons) {
       if (m.dead || Math.abs(m.x - p.x) > 22 || Math.abs(m.y - p.y) > 15) continue;
-      ms.push([m.id, MTK.indexOf(m.type), Math.round(m.x * 100), Math.round(m.y * 100), Math.round(100 * m.hp / m.mhp), m.face, (m.mv ? 1 : 0) | (m.atkT > 0 ? 2 : 0)]);
+      ms.push([m.id, MTK.indexOf(m.type), Math.round(m.x * 100), Math.round(m.y * 100), Math.round(100 * m.hp / m.mhp), m.face, (m.mv ? 1 : 0) | (m.atkT > 0 ? 2 : 0), m.dir == null ? 2 : m.dir]);
     }
     const e = evs.filter(x => (x.k === 'chain') ? Math.abs(x.pts[0][0] - p.x) < 26 && Math.abs(x.pts[0][1] - p.y) < 18 : Math.abs(x.x - p.x) < 26 && Math.abs(x.y - p.y) < 18);
     sendTo(p.uid, { t: 's', m: ms, p: ps, ev: e });

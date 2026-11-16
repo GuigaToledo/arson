@@ -8,7 +8,7 @@ function rg(g, x, y, r0, x1, y1, r1, stops) { const gr = g.createRadialGradient(
 function shade(hex, f) { // f>0 clareia, f<0 escurece
   const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   if (f >= 0) { r += (255 - r) * f; g += (255 - g) * f; b += (255 - b) * f; } else { r *= 1 + f; g *= 1 + f; b *= 1 + f; }
-  return `rgb(${r | 0},${g | 0},${b | 0})`;
+  return '#' + ((1 << 24) | ((r | 0) << 16) | ((g | 0) << 8) | (b | 0)).toString(16).slice(1);
 }
 
 // ------------------------------------------------------------
@@ -443,6 +443,29 @@ const LOOKS = {
   arson: { type: 'boss' },
   boneco: { type: 'dummy' },
 };
+// ------------------------------------------------------------
+//  Cores personalizadas (roupa, pele, cabelo)
+// ------------------------------------------------------------
+const OUTFIT = ['#b3261e', '#2a5c9a', '#2f6b2a', '#4d2a86', '#c9a227', '#2a2a30', '#e8e2d0', '#d0602a', '#2a8a8a', '#a0306a'];
+const SKINC = ['#f4d4b4', '#e2b48c', '#c68e62', '#8d5a3a', '#5a3a24'];
+const HAIRC = ['#1e1612', '#5a3a1e', '#a0603a', '#e8c86a', '#dcdcdc', '#b3261e'];
+function lookFor(voc, col) {
+  if (!Array.isArray(col) || !LOOKS[voc] || col.every(v => v < 0)) return voc;
+  const c = col.map(v => (v | 0));
+  const key = voc + '|' + c.join(',');
+  if (LOOKS[key]) return key;
+  const L = Object.assign({}, LOOKS[voc]);
+  const oc = OUTFIT[c[0]], sc = SKINC[c[1]], hc = HAIRC[c[2]];
+  if (oc) {
+    if (voc === 'guerreiro') { L.trim = oc; L.cape = shade(oc, -0.15); }
+    else if (voc === 'mago') { L.top = oc; L.hatCol = shade(oc, -0.2); L.pants = shade(oc, -0.45); }
+    else { L.hatCol = oc; L.cape = shade(oc, -0.1); L.trim = oc; }
+  }
+  if (sc) L.skin = sc;
+  if (hc) { L.hair = hc; if (voc === 'mago') L.beard = shade(hc, 0.15); }
+  LOOKS[key] = L;
+  return key;
+}
 function drawDummy(g, atk) {
   const tilt = atk ? Math.sin(atk * Math.PI) * 0.18 : 0;
   g.fillStyle = 'rgba(0,0,0,.2)'; g.beginPath(); g.ellipse(0, -1, 10, 3, 0, 0, 7); g.fill();
@@ -696,6 +719,73 @@ function drawQuad(g, Q, ph, atk) {
   if (atk) { g.fillStyle = '#5a0e0e'; g.beginPath(); g.ellipse(hx + Rh * 1.1, hyy + Rh * 0.55, Rh * 0.5, Rh * 0.18 * Math.sin(atk * Math.PI) + 0.5, 0, 0, 7); g.fill(); }
 }
 
+// vista de frente (front=true) ou de costas
+function drawQuadFB(g, Q, ph, atk, front) {
+  const sw = Math.sin(ph * Math.PI * 2), moving = ph > 0;
+  const L = Q.len, Hh = Q.h, leg = Q.leg, Rh = Q.head;
+  const bob = moving ? -Math.abs(Math.cos(ph * Math.PI * 2)) * 1.5 : 0;
+  const hipY = -leg + bob, bodyY = hipY - Hh * 0.3;
+  const bw = Math.max(Hh * 0.75, L * 0.3), bh = Hh * 0.62;
+  const lunge = atk ? Math.sin(atk * Math.PI) : 0;
+  const legW = Math.max(3.5, Hh * 0.22);
+  const legsDraw = (back) => {
+    const xs = back ? [-bw * 0.55, bw * 0.55] : [-bw * 0.62, bw * 0.62];
+    xs.forEach((x, i) => {
+      const lift = moving ? Math.max(0, Math.sin(ph * Math.PI * 2 + (i ? Math.PI : 0) + (back ? Math.PI : 0))) * 4 : 0;
+      const col = back ? shade(Q.col, -0.4) : shade(Q.col, -0.12);
+      if (Q.lizard) { limb(g, x * 0.8, hipY, x * 1.35, -2 - lift, 4, col); }
+      else { limb(g, x * 0.85, hipY - Hh * 0.1, x, -2 - lift, legW, col); ell(g, x, -1 - lift, legW * 0.6, 1.8, shade(Q.col, -0.6)); }
+    });
+  };
+  const head = () => {
+    const hy = front ? bodyY + bh * 0.25 + lunge * 6 : bodyY - bh * 0.75;
+    const hs = front ? 1 + lunge * 0.15 : 0.85;
+    if (Q.ear === 'point') for (const sx of [-1, 1]) { g.fillStyle = Q.earCol; g.beginPath(); g.moveTo(sx * Rh * 0.3 * hs, hy - Rh * 0.6 * hs); g.lineTo(sx * Rh * 0.85 * hs, hy - Rh * 1.6 * hs); g.lineTo(sx * Rh * 0.9 * hs, hy - Rh * 0.3 * hs); g.closePath(); g.fill(); g.strokeStyle = OUT; g.lineWidth = 1; g.stroke(); }
+    if (Q.ear === 'round') for (const sx of [-1, 1]) { g.fillStyle = Q.earCol; g.beginPath(); g.arc(sx * Rh * 0.75 * hs, hy - Rh * 0.75 * hs, Rh * 0.45, 0, 7); g.fill(); g.strokeStyle = OUT; g.lineWidth = 1; g.stroke(); }
+    g.fillStyle = lg(g, 0, hy - Rh, 0, hy + Rh, [[0, shade(Q.col, 0.2)], [1, shade(Q.col, -0.3)]]);
+    g.beginPath(); g.ellipse(0, hy, Rh * 0.95 * hs, Rh * 0.85 * hs, 0, 0, 7); g.fill(); g.strokeStyle = OUT; g.lineWidth = 1.3; g.stroke();
+    if (!front) return;
+    g.fillStyle = shade(Q.col, 0.12); g.beginPath(); g.ellipse(0, hy + Rh * 0.45 * hs, Rh * 0.55 * hs, Rh * 0.42 * hs, 0, 0, 7); g.fill(); g.strokeStyle = OUT; g.lineWidth = 1; g.stroke();
+    g.fillStyle = Q.tusks ? '#c98f8f' : '#1a1210'; g.beginPath(); g.ellipse(0, hy + Rh * 0.38 * hs, Rh * 0.25, Rh * 0.16, 0, 0, 7); g.fill();
+    if (Q.tusks) { g.strokeStyle = '#f4efe2'; g.lineWidth = 2.2; for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(sx * Rh * 0.4, hy + Rh * 0.7); g.quadraticCurveTo(sx * Rh * 0.8, hy + Rh * 0.6, sx * Rh * 0.75, hy + Rh * 0.1); g.stroke(); } }
+    for (const sx of [-1, 1]) {
+      const ex = sx * Rh * 0.42 * hs, ey = hy - Rh * 0.15 * hs;
+      if (Q.glowEye) { g.fillStyle = rg(g, ex, ey, 0, ex, ey, 5, [[0, 'rgba(255,200,80,.9)'], [1, 'rgba(255,140,20,0)']]); g.beginPath(); g.arc(ex, ey, 5, 0, 7); g.fill(); }
+      g.fillStyle = Q.eye; g.beginPath(); g.arc(ex, ey, Math.max(1.4, Rh * 0.16), 0, 7); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.8)'; g.fillRect(ex - 0.5, ey - 1, 1, 1);
+    }
+    if (atk) { g.fillStyle = '#5a0e0e'; g.beginPath(); g.ellipse(0, hy + Rh * 0.72 * hs, Rh * 0.35, Rh * 0.2 * lunge + 0.5, 0, 0, 7); g.fill(); }
+  };
+  const tail = () => {
+    if (front) return;
+    g.lineCap = 'round';
+    if (Q.tail === 'thin') { g.strokeStyle = Q.tailCol; g.lineWidth = 2; g.beginPath(); g.moveTo(0, bodyY + bh * 0.4); g.quadraticCurveTo(sw * 8, bodyY + bh + 6, sw * 4, -2); g.stroke(); }
+    else if (Q.tail === 'bushy') { g.fillStyle = Q.tailCol; g.beginPath(); g.ellipse(sw * 3, bodyY + bh * 0.6, 6, 12, sw * 0.3, 0, 7); g.fill(); g.strokeStyle = OUT; g.lineWidth = 1; g.stroke(); }
+    else if (Q.tail === 'curl') { g.strokeStyle = Q.tailCol; g.lineWidth = 2.5; g.beginPath(); g.arc(0, bodyY + bh * 0.3, 3.5, 0, Math.PI * 1.6); g.stroke(); }
+    else if (Q.tail === 'lizard') { g.fillStyle = Q.tailCol; g.beginPath(); g.moveTo(-6, bodyY + bh * 0.3); g.quadraticCurveTo(sw * 10, bodyY + bh + 10, sw * 6, -1); g.quadraticCurveTo(sw * 6 + 3, bodyY + bh, 6, bodyY + bh * 0.3); g.closePath(); g.fill(); g.strokeStyle = OUT; g.lineWidth = 1; g.stroke(); }
+  };
+  legsDraw(true);
+  if (!front) head();
+  // corpo
+  g.fillStyle = lg(g, -bw, 0, bw, 0, [[0, shade(Q.col, 0.2)], [0.5, Q.col], [1, shade(Q.col, -0.4)]]);
+  g.beginPath(); g.ellipse(0, bodyY, bw, bh, 0, 0, 7); g.fill(); g.strokeStyle = OUT; g.lineWidth = 1.4; g.stroke();
+  if (front) { g.fillStyle = Q.belly; g.globalAlpha = 0.5; g.beginPath(); g.ellipse(0, bodyY + bh * 0.3, bw * 0.55, bh * 0.45, 0, 0, 7); g.fill(); g.globalAlpha = 1; }
+  if (Q.spots) { g.fillStyle = Q.spots; for (let i = 0; i < 4; i++) { g.beginPath(); g.ellipse(-bw * 0.5 + i * bw * 0.33, bodyY - bh * 0.2, 2.5, 2, 0, 0, 7); g.fill(); } }
+  if (Q.bristle && !front) { g.strokeStyle = shade(Q.col, -0.5); g.lineWidth = 1.4; for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(-3 + i, bodyY - bh + i * 3); g.lineTo(-5 + i, bodyY - bh - 4 + i * 3); g.stroke(); } }
+  if (Q.embers) { g.fillStyle = 'rgba(255,140,40,.9)'; for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(-bw * 0.4 + i * bw * 0.4, bodyY - bh * 0.3, 1.4, 0, 7); g.fill(); } }
+  tail();
+  legsDraw(false);
+  if (front) head();
+}
+function getTint(look, dir, fi) {
+  const k = 'T|' + look + '|' + dir + '|' + fi;
+  let c = frameCache.get(k); if (c) return c;
+  const f = getFrame(look, dir, fi);
+  c = mk(FW, FH); const g = c.getContext('2d');
+  g.drawImage(f, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(255,40,30,.55)'; g.fillRect(0, 0, FW, FH);
+  frameCache.set(k, c); return c;
+}
+
 // ------------------------------------------------------------
 //  Golem de Brasa (vista frontal)
 // ------------------------------------------------------------
@@ -730,7 +820,7 @@ const FW = 128, FH = 140, FAX = 64, FAY = 126;
 const frameCache = new Map();
 function getFrame(look, dir, fi) {
   const L = LOOKS[look];
-  const ddir = L.type === 'human' ? (dir === 3 ? 1 : dir) : 1;
+  const ddir = (L.type === 'human' || L.type === 'quad') ? (dir === 3 ? 1 : dir) : 1;
   const key = look + '|' + ddir + '|' + fi;
   let c = frameCache.get(key);
   if (c) return c;
@@ -740,7 +830,7 @@ function getFrame(look, dir, fi) {
   const ph = fi >= 1 && fi <= 8 ? (fi - 1) / 8 + 0.001 : 0;
   const atk = fi >= 9 ? (fi - 8) / 3 : 0;
   if (L.type === 'human') drawHuman(g, L, ddir, ph, atk);
-  else if (L.type === 'quad') drawQuad(g, L, ph, atk);
+  else if (L.type === 'quad') { if (ddir === 1) drawQuad(g, L, ph, atk); else drawQuadFB(g, L, ph, atk, ddir === 2); }
   else if (L.type === 'golem') drawGolem(g, ph, atk);
   else if (L.type === 'dummy') drawDummy(g, atk);
   frameCache.set(key, tmp);

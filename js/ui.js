@@ -157,14 +157,25 @@ function renderSelect() {
       <canvas width="120" height="150"></canvas>
       <div class="sc-voc">${VOC[v].nome}</div>
       <input class="sc-name" maxlength="16" placeholder="Dê um nome" value="${esc(c.name || '')}">
+      <div class="sc-cols">${[['Roupa', OUTFIT, 0], ['Pele', SKINC, 1], ['Cabelo', HAIRC, 2]].map(([lb, pal, i]) => `<div class="sw-row" title="${lb}"><span>${lb}</span>${pal.map((col, j) => `<i class="sw ${(c.color && c.color[i] === j) ? 'on' : ''}" data-i="${i}" data-j="${j}" style="background:${col}"></i>`).join('')}</div>`).join('')}</div>
       <div class="sc-info">${c.name ? `Nível ${lv}<br><small>${sk}</small>` : '<small>Novo personagem</small>'}</div>
       <button class="go play">JOGAR</button>
     </div>`;
   }).join('');
   box.querySelectorAll('.slot-card').forEach(cd => {
     const v = cd.dataset.v, cvs = cd.querySelector('canvas'), g = cvs.getContext('2d');
-    cd._draw = t => { g.clearRect(0, 0, cvs.width, cvs.height); g.save(); g.translate(cvs.width / 2, cvs.height - 6); g.scale(1.35, 1.35); g.drawImage(getFrame(v, 2, cd.classList.contains('sel') ? 1 + Math.floor(t / 110) % 8 : 0), -FAX, -FAY); g.restore(); };
+    cd._draw = t => { g.clearRect(0, 0, cvs.width, cvs.height); g.save(); g.translate(cvs.width / 2, cvs.height - 6); g.scale(1.35, 1.35); g.drawImage(getFrame(lookFor(v, STORE.chars[v].color), 2, cd.classList.contains('sel') ? 1 + Math.floor(t / 110) % 8 : 0), -FAX, -FAY); g.restore(); };
     cd._draw(0);
+    cd.querySelectorAll('.sw').forEach(sw => sw.onclick = ev => {
+      ev.stopPropagation();
+      const ch = STORE.chars[v], i = +sw.dataset.i, j = +sw.dataset.j;
+      ch.color = Array.isArray(ch.color) ? ch.color.slice() : [-1, -1, -1];
+      ch.color[i] = ch.color[i] === j ? -1 : j; // clicar de novo volta ao padrão
+      writeStore();
+      cd.querySelectorAll(`.sw[data-i="${i}"]`).forEach(x => x.classList.toggle('on', ch.color[i] === +x.dataset.j));
+      selVoc = v; box.querySelectorAll('.slot-card').forEach(x => x.classList.toggle('sel', x === cd));
+      cd._draw(performance.now());
+    });
     cd.onclick = e => { if (e.target.tagName === 'INPUT') return; selVoc = v; box.querySelectorAll('.slot-card').forEach(x => x.classList.toggle('sel', x === cd)); };
     const inp = cd.querySelector('.sc-name');
     inp.onfocus = () => { selVoc = v; box.querySelectorAll('.slot-card').forEach(x => x.classList.toggle('sel', x === cd)); };
