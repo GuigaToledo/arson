@@ -330,8 +330,10 @@ function autoPlay(dt) {
   const minMana = Math.min(heal.mana, ...atk.map(s => s.mana));
   if (ME.mp < minMana || ME.mp < maxMp() * 0.12) usePot('mp');
   if (isPZ(ME.x, ME.y)) return;
-  let tg = ME.target != null ? MON.get(ME.target) : null;
-  if (!tg) { const n = nearestMon(ME.x, ME.y, 7); if (n) { ME.target = n.id; tg = n; } }
+  // mira sempre o inimigo mais próximo, inclusive os distantes (até 12 quadrados)
+  let tg = nearestMon(ME.x, ME.y, 12);
+  if (tg) ME.target = tg.id;
+  else tg = ME.target != null ? MON.get(ME.target) : null;
   if (!tg) return;
   const d = Math.hypot(tg.tx - ME.x, tg.ty - ME.y);
   for (let i = atk.length - 1; i >= 0; i--) {
