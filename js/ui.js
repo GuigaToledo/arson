@@ -15,7 +15,7 @@ addEventListener('keydown', e => {
     else openMenu('skills');
     return;
   }
-  if (c === 'KeyK') { if ($('menu').hidden) openMenu('skills'); else closeMenu(); return; }
+  if (c === 'KeyK') { const off = document.body.classList.toggle('noskh'); STORE.settings.skh = !off; return; }
   if (!$('menu').hidden) return;
   if (c === 'Enter' || c === 'NumpadEnter') { e.preventDefault(); openChat(); return; }
   if (c === 'Space') { if (!e.repeat) targetNext(); return; }
@@ -203,6 +203,7 @@ function renderSelect() {
 (function init() {
   applyQuality(STORE.settings.quality === 'auto' ? (IS_MOBILE ? 'media' : 'alta') : STORE.settings.quality, true);
   zoom = clamp(STORE.settings.zoom || (IS_MOBILE ? 64 : 84), 40, 140);
+  if (STORE.settings.skh === false) document.body.classList.add('noskh');
   miniOn = STORE.settings.mini !== false; $('mini').style.display = miniOn ? '' : 'none';
   if (IS_MOBILE || navigator.maxTouchPoints > 0) document.body.classList.add('touch');
   setupTouch();

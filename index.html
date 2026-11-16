@@ -27,7 +27,11 @@
   .bar > span { position: absolute; inset: 0; text-align: center; font-size: 10px; line-height: 14px; text-shadow: 0 1px 2px #000; }
   #hpF { background: linear-gradient(#ff6a5a, #b8221a); } #mpF { background: linear-gradient(#7aa8ff, #2a5ad8); }
   .xp { height: 4px; } #xpF { background: linear-gradient(90deg, #ffb03a, #ffe066); }
-  #task { left: 14px; top: 104px; padding: 5px 10px; font-size: 11px; color: #c9f0c0; }
+  #skh { left: 14px; top: 104px; width: 230px; padding: 6px 10px; font-size: 11px; }
+  #skh .r { display: grid; grid-template-columns: 62px 28px 1fr; align-items: center; gap: 6px; margin: 2px 0; }
+  #skh b { color: var(--fire2); text-align: right; } #skh .pb { height: 4px; border-radius: 2px; background: rgba(0,0,0,.55); overflow: hidden; } #skh .pb i { display: block; height: 100%; background: linear-gradient(90deg, #ff9a3a, #ffe066); }
+  body.noskh #skh { display: none; } body.noskh #task { top: 104px; }
+  #task { left: 14px; top: 196px; padding: 5px 10px; font-size: 11px; color: #c9f0c0; }
   /* alvo */
   #tgt { left: 50%; top: 14px; transform: translateX(-50%); width: 260px; padding: 6px 12px; text-align: center; }
   #tgtN { font-weight: bold; color: #ffb0a0; font-size: 12px; }
@@ -173,6 +177,7 @@
   <div class="bar"><i id="mpF"></i><span id="mpT"></span></div>
   <div class="bar xp"><i id="xpF"></i></div>
 </div>
+<div id="skh" class="hud glass"></div>
 <div id="task" class="hud glass" hidden></div>
 <div id="tgt" class="hud glass" hidden><div id="tgtN"></div><div class="bar"><i id="tgtF"></i></div></div>
 <canvas id="mini" class="hud" width="340" height="340"></canvas>
@@ -208,7 +213,7 @@
     <tr><td>Roda do mouse / + −</td><td>zoom</td></tr>
     <tr><td>M</td><td>mostrar/ocultar minimapa</td></tr>
     <tr><td>Esc</td><td>soltar alvo / fechar janelas / abrir menu</td></tr>
-    <tr><td>K</td><td>habilidades (magia, defesa, espada, distância)</td></tr>
+    <tr><td>K</td><td>mostrar/ocultar o painel de habilidades</td></tr>
     <tr><td>Controle Xbox</td><td>analógico anda · A alvo · B/X poções · Y cura · LB/RB/LT/RT magias 1–4 · Start menu</td></tr>
   </table>
   <p>Com um alvo selecionado, as magias vão nele. Sem alvo, cones e áreas miram no cursor do mouse. O ataque básico é automático quando o alvo está ao alcance. Na cidade (Cinzaforte) ninguém ataca. Fale "oi" perto de Brann (poções) e Lira (cura e tarefas).</p>

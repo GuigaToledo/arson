@@ -1093,8 +1093,16 @@ function updHud(now) {
   const tg = ME.target != null ? MON.get(ME.target) : null;
   const tb = $('tgt');
   if (tg) { tb.hidden = false; $('tgtN').textContent = MT[tg.type].name; $('tgtF').style.width = tg.hp + '%'; } else tb.hidden = true;
+  updSkh();
   if (ME.task) { $('task').hidden = false; $('task').textContent = `Tarefa: ${ME.task.count}/${ME.task.need} ${MT[ME.task.type].name}`; } else $('task').hidden = true;
   updNet();
+}
+let skhKey = '';
+function updSkh() {
+  const ks = SKV[ME.voc];
+  const key = ME.voc + ks.map(k => ME.sk[k][0] + ':' + Math.floor(ME.sk[k][1])).join('|');
+  if (key === skhKey) return; skhKey = key;
+  $('skh').innerHTML = ks.map(k => { const [lv, pts] = ME.sk[k], f = clamp(pts / skNeed(k, lv), 0, 1); return `<div class="r"><span>${SKN[k]}</span><b>${lv}</b><div class="pb"><i style="width:${(f * 100).toFixed(1)}%"></i></div></div>`; }).join('');
 }
 function updNet() { const n = NET.isHost ? SIM.players.size : REM.size + 1; $('net').innerHTML = `<i class="${NET.ready ? 'on' : 'wait'}"></i>${NET.ready ? `online · ${n} jogador${n > 1 ? 'es' : ''}` : 'conectando…'}`; updConn(); }
 // minimapa
@@ -1152,8 +1160,8 @@ cv.addEventListener('wheel', e => { e.preventDefault(); setZoom(zoom * (e.deltaY
 function targetNext() {
   const list = [...MON.values()].map(m => ({ m, d: Math.hypot(m.tx - ME.x, m.ty - ME.y) })).filter(o => o.d < 10).sort((a, b) => a.d - b.d);
   if (!list.length) { ME.target = null; return toast('Nenhuma criatura por perto.'); }
-  const i = list.findIndex(o => o.m.id === ME.target);
-  ME.target = list[(i + 1) % list.length].m.id;
+  // sempre o mais próximo; se ele já é o alvo, passa para o segundo mais próximo
+  ME.target = (list[0].m.id === ME.target && list.length > 1) ? list[1].m.id : list[0].m.id;
 }
 const ci = $('ci');
 function openChat() { chatOpen = true; document.body.classList.add('chat'); ci.value = ''; ci.focus(); $('log').scrollTop = 1e9; keys.clear(); }
