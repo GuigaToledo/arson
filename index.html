@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arson</title>
+<meta name="description" content="Arson — MMORPG online no navegador. Um mundo só, para todos os jogadores.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 4C22 18 14 26 14 40a18 18 0 0 0 36 0c0-8-4-14-8-18 0 6-3 10-6 10 2-10-1-20-4-28z' fill='%23ff7a1a'/%3E%3Cpath d='M32 30c-5 6-8 10-8 15a8 8 0 0 0 16 0c0-5-4-9-8-15z' fill='%23ffe066'/%3E%3C/svg%3E">
+<style>
+  :root { --fire: #ff7a1a; --fire2: #ffd23a; --text: #efe4d6; --muted: #a8968a; --glass: rgba(14,10,8,.62); --line: rgba(255,200,150,.14); }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0806; color: var(--text); font: 13px/1.4 Verdana, Geneva, sans-serif; user-select: none; }
+  #cv { position: fixed; inset: 0; display: block; cursor: crosshair; }
+  .hud { position: fixed; pointer-events: none; display: none; }
+  body.playing .hud { display: block; }
+  .glass { background: var(--glass); border: 1px solid var(--line); border-radius: 10px; backdrop-filter: blur(4px); }
+  /* status */
+  #stat { left: 14px; top: 14px; width: 230px; padding: 8px 10px; }
+  #stat .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  #nm { font-weight: bold; font-size: 14px; }
+  #stat .lv { color: var(--muted); font-size: 11px; } #stat .lv b { color: var(--fire2); font-size: 13px; }
+  .bar { position: relative; height: 14px; border-radius: 7px; background: rgba(0,0,0,.55); overflow: hidden; margin: 4px 0; }
+  .bar > i { position: absolute; inset: 0 auto 0 0; border-radius: 7px; transition: width .12s; }
+  .bar > span { position: absolute; inset: 0; text-align: center; font-size: 10px; line-height: 14px; text-shadow: 0 1px 2px #000; }
+  #hpF { background: linear-gradient(#ff6a5a, #b8221a); } #mpF { background: linear-gradient(#7aa8ff, #2a5ad8); }
+  .xp { height: 4px; } #xpF { background: linear-gradient(90deg, #ffb03a, #ffe066); }
+  #task { left: 14px; top: 104px; padding: 5px 10px; font-size: 11px; color: #c9f0c0; }
+  /* alvo */
+  #tgt { left: 50%; top: 14px; transform: translateX(-50%); width: 260px; padding: 6px 12px; text-align: center; }
+  #tgtN { font-weight: bold; color: #ffb0a0; font-size: 12px; }
+  #tgt .bar { height: 7px; } #tgtF { background: linear-gradient(#ff5a4a, #9a1a12); }
+  /* minimapa */
+  #mini { position: fixed; right: 14px; top: 14px; width: 170px; height: 170px; border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,.6); }
+  #net { right: 14px; top: 192px; width: 170px; text-align: center; font-size: 10px; color: var(--muted); }
+  #net i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; background: #e8c33a; vertical-align: 0; }
+  #net i.on { background: #3fd34a; box-shadow: 0 0 6px #3fd34a; } #net i.off { background: #e05a4a; }
+  /* barra de magias */
+  #hot { left: 50%; bottom: 14px; transform: translateX(-50%); display: flex !important; gap: 10px; align-items: flex-end; pointer-events: auto; padding: 7px 9px; }
+  body:not(.playing) #hot { display: none !important; }
+  #spells { display: flex; gap: 6px; }
+  .slot { position: relative; width: 48px; height: 48px; border-radius: 8px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,200,150,.25); }
+  .slot canvas { display: block; }
+  .slot .k { position: absolute; left: 3px; top: 1px; font-size: 11px; font-weight: bold; color: #fff; text-shadow: 0 1px 2px #000; }
+  .slot .cd { position: absolute; inset: 0; }
+  .slot .lk { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.7); font-size: 11px; color: var(--muted); }
+  .slot.locked .lk { display: flex; } .slot.nomana { filter: saturate(.3) brightness(.7); }
+  .slot:hover { border-color: var(--fire); }
+  .pots { display: flex; gap: 6px; padding-left: 8px; border-left: 1px solid var(--line); }
+  .pot { position: relative; width: 40px; height: 48px; border-radius: 8px; background: rgba(0,0,0,.4); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; }
+  .pot i { width: 14px; height: 18px; border-radius: 4px 4px 8px 8px; margin-bottom: 2px; box-shadow: inset -3px -3px 0 rgba(0,0,0,.25), inset 2px 2px 0 rgba(255,255,255,.3); }
+  .pot .k { position: absolute; left: 3px; top: 1px; font-size: 10px; font-weight: bold; color: var(--muted); }
+  .gold { color: var(--fire2); font-weight: bold; }
+  #goldBox { font-size: 11px; align-self: center; padding-left: 8px; border-left: 1px solid var(--line); white-space: nowrap; }
+  /* chat */
+  #feed { left: 14px; bottom: 84px; width: min(460px, 60vw); font-size: 12px; text-shadow: 0 1px 2px #000, 0 0 6px #000; }
+  #feed div { transition: opacity 1s; margin-top: 2px; } #feed div.fade { opacity: 0; }
+  body.chat #feed { display: none; }
+  #chat { position: fixed; left: 14px; bottom: 84px; width: min(460px, 70vw); display: none; padding: 8px; }
+  body.chat #chat { display: block; }
+  #log { max-height: 220px; overflow-y: auto; font-size: 12px; margin-bottom: 6px; padding-right: 4px; }
+  #ci { width: 100%; border: 1px solid var(--line); border-radius: 6px; background: rgba(0,0,0,.5); color: var(--text); padding: 7px 9px; font: inherit; outline: none; }
+  #ci:focus { border-color: rgba(255,122,26,.6); }
+  .c-sys { color: #f4e27a; } .c-say { color: #ffff9a; } .c-npc { color: #7fdcff; } .c-loot { color: #8dff9a; } .c-lvl { color: #fff; font-weight: bold; } .c-death { color: #ff6a5a; font-weight: bold; } .c-boss { color: var(--fire); font-weight: bold; }
+  /* mensagens */
+  #center { position: fixed; left: 50%; top: 24%; transform: translate(-50%, -10px); text-align: center; opacity: 0; transition: opacity .5s, transform .5s; pointer-events: none; text-shadow: 0 2px 12px #000, 0 0 30px rgba(0,0,0,.8); }
+  #center.on { opacity: 1; transform: translate(-50%, 0); }
+  #center .big { font: bold 40px Georgia, serif; color: #ffe8b0; letter-spacing: 2px; }
+  #center .small { font-size: 14px; color: #f0d8c0; margin-top: 4px; }
+  #toast { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); padding: 6px 14px; border-radius: 8px; background: rgba(0,0,0,.7); color: #ffd0b0; font-size: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.on { opacity: 1; }
+  #hint { right: 14px; bottom: 14px; font-size: 10px; color: rgba(255,240,220,.45); text-shadow: 0 1px 2px #000; }
+  /* diálogo NPC */
+  #dlg { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); width: min(420px, 92vw); padding: 14px 16px; z-index: 5; pointer-events: auto; }
+  .dlg-t { font: bold 16px Georgia, serif; color: #7fdcff; margin-bottom: 6px; }
+  #dlg p { margin: 0 0 10px; }
+  .dlg-b { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .dlg-b button, .btn { flex: 1; padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(255,170,90,.35); background: linear-gradient(#3a261a, #23170f); color: var(--text); font: inherit; cursor: pointer; }
+  .dlg-b button:hover, .btn:hover { border-color: var(--fire); }
+  .dlg-b button.ghost { background: transparent; }
+  /* ajuda */
+  #help { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, 94vw); padding: 18px 22px; z-index: 6; pointer-events: auto; }
+  #help h2 { margin: 0 0 10px; font: bold 22px Georgia, serif; color: var(--fire2); }
+  #help table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #help td { padding: 4px 6px; border-bottom: 1px solid var(--line); } #help td:first-child { color: var(--fire2); white-space: nowrap; width: 40%; }
+  #help p { color: var(--muted); font-size: 11px; margin: 10px 0 0; }
+  /* login */
+  #login { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; background: radial-gradient(ellipse at 50% 100%, rgba(90,26,5,.55) 0%, rgba(10,6,4,.55) 60%, rgba(0,0,0,.75) 100%); }
+  #login.hidden { display: none; }
+  .card { width: 440px; max-width: 100%; padding: 26px 26px 18px; background: rgba(16,11,8,.82); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 0 80px rgba(255,90,20,.22); backdrop-filter: blur(6px); }
+  .logo { font: bold 72px/1 Georgia, 'Times New Roman', serif; text-align: center; letter-spacing: 10px; background: linear-gradient(180deg, #fff3b0 0%, var(--fire2) 30%, var(--fire) 62%, #a3200a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 16px rgba(255,110,20,.6)); }
+  .tag { text-align: center; color: var(--muted); margin: 6px 0 18px; font-style: italic; }
+  .card label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 12px 0 5px; }
+  .card input { width: 100%; padding: 10px 12px; background: rgba(0,0,0,.5); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit; outline: none; }
+  .card input:focus { border-color: var(--fire); }
+  .vocs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .voc { border: 1px solid var(--line); border-radius: 10px; padding: 6px 4px 8px; text-align: center; cursor: pointer; background: rgba(0,0,0,.35); transition: border-color .15s, background .15s; }
+  .voc canvas { display: block; margin: 0 auto; }
+  .voc b { display: block; font-size: 12px; } .voc small { color: var(--muted); font-size: 10px; }
+  .voc.sel { border-color: var(--fire); background: rgba(80,30,10,.5); box-shadow: inset 0 0 0 1px var(--fire); }
+  .go { width: 100%; margin-top: 18px; padding: 12px; border: 0; border-radius: 8px; font: bold 15px Verdana, sans-serif; letter-spacing: 3px; color: #1a0d08; background: linear-gradient(var(--fire2), var(--fire)); cursor: pointer; }
+  .go:hover { filter: brightness(1.1); }
+  #err { color: #ff7a6a; min-height: 18px; text-align: center; font-size: 12px; margin-top: 8px; }
+  .note { text-align: center; color: var(--muted); font-size: 11px; margin-top: 6px; }
+  #cont { text-align: center; } #contInfo { margin: 4px 0 4px; font-size: 14px; }
+  #ver { position: fixed; right: 10px; bottom: 8px; font-size: 10px; color: rgba(255,255,255,.3); z-index: 11; }
+  @media (max-width: 700px) { #stat { width: 170px; } #mini { width: 110px; height: 110px; } #net { top: 128px; width: 110px; } .slot { width: 40px; height: 40px; } .slot canvas { width: 40px; height: 40px; } }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="stat" class="hud glass">
+  <div class="row"><span id="nm">—</span><span class="lv">nível <b id="lvl">1</b></span></div>
+  <div class="bar"><i id="hpF"></i><span id="hpT"></span></div>
+  <div class="bar"><i id="mpF"></i><span id="mpT"></span></div>
+  <div class="bar xp"><i id="xpF"></i></div>
+</div>
+<div id="task" class="hud glass" hidden></div>
+<div id="tgt" class="hud glass" hidden><div id="tgtN"></div><div class="bar"><i id="tgtF"></i></div></div>
+<canvas id="mini" class="hud" width="340" height="340"></canvas>
+<div id="net" class="hud"></div>
+<div id="hot" class="hud glass">
+  <div id="spells"></div>
+  <div class="pots">
+    <div class="pot"><span class="k">Q</span><i style="background:#d8322a"></i><span id="php">0</span></div>
+    <div class="pot"><span class="k">E</span><i style="background:#3a7bff"></i><span id="pmp">0</span></div>
+  </div>
+  <div id="goldBox"><span class="gold" id="gold">0</span> ouro</div>
+</div>
+<div id="feed" class="hud"></div>
+<div id="chat" class="glass"><div id="log"></div><input id="ci" maxlength="140" placeholder="Digite e aperte Enter (Esc cancela)" autocomplete="off"></div>
+<div id="center"></div>
+<div id="toast"></div>
+<div id="hint" class="hud">H · ajuda &nbsp; Enter · chat</div>
+<div id="dlg" class="glass" hidden></div>
+<div id="help" class="glass" hidden>
+  <h2>Controles</h2>
+  <table>
+    <tr><td>WASD / setas</td><td>andar (movimento livre, inclusive diagonal)</td></tr>
+    <tr><td>Espaço</td><td>selecionar o próximo alvo</td></tr>
+    <tr><td>Clique</td><td>selecionar um monstro / falar com NPC</td></tr>
+    <tr><td>Numpad 1–6 (ou 1–6)</td><td>lançar magias</td></tr>
+    <tr><td>Q / E</td><td>poção de vida / mana</td></tr>
+    <tr><td>Enter</td><td>abrir o chat · Enter de novo envia e fecha</td></tr>
+    <tr><td>Roda do mouse / + −</td><td>zoom</td></tr>
+    <tr><td>M</td><td>mostrar/ocultar minimapa</td></tr>
+    <tr><td>Esc</td><td>soltar alvo / fechar janelas</td></tr>
+  </table>
+  <p>Com um alvo selecionado, as magias vão nele. Sem alvo, cones e áreas miram no cursor do mouse. O ataque básico é automático quando o alvo está ao alcance. Na cidade (Cinzaforte) ninguém ataca. Fale "oi" perto de Brann (poções) e Lira (cura e tarefas).</p>
+</div>
+
+<div id="login">
+  <div class="card">
+    <div class="logo">ARSON</div>
+    <div class="tag">As terras queimam. Só os fortes renascem das cinzas.</div>
+    <div id="cont" hidden>
+      <div class="note">Continuar como</div>
+      <div id="contInfo"></div>
+      <button class="go" id="btnCont">JOGAR</button>
+      <button class="btn" id="btnNovo" style="width:100%;margin-top:8px">Novo personagem</button>
+    </div>
+    <form id="novo" autocomplete="off">
+      <label for="nome">Nome do personagem</label>
+      <input id="nome" maxlength="16" required>
+      <label>Vocação</label>
+      <div class="vocs">
+        <div class="voc sel" data-v="guerreiro"><canvas width="110" height="140"></canvas><b>Guerreiro</b><small>vida e defesa</small></div>
+        <div class="voc" data-v="mago"><canvas width="110" height="140"></canvas><b>Mago</b><small>fogo e raios</small></div>
+        <div class="voc" data-v="arqueiro"><canvas width="110" height="140"></canvas><b>Arqueiro</b><small>longa distância</small></div>
+      </div>
+      <button class="go" type="submit" id="formBtn">ENTRAR NO MUNDO</button>
+      <div id="err"></div>
+      <div class="note">Todos os jogadores estão no mesmo mundo. Seu progresso fica salvo neste navegador.</div>
+    </form>
+  </div>
+</div>
+<div id="ver"></div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/art.js"></script>
+<script src="js/net.js"></script>
+<script src="js/host.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
