@@ -38,7 +38,9 @@ const HW = { gpu: '', tier: 1, cores: navigator.hardwareConcurrency || 4, mem: n
   const g = HW.gpu.toLowerCase();
   const strong = /nvidia|geforce|rtx|gtx|radeon rx|radeon pro|apple m[1-9]|arc a\d/.test(g);
   const weak = /swiftshader|llvmpipe|software|mali|adreno [1-5]\d\d|powervr|intel.*hd graphics [2-5]\d\d|gma/.test(g);
-  HW.tier = weak || IS_MOBILE || (HW.mem && HW.mem <= 2) ? 0 : strong && HW.cores >= 4 ? 2 : 1;
+  // computador de mesa forte (muitos núcleos e memória, ou placa dedicada): qualidade máxima, sem nunca reduzir
+  const bigPC = !IS_MOBILE && HW.cores >= 8 && (!HW.mem || HW.mem >= 8) && !/swiftshader|llvmpipe|software/.test(g);
+  HW.tier = (strong && HW.cores >= 4) || bigPC ? 2 : weak || IS_MOBILE || (HW.mem && HW.mem <= 2) ? 0 : 1;
   // mede a taxa do monitor pelos quadros do navegador
   let n = 0, t0 = 0;
   (function hz(t) { if (!t0) t0 = t; if (++n < 60) return requestAnimationFrame(hz); const f = 1000 * 59 / (t - t0); HW.hz = f > 200 ? 240 : f > 155 ? 165 : f > 130 ? 144 : f > 100 ? 120 : f > 80 ? 90 : 60; })(0);
@@ -47,6 +49,7 @@ function autoQualityStart() { return HW.tier === 2 ? 'alta' : HW.tier === 1 ? 'm
 const perf = { acc: 0, n: 0, slow: 0, fast: 0 };
 function perfWatch(dt) {
   if (!STORE || STORE.settings.quality !== 'auto' || document.hidden) return;
+  if (HW.tier === 2) { if (qName !== 'alta') applyQuality('alta', true); return; } // PC forte: nunca reduz a qualidade
   perf.acc += dt; perf.n++;
   if (perf.n >= 120) {
     const avg = perf.acc / perf.n * 1000; perf.acc = 0; perf.n = 0;
