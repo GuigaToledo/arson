@@ -86,7 +86,7 @@ function renderMenu() {
   } else if (menuTab === 'config') {
     const s = STORE.settings;
     h += `<label class="m-opt"><input type="checkbox" id="optAuto" ${s.auto ? 'checked' : ''}> <span><b>Modo automático</b><small>Poções infinitas, poção de mana automática, cura em 50% de vida, poção de vida em 25% e magias de ataque assim que recarregam. Ideal para celular e controle.</small></span></label>
-      <div class="m-opt"><span><b>Qualidade gráfica</b><small>Automática reduz sozinha em aparelhos lentos. Atual: ${Q.nome}.</small></span>
+      <div class="m-opt"><span><b>Qualidade gráfica</b><small>Automática ajusta sozinha para o seu computador. Atual: <b>${Q.nome}</b>.<br>Detectado: ${esc(HW.gpu || 'placa de vídeo desconhecida')} · ${HW.cores} núcleos${HW.mem ? ' · ' + HW.mem + ' GB' : ''} · monitor ${HW.hz} Hz</small></span>
       <select id="optQ">${[['auto', 'Automática'], ['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa']].map(([v, n]) => `<option value="${v}" ${s.quality === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <label class="m-opt"><input type="checkbox" id="optMini" ${miniOn ? 'checked' : ''}> <span><b>Minimapa</b></span></label>
       <div class="m-opt"><span><b>Zoom</b></span><input type="range" id="optZoom" min="40" max="140" value="${Math.round(zoom)}"></div>`;
@@ -100,7 +100,7 @@ function renderMenu() {
   box.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { menuTab = b.dataset.tab; renderMenu(); });
   box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => menuAct(b.dataset.act));
   const oa = $('optAuto'); if (oa) oa.onchange = () => { STORE.settings.auto = oa.checked; document.body.classList.toggle('auto', oa.checked); saveGame(); toast(oa.checked ? 'Modo automático ligado' : 'Modo automático desligado'); };
-  const oq = $('optQ'); if (oq) oq.onchange = () => { STORE.settings.quality = oq.value; applyQuality(oq.value === 'auto' ? (IS_MOBILE ? 'media' : 'alta') : oq.value); saveGame(); renderMenu(); };
+  const oq = $('optQ'); if (oq) oq.onchange = () => { STORE.settings.quality = oq.value; applyQuality(oq.value === 'auto' ? autoQualityStart() : oq.value); saveGame(); renderMenu(); };
   const om = $('optMini'); if (om) om.onchange = () => setMini(om.checked);
   const oz = $('optZoom'); if (oz) oz.oninput = () => setZoom(Number(oz.value));
 }
@@ -201,7 +201,7 @@ function renderSelect() {
 //  Inicialização
 // ------------------------------------------------------------
 (function init() {
-  applyQuality(STORE.settings.quality === 'auto' ? (IS_MOBILE ? 'media' : 'alta') : STORE.settings.quality, true);
+  applyQuality(STORE.settings.quality === 'auto' ? autoQualityStart() : STORE.settings.quality, true);
   zoom = clamp(STORE.settings.zoom || (IS_MOBILE ? 64 : 84), 40, 140);
   if (STORE.settings.skh === false) document.body.classList.add('noskh');
   miniOn = STORE.settings.mini !== false; $('mini').style.display = miniOn ? '' : 'none';

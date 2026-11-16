@@ -23,14 +23,40 @@ function applyQuality(name, silent) {
   qName = name; Q = QUAL[name];
   if (!silent) toast(`Qualidade gráfica: ${Q.nome}`);
 }
-const perf = { acc: 0, n: 0, slow: 0 };
+// ------------------------------------------------------------
+//  Perfil do computador: placa de vídeo, núcleos, memória e
+//  taxa do monitor. A qualidade se ajusta sozinha nos dois sentidos.
+// ------------------------------------------------------------
+const HW = { gpu: '', tier: 1, cores: navigator.hardwareConcurrency || 4, mem: navigator.deviceMemory || 0, hz: 60 };
+(function detectHW() {
+  try {
+    const c = document.createElement('canvas'), gl = c.getContext('webgl');
+    const ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
+    HW.gpu = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : (gl ? String(gl.getParameter(gl.RENDERER)) : '');
+    const ctxLose = gl && gl.getExtension('WEBGL_lose_context'); if (ctxLose) ctxLose.loseContext();
+  } catch (e) { }
+  const g = HW.gpu.toLowerCase();
+  const strong = /nvidia|geforce|rtx|gtx|radeon rx|radeon pro|apple m[1-9]|arc a\d/.test(g);
+  const weak = /swiftshader|llvmpipe|software|mali|adreno [1-5]\d\d|powervr|intel.*hd graphics [2-5]\d\d|gma/.test(g);
+  HW.tier = weak || IS_MOBILE || (HW.mem && HW.mem <= 2) ? 0 : strong && HW.cores >= 4 ? 2 : 1;
+  // mede a taxa do monitor pelos quadros do navegador
+  let n = 0, t0 = 0;
+  (function hz(t) { if (!t0) t0 = t; if (++n < 60) return requestAnimationFrame(hz); const f = 1000 * 59 / (t - t0); HW.hz = f > 200 ? 240 : f > 155 ? 165 : f > 130 ? 144 : f > 100 ? 120 : f > 80 ? 90 : 60; })(0);
+})();
+function autoQualityStart() { return HW.tier === 2 ? 'alta' : HW.tier === 1 ? 'media' : 'baixa'; }
+const perf = { acc: 0, n: 0, slow: 0, fast: 0 };
 function perfWatch(dt) {
   if (!STORE || STORE.settings.quality !== 'auto' || document.hidden) return;
   perf.acc += dt; perf.n++;
-  if (perf.n >= 90) {
+  if (perf.n >= 120) {
     const avg = perf.acc / perf.n * 1000; perf.acc = 0; perf.n = 0;
-    if (avg > 27) perf.slow++; else perf.slow = 0;
-    if (perf.slow >= 2) { perf.slow = 0; const i = QORDER.indexOf(qName); if (i < QORDER.length - 1) applyQuality(QORDER[i + 1]); }
+    const target = 1000 / HW.hz;
+    if (avg > target * 1.3 && avg > 9) { perf.slow++; perf.fast = 0; }       // não está acompanhando o monitor
+    else if (avg < target * 1.08) { perf.fast++; perf.slow = 0; }          // acompanhando com folga
+    else { perf.slow = 0; perf.fast = 0; }
+    const i = QORDER.indexOf(qName);
+    if (perf.slow >= 2 && i < QORDER.length - 1) { perf.slow = 0; applyQuality(QORDER[i + 1]); }
+    else if (perf.fast >= 8 && i > 0) { perf.fast = 0; applyQuality(QORDER[i - 1]); } // sobe de volta se sobrar folga
   }
 }
 function resize() {
