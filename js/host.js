@@ -256,10 +256,10 @@ function hostTick(dt) {
     if (!near) { m.mv = false; m.tgt = null; continue; }
     m.atkT = Math.max(0, m.atkT - dt); m.acd -= dt; m.scan -= dt; m.spc -= dt;
     let p = m.tgt ? SIM.players.get(m.tgt) : null;
-    if (p && (p.dead || p.pz || dist(m, p) > (t.dummy ? 3.2 : 14))) { p = null; m.tgt = null; }
+    if (p && (p.dead || p.pz || dist(m, p) > (t.dummy ? 9 : 14))) { p = null; m.tgt = null; }
     if (t.dummy) { // boneco: parado, só revida
       if (!p && m.scan <= 0) { m.scan = 0.5; let bd = t.aggro; for (const q of plist) { if (q.dead || q.pz) continue; const d = dist(m, q); if (d < bd) { bd = d; p = q; } } if (p) m.tgt = p.uid; }
-      if (p) { m.face = p.x >= m.x ? 1 : -1; m.dir = m.face > 0 ? 1 : 3; if (dist(m, p) <= t.range + 0.6 && m.acd <= 0) { m.acd = t.aspd; monAttack(m, p); } }
+      if (p) { m.face = p.x >= m.x ? 1 : -1; m.dir = m.face > 0 ? 1 : 3; if (m.acd <= 0) { m.acd = t.aspd; if (dist(m, p) > t.range + 0.6) ev({ k: 'proj', f: 'palha', x: m.x, y: m.y - 0.6, x1: p.x, y1: p.y - 0.5 }); monAttack(m, p); } }
       m.mv = false;
       continue;
     }

@@ -11,7 +11,7 @@ let dpr = 1, zoom = 64, VIEW = { S: 1, ox: 0, oy: 0 }, vignette = null;
 // ------------------------------------------------------------
 // a resolução é sempre a nativa da tela; a qualidade só liga/desliga efeitos
 const QUAL = {
-  alta: { nome: 'Alta', light: true, glow: true, parts: 1800, shadows: true, anim: true, vig: true },
+  alta: { nome: 'Alta', light: true, glow: true, parts: 1200, shadows: true, anim: true, vig: true },
   media: { nome: 'Média', light: true, glow: false, parts: 600, shadows: true, anim: true, vig: true },
   baixa: { nome: 'Baixa', light: false, glow: false, parts: 160, shadows: false, anim: false, vig: false },
 };
@@ -56,7 +56,7 @@ let ME = null, playing = false;
 const MON = new Map(), REM = new Map();
 const FX = [], PART = [], TXT = [], DECALS = [], CORPSES = [], SPEECH = new Map();
 let shake = 0, snapN = 0;
-const HEIGHTS = { rato: 26, javali: 46, lobo: 48, goblin: 70, salamandra: 30, golem: 96, arson: 170, human: 84 };
+const HEIGHTS = { boneco: 64, rato: 26, javali: 46, lobo: 48, goblin: 70, salamandra: 30, golem: 96, arson: 170, human: 84 };
 const maxHp = () => maxHpOf(ME.voc, ME.lvl), maxMp = () => maxMpOf(ME.voc, ME.lvl);
 
 // ------------------------------------------------------------
@@ -259,7 +259,7 @@ function updateLocal(dt) {
     if (d <= VOC[ME.voc].range + MT[tg.type].r + 0.3 && ME.atkCd <= 0) {
       ME.atkCd = VOC[ME.voc].aspd; ME.atkT = 0.3; faceTo(tg.tx, tg.ty);
       toHost({ t: 'atk', tg: tg.id });
-      if (ME.voc !== 'mago') skGain(PRIM[ME.voc], 1);
+      skGain(PRIM[ME.voc], ME.voc === 'mago' ? 3 : 1); // mago: o ataque do cajado também treina Magia
     }
   }
   if (dlgNpc && Math.hypot(dlgNpc.x - ME.x, dlgNpc.y - ME.y) > 4) closeDlg();
@@ -627,11 +627,12 @@ function render(now, dt) {
     ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#5a0a0a'; ctx.beginPath(); ctx.ellipse(c.x * TS, c.y * TS + 4, 18, 7, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
   }
   // sombras das árvores
-  if (Q.shadows) ctx.fillStyle = 'rgba(0,0,0,.22)';
+  if (Q.shadows) { ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); }
   for (let ty = ty0; ty <= ty1 + 3; ty++) for (let tx = tx0 - 2; tx <= tx1 + 2; tx++) {
     const tt = tileAt(tx, ty);
-    if (Q.shadows && tt === T.TREE) { ctx.beginPath(); ctx.ellipse((tx + 0.8) * TS, (ty + 0.75) * TS, TS * 1.15, TS * 0.42, 0, 0, 7); ctx.fill(); }
+    if (Q.shadows && tt === T.TREE) { ctx.moveTo((tx + 0.8) * TS + TS * 1.15, (ty + 0.75) * TS); ctx.ellipse((tx + 0.8) * TS, (ty + 0.75) * TS, TS * 1.15, TS * 0.42, 0, 0, 7); }
   }
+  if (Q.shadows) ctx.fill();
   // lista ordenada por profundidade
   const D = [];
   for (let ty = ty0; ty <= ty1 + 4; ty++) for (let tx = tx0 - 2; tx <= tx1 + 2; tx++) {
@@ -684,24 +685,42 @@ function render(now, dt) {
   if (Q.vig) ctx.drawImage(vignette, 0, 0);
   if (playing) drawOverlayText(now);
 }
+// cópias já no tamanho exato da tela: desenhar vira só uma cópia de pixels (muito mais leve)
+function sprAt(c, k) {
+  k = Math.round(k * 40) / 40;
+  const m = c._sc || (c._sc = new Map());
+  let o = m.get(k);
+  if (!o) {
+    o = mk(Math.max(1, Math.round(c.lw * k)), Math.max(1, Math.round(c.lh * k)));
+    const g = o.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(c, 0, 0, o.width, o.height);
+    m.set(k, o); if (m.size > 4) m.delete(m.keys().next().value);
+  }
+  return o;
+}
+function blit(c, wx, wy, sc) {
+  const o = sprAt(c, sc * VIEW.S);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(o, Math.round(VIEW.ox + wx * VIEW.S), Math.round(VIEW.oy + wy * VIEW.S));
+  ctx.setTransform(VIEW.S, 0, 0, VIEW.S, VIEW.ox, VIEW.oy);
+}
 function treeSpr(tx, ty) { const h = Math.floor(hash2(tx, ty, 300) * 1000); return vnoise(tx / 9, ty / 9, 301) > 0.56 ? TREES[3 + h % 2] : TREES[h % 3]; }
 function drawObj(it, now) {
   const { tx, ty, tt } = it, h = hash2(tx, ty, 302);
   let spr, sc, x, y;
-  if (tt === T.TREE) { spr = treeSpr(tx, ty); sc = 0.82 + h * 0.3; x = (tx + 0.5 + (h - 0.5) * 0.25) * TS; y = (ty + 0.72) * TS; }
-  else if (tt === T.DEADTREE) { spr = DEADTREES[Math.floor(h * 3)]; sc = 0.75 + h * 0.25; x = (tx + 0.5) * TS; y = (ty + 0.75) * TS; }
-  else { spr = ROCKS[(grdOf(tx, ty) === T.ASH ? 2 : 0) + Math.floor(h * 2)]; sc = 0.62 + h * 0.2; x = (tx + 0.5) * TS; y = (ty + 0.75) * TS; }
+  if (tt === T.TREE) { spr = treeSpr(tx, ty); sc = 0.82 + Math.floor(h * 4) * 0.1; x = (tx + 0.5 + (h - 0.5) * 0.25) * TS; y = (ty + 0.72) * TS; }
+  else if (tt === T.DEADTREE) { spr = DEADTREES[Math.floor(h * 3)]; sc = 0.75 + Math.floor(h * 3) * 0.1; x = (tx + 0.5) * TS; y = (ty + 0.75) * TS; }
+  else { spr = ROCKS[(grdOf(tx, ty) === T.ASH ? 2 : 0) + Math.floor(h * 2)]; sc = 0.62 + Math.floor(h * 3) * 0.08; x = (tx + 0.5) * TS; y = (ty + 0.75) * TS; }
   let a = 1;
   if (playing && tt === T.TREE && ME.y < ty + 0.6 && ME.y > ty - 2.4 && Math.abs(ME.x - (tx + 0.5)) < 1.4) a = 0.42;
   ctx.globalAlpha = a;
-  ctx.drawImage(spr.c, x - spr.ax * sc, y - spr.ay * sc, spr.c.lw * sc, spr.c.lh * sc);
+  blit(spr.c, x - spr.ax * sc, y - spr.ay * sc, sc);
   ctx.globalAlpha = 1;
 }
 function drawWall(tx, ty) {
   const x = tx * TS, y = ty * TS;
-  ctx.drawImage(WALL_TOP, x, y - WALLH, TS + 0.5, TS + 0.5);
+  blit(WALL_TOP, x, y - WALLH, 1);
   if (tileAt(tx, ty + 1) !== T.WALL) {
-    ctx.drawImage(WALL_FRONT, x, y + TS - WALLH, TS + 0.5, WALLH);
+    blit(WALL_FRONT, x, y + TS - WALLH, 1);
     // ameias
     ctx.fillStyle = '#9d9482';
     for (let i = 0; i < 3; i++) ctx.fillRect(x + 4 + i * 22, y + TS - WALLH - 10, 12, 10);
@@ -712,7 +731,7 @@ function drawWall(tx, ty) {
 }
 function drawProp(p, t, lights) {
   const a = PROPART[p.k];
-  ctx.drawImage(a.c, p.x * TS - a.ax, p.y * TS - a.ay, a.c.lw, a.c.lh);
+  blit(a.c, p.x * TS - a.ax, p.y * TS - a.ay, 1);
   if (a.fire) { const fx = p.x * TS - a.ax + a.fire[0], fy = p.y * TS - a.ay + a.fire[1]; flame(ctx, fx, fy, a.fire[2], t, p.x * 7 + p.y); lights.push([fx / TS, fy / TS, 3, 0.85]); if (Math.random() < 0.08) part({ x: fx, y: fy - 10, vx: (Math.random() - 0.5) * 20, vy: -50, life: 0.9, max: 0.9, s: 1.6, c: FIRE[0], add: true, grav: -10, drag: 0.5 }); }
   if (a.candles) for (const [cx, cy] of a.candles) { flame(ctx, p.x * TS - a.ax + cx, p.y * TS - a.ay + cy, 0.35, t, cx); }
 }
@@ -766,7 +785,13 @@ function drawEnt(it, now, t, lights) {
   if (dir === 3) ctx.scale(-1, 1);
   if (L.type === 'dummy' && e.hurtT > 0) ctx.rotate(Math.sin(now / 30) * 0.08);
   if (sc !== 1) ctx.scale(sc, sc);
-  ctx.drawImage(fr, -FAX, -FAY, FW, FH);
+  if (L.type === 'dummy' && e.hurtT > 0) ctx.drawImage(fr, -FAX, -FAY, FW, FH);
+  else { // cópia no tamanho exato da tela (rápido)
+    const k = sc * VIEW.S, o = sprAt(fr, k), m = ctx.getTransform();
+    ctx.setTransform(Math.sign(m.a), 0, 0, 1, Math.round(m.e), Math.round(m.f));
+    ctx.drawImage(o, -Math.round(FAX * k), -Math.round(FAY * k));
+    ctx.setTransform(m);
+  }
   // fogo vivo
   if (it.look === 'goblin') { const hx = 14, hy = -48; flame(ctx, hx, hy, 0.6, t, e.id || 1); }
   if (it.look === 'salamandra') { for (let i = 0; i < 4; i++) flame(ctx, -16 + i * 9, -20, 0.45 + 0.1 * Math.sin(t * 3 + i), t, i * 3 + (e.id || 0)); }
@@ -819,6 +844,11 @@ function drawFx(now, lights) {
         ctx.strokeStyle = '#6b4422'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(10, 0); ctx.stroke();
         ctx.fillStyle = '#c8ccd0'; ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(8, -3.5); ctx.lineTo(8, 3.5); ctx.fill();
         ctx.fillStyle = '#eeeeee'; ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(-20, -4); ctx.lineTo(-12, 0); ctx.lineTo(-20, 4); ctx.fill();
+        ctx.restore();
+      } else if (f.f === 'palha') {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(p * 12);
+        ctx.strokeStyle = '#d9b860'; ctx.lineWidth = 2;
+        for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(-6, k * 2 - 3); ctx.lineTo(6, k * 1.5 - 2); ctx.stroke(); }
         ctx.restore();
       } else {
         const big = f.big ? 1.5 : 1, col = f.f === 'arcano' ? GLOWB : GLOWO;
@@ -888,6 +918,7 @@ function drawFx(now, lights) {
 }
 function impact(f) {
   if (f.f === 'flecha') burst(f.x1, f.y1, 5, [[200, 180, 150]], 60, 0.3, { add: false, s: 2 });
+  else if (f.f === 'palha') burst(f.x1, f.y1, 6, [[217, 184, 96], [180, 150, 70]], 70, 0.4, { add: false, s: 2, grav: 200 });
   else if (f.f === 'arcano') burst(f.x1, f.y1, 12, [[200, 180, 255], [140, 110, 255]], 120, 0.4, { s: 3 });
   else burst(f.x1, f.y1, f.big ? 26 : 12, FIRE, f.big ? 180 : 120, 0.5, { s: 4 });
 }
@@ -1073,9 +1104,10 @@ const MINIBASE = (() => {
   for (let i = 0; i < W * H; i++) { const c2 = COL[MAP[i]]; img.data[i * 4] = c2[0]; img.data[i * 4 + 1] = c2[1]; img.data[i * 4 + 2] = c2[2]; img.data[i * 4 + 3] = 255; }
   g.putImageData(img, 0, 0); return c;
 })();
-let miniOn = true;
+let miniOn = true, miniT = 0;
 function drawMini() {
   if (!miniOn) return;
+  const nowM = performance.now(); if (nowM - miniT < 100) return; miniT = nowM;
   const c = $('mini'), g = c.getContext('2d'), s = c.width, R = s / 2, sc = 2.6 * (s / 170);
   g.clearRect(0, 0, s, s);
   g.save(); g.beginPath(); g.arc(R, R, R - 2, 0, 7); g.clip();
