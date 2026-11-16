@@ -63,9 +63,9 @@ function renderTitle3D(now, dt) {
   SKY.copy(SKY_VOLC).lerp(SKY_DAY, 0.15); scene.background.copy(SKY); scene.fog.color.copy(SKY);
   sun.castShadow = Q.shadows;
   for (const c of CHUNKS) c.m.visible = Math.abs(c.cx - cx) < 30 && Math.abs(c.cz - cz) < 26;
-  renderer.render(scene, camera);
+  renderFrame(true);
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
-  ctx.drawImage(vignette, 0, 0);
+  if (!POST.on) ctx.drawImage(vignette, 0, 0);
 }
 
 // ------------------------------------------------------------

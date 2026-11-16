@@ -77,6 +77,7 @@ function init3D() {
   P3add = makeParticles(true); P3norm = makeParticles(false);
   SKY = new THREE.Color(); SKY_DAY = new THREE.Color(0x9cc3e6); SKY_VOLC = new THREE.Color(0x2a0c06);
   R3.ok = true;
+  try { setupPost(); } catch (e) { console.warn('pós-processamento indisponível:', e); }
   addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
   return true;
 }
@@ -108,7 +109,7 @@ function buildGround() {
     vec3 grad = sign(det) * (dhx * r1 + dhy * r2);
     normal = normalize(abs(det) * normal - grad * 0.06);
   }`)
-      .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance += diffuseColor.rgb * gEmis * 2.2;');
+      .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance += diffuseColor.rgb * gEmis * 1.3;');
   };
   const geo = new THREE.PlaneGeometry(W + 40, H + 40, 1, 1);
   const m = new THREE.Mesh(geo, groundMat);
@@ -692,7 +693,7 @@ function render3D(now, dt) {
   const smap = qName === 'alta' ? 2048 : 1024;
   if (sun.shadow.mapSize.x !== smap) { sun.shadow.mapSize.set(smap, smap); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
   for (const c of CHUNKS) c.m.visible = Math.abs(c.cx - camT.x) < 30 && Math.abs(c.cz - camT.z) < 26;
-  renderer.render(scene, camera);
+  renderFrame(false);
   // textos por cima (nomes, barras, números)
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
   if (playing) drawOverlayText(now);
