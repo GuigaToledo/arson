@@ -2,8 +2,10 @@
 // ============================================================
 //  ARSON — núcleo: ruído, mapa, dados do jogo, colisão
 // ============================================================
-const VERSION = '0.5.4';
+const VERSION = '0.5.5';
 const TS = 64; // pixels de arte por tile
+// suba MAP_VERSION sempre que o mapa mudar: quem estava fora do templo volta para Cinzaforte (evita nascer dentro de parede/água)
+const MAP_VERSION = 1;
 
 function hash2(x, y, s) {
   let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(s | 0, 982451653)) | 0;

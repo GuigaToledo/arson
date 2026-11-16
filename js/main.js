@@ -102,6 +102,7 @@ function normalizeStore(st) {
     const sk = Object.assign({}, base.sk, c.sk || {});
     for (const k of SKILLS) if (!Array.isArray(sk[k]) || sk[k].length < 2) sk[k] = [Math.max(1, Number(sk[k]) || 1), 0];
     st.chars[v] = Object.assign(base, c, { voc: v, sk });
+    if (st.chars[v].mapV == null) st.chars[v].mapV = MAP_VERSION; // saves antigos: mesmo mapa
     if (!st.chars[v].uid) st.chars[v].uid = newUid();
   }
   st.settings = Object.assign({ auto: false, quality: 'auto', mini: true, zoom: 64 }, st.settings || {});
@@ -122,7 +123,7 @@ function writeStore() {
 function saveGame() {
   if (ME) {
     const c = STORE.chars[ME.voc];
-    Object.assign(c, { name: ME.name, uid: ME.uid, xp: ME.xp, gold: ME.gold, hpPot: ME.hpPot, mpPot: ME.mpPot, task: ME.task, hp: Math.round(ME.hp), mp: Math.round(ME.mp), x: ME.x, y: ME.y, sk: ME.sk, played: Date.now() });
+    Object.assign(c, { name: ME.name, uid: ME.uid, xp: ME.xp, gold: ME.gold, hpPot: ME.hpPot, mpPot: ME.mpPot, task: ME.task, hp: Math.round(ME.hp), mp: Math.round(ME.mp), x: ME.x, y: ME.y, sk: ME.sk, played: Date.now(), mapV: MAP_VERSION });
   }
   writeStore();
 }
@@ -163,7 +164,9 @@ function startGame(voc) {
   };
   ME.lvl = levelFor(ME.xp);
   ME.hp = clamp(sv.hp || maxHp(), 1, maxHp()); ME.mp = clamp(sv.mp != null ? sv.mp : maxMp(), 0, maxMp());
-  if (!isFinite(ME.x) || !isFinite(ME.y) || hitCircle(ME.x, ME.y, 0.28, false)) { ME.x = TEMPLO.x; ME.y = TEMPLO.y; }
+  const mapChanged = sv.mapV !== MAP_VERSION && sv.x != null;
+  if (mapChanged || !isFinite(ME.x) || !isFinite(ME.y) || hitCircle(ME.x, ME.y, 0.28, false)) { ME.x = TEMPLO.x; ME.y = TEMPLO.y; }
+  if (mapChanged) setTimeout(() => sysMsg('O mapa mudou nesta atualização: você voltou para o templo de Cinzaforte.', 'sys'), 300);
   ME.col = Array.isArray(sv.color) ? sv.color : null;
   ME.look = lookFor(voc, ME.col);
   STORE.last = voc;
