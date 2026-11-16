@@ -9,20 +9,18 @@ let dpr = 1, zoom = 64, VIEW = { S: 1, ox: 0, oy: 0 }, vignette = null;
 // ------------------------------------------------------------
 //  Qualidade (automática para celulares e PCs lentos)
 // ------------------------------------------------------------
+// a resolução é sempre a nativa da tela; a qualidade só liga/desliga efeitos
 const QUAL = {
-  alta: { nome: 'Alta', rs: 1, dprMax: 2, light: true, parts: 1800, cq: 1, shadows: true },
-  media: { nome: 'Média', rs: 1, dprMax: 1, light: true, parts: 700, cq: 1, shadows: true },
-  baixa: { nome: 'Baixa', rs: 0.7, dprMax: 1, light: false, parts: 250, cq: 0.5, shadows: false },
+  alta: { nome: 'Alta', light: true, glow: true, parts: 1800, shadows: true, anim: true, vig: true },
+  media: { nome: 'Média', light: true, glow: false, parts: 600, shadows: true, anim: true, vig: true },
+  baixa: { nome: 'Baixa', light: false, glow: false, parts: 160, shadows: false, anim: false, vig: false },
 };
 const QORDER = ['alta', 'media', 'baixa'];
 const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 820);
 let Q = QUAL.alta, qName = 'alta';
 function applyQuality(name, silent) {
   if (!QUAL[name]) name = 'alta';
-  const changed = QUAL[name].cq !== CQ;
   qName = name; Q = QUAL[name];
-  if (changed) { CQ = Q.cq; chunkCache.clear(); chunkQueue = []; }
-  resize();
   if (!silent) toast(`Qualidade gráfica: ${Q.nome}`);
 }
 const perf = { acc: 0, n: 0, slow: 0 };
@@ -36,7 +34,7 @@ function perfWatch(dt) {
   }
 }
 function resize() {
-  dpr = Math.min(Q.dprMax, window.devicePixelRatio || 1) * Q.rs;
+  dpr = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.floor(innerWidth * dpr); cv.height = Math.floor(innerHeight * dpr);
   LC.width = Math.ceil(cv.width / 2); LC.height = Math.ceil(cv.height / 2);
   vignette = mk(cv.width, cv.height);
@@ -482,7 +480,7 @@ function npcAction(a) {
 //  Efeitos
 // ------------------------------------------------------------
 function addText(x, y, text, color, big) { TXT.push({ x, y, text, color, t0: performance.now(), dur: big ? 1600 : 1000, big }); }
-function part(o) { if (PART.length < 1800) PART.push(o); }
+function part(o) { if (PART.length < Q.parts) PART.push(o); }
 function burst(x, y, n, col, spd, life, opt) {
   opt = opt || {};
   for (let i = 0; i < n; i++) {
@@ -592,6 +590,7 @@ function render(now, dt) {
   // água e lava animadas
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
     const tt = tileAt(tx, ty);
+    if (!Q.anim) { if (tt === T.LAVA && (tx + ty) % 2 === 0) lights.push([tx + 0.5, ty + 0.5, 1.8, 0.55]); continue; }
     if (tt === T.WATER) {
       const h = hash2(tx, ty, 200), ph = t * 0.6 + h * 6.28;
       ctx.fillStyle = `rgba(255,255,255,${0.05 + 0.05 * Math.sin(ph)})`;
@@ -626,10 +625,10 @@ function render(now, dt) {
     ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#5a0a0a'; ctx.beginPath(); ctx.ellipse(c.x * TS, c.y * TS + 4, 18, 7, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
   }
   // sombras das árvores
-  ctx.fillStyle = 'rgba(0,0,0,.22)';
+  if (Q.shadows) ctx.fillStyle = 'rgba(0,0,0,.22)';
   for (let ty = ty0; ty <= ty1 + 3; ty++) for (let tx = tx0 - 2; tx <= tx1 + 2; tx++) {
     const tt = tileAt(tx, ty);
-    if (tt === T.TREE) { ctx.beginPath(); ctx.ellipse((tx + 0.8) * TS, (ty + 0.75) * TS, TS * 1.15, TS * 0.42, 0, 0, 7); ctx.fill(); }
+    if (Q.shadows && tt === T.TREE) { ctx.beginPath(); ctx.ellipse((tx + 0.8) * TS, (ty + 0.75) * TS, TS * 1.15, TS * 0.42, 0, 0, 7); ctx.fill(); }
   }
   // lista ordenada por profundidade
   const D = [];
@@ -663,10 +662,11 @@ function render(now, dt) {
   const vd = Math.hypot(camX - VX, camY - VY);
   const amb = clamp((34 - vd) / 18, 0, 1) * 0.62;
   ctx.globalCompositeOperation = 'lighter';
-  for (const [x, y, r, i, col] of lights) { ctx.globalAlpha = i * 0.28; ctx.drawImage(col === 'b' ? GLOWB : col === 'g' ? GLOWG : GLOWO, (x - r) * TS, (y - r) * TS, r * 2 * TS, r * 2 * TS); }
+  if (Q.glow) for (const [x, y, r, i, col] of lights) { ctx.globalAlpha = i * 0.28; ctx.drawImage(col === 'b' ? GLOWB : col === 'g' ? GLOWG : GLOWO, (x - r) * TS, (y - r) * TS, r * 2 * TS, r * 2 * TS); }
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  if (amb > 0.01) {
+  if (amb > 0.01 && !Q.light) { ctx.fillStyle = `rgba(26,6,2,${amb * 0.7})`; ctx.fillRect(0, 0, cw, ch); }
+  else if (amb > 0.01) {
     lctx.setTransform(1, 0, 0, 1, 0, 0); lctx.globalCompositeOperation = 'source-over';
     lctx.clearRect(0, 0, LC.width, LC.height);
     lctx.fillStyle = `rgba(26,6,2,${amb})`; lctx.fillRect(0, 0, LC.width, LC.height);
@@ -679,7 +679,7 @@ function render(now, dt) {
     // cinzas flutuando
     if (Math.random() < amb * 0.9) part({ x: (camX + (Math.random() - 0.5) * vw) * TS, y: (camY + vh / 2) * TS, vx: (Math.random() - 0.5) * 20, vy: -40 - Math.random() * 40, life: 4, max: 4, s: 1.6, c: FIRE[Math.floor(Math.random() * 3)], add: true, grav: 0, drag: 0 });
   }
-  ctx.drawImage(vignette, 0, 0);
+  if (Q.vig) ctx.drawImage(vignette, 0, 0);
   if (playing) drawOverlayText(now);
 }
 function treeSpr(tx, ty) { const h = Math.floor(hash2(tx, ty, 300) * 1000); return vnoise(tx / 9, ty / 9, 301) > 0.56 ? TREES[3 + h % 2] : TREES[h % 3]; }

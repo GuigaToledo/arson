@@ -109,16 +109,16 @@ function drawTitle(now) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (!TITLE.bg || TITLE.bw !== w || TITLE.bh !== h) { TITLE.bg = titleBg(w, h); TITLE.bw = w; TITLE.bh = h; }
   ctx.drawImage(TITLE.bg, 0, 0);
-  const wide = w / dpr >= 1100; // cartão à direita: cena inteira à esquerda
-  const s = wide ? Math.min(w * 0.62 / 1100, h / 900) : Math.min(w / 1600, h / 900);
+  const wide = w / dpr >= 1100; // cartão centralizado: heróis à esquerda, dragão à direita
+  const s = Math.min(w / 1600, h / 900) * (wide ? 0.92 : 1);
   const narrow = !wide && w / h < 1.2;
   // dragão
-  const dx = wide ? w * 0.47 : w * (narrow ? 0.72 : 0.8), dy = h * (wide ? 0.44 : 0.5);
+  const dx = wide ? w * 0.87 : w * (narrow ? 0.72 : 0.8), dy = h * (wide ? 0.5 : 0.5);
   const breath = (t % 6) < 3.4;
   const m = drawDragon(ctx, dx, dy, s * 1.15, t, breath);
   // heróis (esquerda), virados para o dragão
   const hs = 2.6 * s * 1.15, hy = h * 0.86;
-  const hx = wide ? [0.04, 0.1, 0.17] : narrow ? [0.08, 0.16, 0.26] : [0.1, 0.17, 0.25];
+  const hx = wide ? [0.04, 0.1, 0.165] : narrow ? [0.08, 0.16, 0.26] : [0.1, 0.17, 0.25];
   const heroes = [['arqueiro', w * hx[0], hy - 10 * s, 9 + Math.floor(t * 3) % 3], ['mago', w * hx[1], hy - 4 * s, 9 + Math.floor(t * 4) % 3], ['guerreiro', w * hx[2], hy + 6 * s, 1 + Math.floor(t * 9) % 8]];
   for (const [v, x, y, fi] of heroes) {
     ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(x, y, 22 * hs, 6 * hs, 0, 0, 7); ctx.fill();
