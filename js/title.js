@@ -122,7 +122,7 @@ function drawTitle(now) {
   const heroes = [['arqueiro', w * hx[0], hy - 10 * s, 9 + Math.floor(t * 3) % 3], ['mago', w * hx[1], hy - 4 * s, 9 + Math.floor(t * 4) % 3], ['guerreiro', w * hx[2], hy + 6 * s, 1 + Math.floor(t * 9) % 8]];
   for (const [v, x, y, fi] of heroes) {
     ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(x, y, 22 * hs, 6 * hs, 0, 0, 7); ctx.fill();
-    ctx.save(); ctx.translate(x, y); ctx.scale(hs, hs); ctx.drawImage(getFrame(v, 1, fi), -FAX, -FAY); ctx.restore();
+    ctx.save(); ctx.translate(x, y); ctx.scale(hs, hs); ctx.drawImage(getFrame(v, 1, fi), -FAX, -FAY, FW, FH); ctx.restore();
   }
   const gx = heroes[2][1] + 14 * hs, gy = heroes[2][2] - 40 * hs; // escudo do guerreiro
   // magia do mago: orbe brilhando

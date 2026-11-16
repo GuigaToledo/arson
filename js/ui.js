@@ -32,7 +32,7 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => keys.delete(e.code));
 addEventListener('blur', () => keys.clear());
 document.addEventListener('visibilitychange', () => { if (document.hidden) { keys.clear(); if (ME) ME.mv = false; saveGame(); } });
-function setZoom(z) { zoom = clamp(z, 40, 112); STORE.settings.zoom = Math.round(zoom); }
+function setZoom(z) { zoom = clamp(z, 40, 140); STORE.settings.zoom = Math.round(zoom); }
 function setMini(on) { miniOn = on; $('mini').style.display = on ? '' : 'none'; STORE.settings.mini = on; }
 
 // ------------------------------------------------------------
@@ -89,7 +89,7 @@ function renderMenu() {
       <div class="m-opt"><span><b>Qualidade gráfica</b><small>Automática reduz sozinha em aparelhos lentos. Atual: ${Q.nome}.</small></span>
       <select id="optQ">${[['auto', 'Automática'], ['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa']].map(([v, n]) => `<option value="${v}" ${s.quality === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <label class="m-opt"><input type="checkbox" id="optMini" ${miniOn ? 'checked' : ''}> <span><b>Minimapa</b></span></label>
-      <div class="m-opt"><span><b>Zoom</b></span><input type="range" id="optZoom" min="40" max="112" value="${Math.round(zoom)}"></div>`;
+      <div class="m-opt"><span><b>Zoom</b></span><input type="range" id="optZoom" min="40" max="140" value="${Math.round(zoom)}"></div>`;
   } else {
     h += `<p class="m-note">Seu progresso é salvo sozinho neste navegador a cada poucos segundos. Para não perder nada se o navegador limpar os dados (ou para jogar em outro aparelho), exporte e guarde o código/arquivo.</p>
       <div class="dlg-b"><button data-act="exp">Baixar arquivo de progresso</button><button data-act="copy">Copiar código</button></div>
@@ -166,7 +166,7 @@ function renderSelect() {
   }).join('');
   box.querySelectorAll('.slot-card').forEach(cd => {
     const v = cd.dataset.v, cvs = cd.querySelector('canvas'), g = cvs.getContext('2d');
-    cd._draw = t => { g.clearRect(0, 0, cvs.width, cvs.height); g.save(); g.translate(cvs.width / 2, cvs.height - 6); g.scale(1.35, 1.35); g.drawImage(getFrame(lookFor(v, STORE.chars[v].color), 2, cd.classList.contains('sel') ? 1 + Math.floor(t / 110) % 8 : 0), -FAX, -FAY); g.restore(); };
+    cd._draw = t => { g.clearRect(0, 0, cvs.width, cvs.height); g.save(); g.translate(cvs.width / 2, cvs.height - 6); g.scale(1.35, 1.35); g.drawImage(getFrame(lookFor(v, STORE.chars[v].color), 2, cd.classList.contains('sel') ? 1 + Math.floor(t / 110) % 8 : 0), -FAX, -FAY, FW, FH); g.restore(); };
     cd._draw(0);
     cd.querySelectorAll('.sw').forEach(sw => sw.onclick = ev => {
       ev.stopPropagation();
@@ -202,7 +202,7 @@ function renderSelect() {
 // ------------------------------------------------------------
 (function init() {
   applyQuality(STORE.settings.quality === 'auto' ? (IS_MOBILE ? 'media' : 'alta') : STORE.settings.quality, true);
-  zoom = clamp(STORE.settings.zoom || (IS_MOBILE ? 52 : 64), 40, 112);
+  zoom = clamp(STORE.settings.zoom || (IS_MOBILE ? 64 : 84), 40, 140);
   miniOn = STORE.settings.mini !== false; $('mini').style.display = miniOn ? '' : 'none';
   if (IS_MOBILE || navigator.maxTouchPoints > 0) document.body.classList.add('touch');
   setupTouch();

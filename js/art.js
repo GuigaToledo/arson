@@ -3,6 +3,9 @@
 //  ARSON — arte procedural em alta resolução (100% original)
 // ============================================================
 function mk(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+// canvas em alta resolução: desenha em coordenadas lógicas, guarda AR vezes mais pixels
+const AR = Math.min(2, Math.max(1.5, (window.devicePixelRatio || 1)));
+function mkA(w, h, r) { r = r || AR; const c = mk(Math.ceil(w * r), Math.ceil(h * r)); c.lw = w; c.lh = h; c.getContext('2d').scale(r, r); return c; }
 function lg(g, x0, y0, x1, y1, stops) { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach((s, i) => gr.addColorStop(s[0], s[1])); return gr; }
 function rg(g, x, y, r0, x1, y1, r1, stops) { const gr = g.createRadialGradient(x, y, r0, x1, y1, r1); stops.forEach(s => gr.addColorStop(s[0], s[1])); return gr; }
 function shade(hex, f) { // f>0 clareia, f<0 escurece
@@ -220,7 +223,7 @@ function pumpChunks(budgetMs, force) {
 //  Objetos do cenário
 // ------------------------------------------------------------
 function makeBroadleaf(seed, pal) {
-  const c = mk(200, 232), g = c.getContext('2d'), r = prng(seed);
+  const c = mkA(200, 232), g = c.getContext('2d'), r = prng(seed);
   // tronco
   g.fillStyle = lg(g, 86, 0, 114, 0, [[0, '#2a1a0e'], [0.45, '#6e4c2d'], [1, '#22150b']]);
   g.beginPath(); g.moveTo(82, 218); g.quadraticCurveTo(93, 204, 92, 150); g.lineTo(90, 100); g.lineTo(110, 100); g.lineTo(108, 150); g.quadraticCurveTo(107, 204, 120, 218); g.closePath(); g.fill();
@@ -255,7 +258,7 @@ function makeBroadleaf(seed, pal) {
   return { c, ax: 100, ay: 216 };
 }
 function makePine(seed) {
-  const c = mk(160, 250), g = c.getContext('2d'), r = prng(seed);
+  const c = mkA(160, 250), g = c.getContext('2d'), r = prng(seed);
   g.fillStyle = lg(g, 72, 0, 88, 0, [[0, '#2a1a0e'], [0.5, '#5e3f24'], [1, '#22150b']]);
   g.fillRect(73, 190, 14, 46);
   const tiers = 5;
@@ -273,7 +276,7 @@ function makePine(seed) {
   return { c, ax: 80, ay: 234 };
 }
 function makeDeadTree(seed) {
-  const c = mk(170, 220), g = c.getContext('2d'), r = prng(seed);
+  const c = mkA(170, 220), g = c.getContext('2d'), r = prng(seed);
   g.lineCap = 'round';
   const tips = [];
   function br(x, y, a, len, w, d) {
@@ -294,7 +297,7 @@ function makeDeadTree(seed) {
   return { c, ax: 85, ay: 216 };
 }
 function makeRock(seed, ash) {
-  const c = mk(110, 96), g = c.getContext('2d'), r = prng(seed);
+  const c = mkA(110, 96), g = c.getContext('2d'), r = prng(seed);
   const pts = [], n = 9;
   for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, rad = 34 + r() * 10; pts.push([55 + Math.cos(a) * rad, 58 + Math.sin(a) * rad * 0.62 - (Math.sin(a) < 0 ? 10 : 0)]); }
   const base = ash ? ['#4a4442', '#2a2524', '#171313'] : ['#a6a29a', '#77736c', '#4b4844'];
@@ -327,7 +330,7 @@ const ROCKS = [makeRock(3, false), makeRock(9, false), makeRock(5, true), makeRo
 // Muralha
 const WALLH = 44;
 const WALL_TOP = (() => {
-  const c = mk(TS, TS), g = c.getContext('2d'), r = prng(99);
+  const c = mkA(TS, TS), g = c.getContext('2d'), r = prng(99);
   g.fillStyle = '#8f8676'; g.fillRect(0, 0, TS, TS);
   for (let row = 0; row < 4; row++) for (let col = 0; col < 3; col++) {
     const x = col * 22 + (row % 2) * 11 - 6, y = row * 16;
@@ -337,7 +340,7 @@ const WALL_TOP = (() => {
   return c;
 })();
 const WALL_FRONT = (() => {
-  const c = mk(TS, WALLH), g = c.getContext('2d'), r = prng(77);
+  const c = mkA(TS, WALLH), g = c.getContext('2d'), r = prng(77);
   g.fillStyle = '#4a4036'; g.fillRect(0, 0, TS, WALLH);
   for (let row = 0; row < 4; row++) for (let col = -1; col < 4; col++) {
     const x = col * 24 + (row % 2) * 12, y = row * 11;
@@ -351,7 +354,7 @@ const WALL_FRONT = (() => {
 // Adereços
 function makeProp(k) {
   if (k === 'barril') {
-    const c = mk(40, 50), g = c.getContext('2d');
+    const c = mkA(40, 50), g = c.getContext('2d');
     g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(20, 46, 15, 4, 0, 0, 7); g.fill();
     g.fillStyle = lg(g, 6, 0, 34, 0, [[0, '#4a2e17'], [0.4, '#8a5a30'], [1, '#3a2312']]);
     g.beginPath(); g.moveTo(8, 12); g.quadraticCurveTo(3, 28, 8, 44); g.lineTo(32, 44); g.quadraticCurveTo(37, 28, 32, 12); g.closePath(); g.fill();
@@ -360,7 +363,7 @@ function makeProp(k) {
     return { c, ax: 20, ay: 46 };
   }
   if (k === 'caixa') {
-    const c = mk(46, 48), g = c.getContext('2d');
+    const c = mkA(46, 48), g = c.getContext('2d');
     g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(6, 40, 36, 6);
     g.fillStyle = '#9a6e40'; g.fillRect(5, 6, 36, 10);
     g.fillStyle = lg(g, 0, 16, 0, 44, [[0, '#7e5632'], [1, '#5a3c22']]); g.fillRect(5, 16, 36, 28);
@@ -368,7 +371,7 @@ function makeProp(k) {
     return { c, ax: 23, ay: 44 };
   }
   if (k === 'braseiro') {
-    const c = mk(40, 56), g = c.getContext('2d');
+    const c = mkA(40, 56), g = c.getContext('2d');
     g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(20, 52, 13, 4, 0, 0, 7); g.fill();
     g.strokeStyle = '#2b2b2e'; g.lineWidth = 3; g.beginPath(); g.moveTo(12, 52); g.lineTo(18, 30); g.moveTo(28, 52); g.lineTo(22, 30); g.moveTo(20, 52); g.lineTo(20, 30); g.stroke();
     g.fillStyle = lg(g, 6, 0, 34, 0, [[0, '#2a2a2e'], [0.4, '#6a6a72'], [1, '#1e1e22']]);
@@ -377,7 +380,7 @@ function makeProp(k) {
     return { c, ax: 20, ay: 52, fire: [20, 18, 1] };
   }
   if (k === 'banca') {
-    const c = mk(150, 130), g = c.getContext('2d');
+    const c = mkA(150, 130), g = c.getContext('2d');
     g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(10, 112, 130, 12);
     g.fillStyle = '#4a2e17'; g.fillRect(14, 30, 6, 90); g.fillRect(130, 30, 6, 90);
     g.fillStyle = lg(g, 0, 70, 0, 118, [[0, '#8a5a30'], [1, '#4a2e17']]); g.fillRect(8, 74, 134, 44);
@@ -391,7 +394,7 @@ function makeProp(k) {
     return { c, ax: 75, ay: 118 };
   }
   if (k === 'altar') {
-    const c = mk(90, 100), g = c.getContext('2d');
+    const c = mkA(90, 100), g = c.getContext('2d');
     g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(45, 92, 38, 8, 0, 0, 7); g.fill();
     g.fillStyle = lg(g, 10, 0, 80, 0, [[0, '#cfc6b4'], [0.5, '#a49a88'], [1, '#6e665a']]); g.fillRect(12, 50, 66, 42);
     g.fillStyle = '#d9d0be'; g.fillRect(6, 42, 78, 10);
@@ -781,8 +784,8 @@ function getTint(look, dir, fi) {
   const k = 'T|' + look + '|' + dir + '|' + fi;
   let c = frameCache.get(k); if (c) return c;
   const f = getFrame(look, dir, fi);
-  c = mk(FW, FH); const g = c.getContext('2d');
-  g.drawImage(f, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(255,40,30,.55)'; g.fillRect(0, 0, FW, FH);
+  c = mkA(FW, FH, FAR); const g = c.getContext('2d');
+  g.drawImage(f, 0, 0, FW, FH); g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(255,40,30,.55)'; g.fillRect(0, 0, FW, FH);
   frameCache.set(k, c); return c;
 }
 
@@ -818,13 +821,14 @@ function drawGolem(g, ph, atk) {
 // ------------------------------------------------------------
 const FW = 128, FH = 140, FAX = 64, FAY = 126;
 const frameCache = new Map();
+const FAR = 1.5, FCAP = 420; // quadros com 1,5x pixels, cache limitado
 function getFrame(look, dir, fi) {
   const L = LOOKS[look];
   const ddir = (L.type === 'human' || L.type === 'quad') ? (dir === 3 ? 1 : dir) : 1;
   const key = look + '|' + ddir + '|' + fi;
   let c = frameCache.get(key);
   if (c) return c;
-  const tmp = mk(FW, FH), g = tmp.getContext('2d');
+  const tmp = mkA(FW, FH, FAR), g = tmp.getContext('2d');
   g.translate(FAX, FAY);
   const s = L.scale || 1; g.scale(s, s);
   const ph = fi >= 1 && fi <= 8 ? (fi - 1) / 8 + 0.001 : 0;
@@ -834,5 +838,6 @@ function getFrame(look, dir, fi) {
   else if (L.type === 'golem') drawGolem(g, ph, atk);
   else if (L.type === 'dummy') drawDummy(g, atk);
   frameCache.set(key, tmp);
+  if (frameCache.size > FCAP) frameCache.delete(frameCache.keys().next().value);
   return tmp;
 }

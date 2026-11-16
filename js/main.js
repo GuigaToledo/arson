@@ -41,7 +41,7 @@ function resize() {
   const g = vignette.getContext('2d');
   g.fillStyle = rg(g, cv.width / 2, cv.height / 2, Math.min(cv.width, cv.height) * 0.35, cv.width / 2, cv.height / 2, Math.hypot(cv.width, cv.height) * 0.6, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,.55)']]);
   g.fillRect(0, 0, cv.width, cv.height);
-  zoom = clamp(zoom, 40, 112);
+  zoom = clamp(zoom, 40, 140);
 }
 addEventListener('resize', resize); resize();
 const GLOW = (() => { const c = mk(128, 128), g = c.getContext('2d'); g.fillStyle = rg(g, 64, 64, 0, 64, 64, 64, [[0, 'rgba(255,255,255,1)'], [0.35, 'rgba(255,255,255,.55)'], [1, 'rgba(255,255,255,0)']]); g.fillRect(0, 0, 128, 128); return c; })();
@@ -567,30 +567,32 @@ function render(now, dt) {
   const ox = cw / 2 - camX * TS * S, oy = ch / 2 - camY * TS * S;
   VIEW = { S, ox, oy, camX, camY };
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#0b0806'; ctx.fillRect(0, 0, cw, ch);
+  const useGL = GLR.ok;
+  if (useGL) { ctx.clearRect(0, 0, cw, ch); glDraw(camX - cw / 2 / (TS * S), camY - ch / 2 / (TS * S), TS * S, now / 1000, Q.light); }
+  else { ctx.fillStyle = '#0b0806'; ctx.fillRect(0, 0, cw, ch); }
   ctx.setTransform(S, 0, 0, S, ox, oy);
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const vw = cw / (TS * S), vh = ch / (TS * S);
   const tx0 = Math.floor(camX - vw / 2) - 1, tx1 = Math.ceil(camX + vw / 2) + 1, ty0 = Math.floor(camY - vh / 2) - 1, ty1 = Math.ceil(camY + vh / 2) + 1;
   // chão
   const cx0 = Math.floor(tx0 / CH), cx1 = Math.floor(tx1 / CH), cy0 = Math.floor(ty0 / CH), cy1 = Math.floor(ty1 / CH);
-  for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) {
+  if (!useGL) for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) {
     if (cx < 0 || cy < 0 || cx * CH >= W || cy * CH >= H) { ctx.fillStyle = '#1d3a16'; ctx.fillRect(cx * CPX, cy * CPX, CPX + 1, CPX + 1); continue; }
     const c = getChunk(cx, cy);
     if (c) ctx.drawImage(c, cx * CPX, cy * CPX, CPX + 0.6, CPX + 0.6);
     else { ctx.fillStyle = '#3d5e2c'; ctx.fillRect(cx * CPX, cy * CPX, CPX + 1, CPX + 1); }
   }
   // pré-carrega um anel em volta
-  for (let cy = cy0 - 1; cy <= cy1 + 1; cy++) for (let cx = cx0 - 1; cx <= cx1 + 1; cx++) if (cx >= 0 && cy >= 0 && cx * CH < W && cy * CH < H) { if (!chunkCache.has(chunkKey(cx, cy)) && !chunkQueue.includes(chunkKey(cx, cy))) chunkQueue.push(chunkKey(cx, cy)); }
-  chunkQueue.sort((a, b) => { const da = Math.hypot(Math.floor(a / 1000) * CH + 4 - camX, (a % 1000) * CH + 4 - camY), db = Math.hypot(Math.floor(b / 1000) * CH + 4 - camX, (b % 1000) * CH + 4 - camY); return da - db; });
-  pumpChunks(firstFrame ? 0 : 10, firstFrame); firstFrame = false;
+  if (!useGL) for (let cy = cy0 - 1; cy <= cy1 + 1; cy++) for (let cx = cx0 - 1; cx <= cx1 + 1; cx++) if (cx >= 0 && cy >= 0 && cx * CH < W && cy * CH < H) { if (!chunkCache.has(chunkKey(cx, cy)) && !chunkQueue.includes(chunkKey(cx, cy))) chunkQueue.push(chunkKey(cx, cy)); }
+  if (!useGL) chunkQueue.sort((a, b) => { const da = Math.hypot(Math.floor(a / 1000) * CH + 4 - camX, (a % 1000) * CH + 4 - camY), db = Math.hypot(Math.floor(b / 1000) * CH + 4 - camX, (b % 1000) * CH + 4 - camY); return da - db; });
+  if (!useGL) { pumpChunks(firstFrame ? 0 : 10, firstFrame); firstFrame = false; }
 
   const lights = [];
   const t = now / 1000;
   // água e lava animadas
   for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
     const tt = tileAt(tx, ty);
-    if (!Q.anim) { if (tt === T.LAVA && (tx + ty) % 2 === 0) lights.push([tx + 0.5, ty + 0.5, 1.8, 0.55]); continue; }
+    if (useGL || !Q.anim) { if (tt === T.LAVA && (tx + ty) % 2 === 0) lights.push([tx + 0.5, ty + 0.5, 1.8, 0.55]); continue; }
     if (tt === T.WATER) {
       const h = hash2(tx, ty, 200), ph = t * 0.6 + h * 6.28;
       ctx.fillStyle = `rgba(255,255,255,${0.05 + 0.05 * Math.sin(ph)})`;
@@ -619,8 +621,8 @@ function render(now, dt) {
     if (c.mt === 'arson') continue;
     const fr = getFrame(c.mt, 1, 0), L = LOOKS[c.mt];
     ctx.save(); ctx.globalAlpha = a * 0.85; ctx.translate(c.x * TS, c.y * TS);
-    if (L.type === 'quad') { ctx.scale(c.face, -0.9); ctx.drawImage(fr, -FAX, -FAY * 0.2 - 10); }
-    else { ctx.rotate(Math.PI / 2 * c.face); ctx.drawImage(fr, -FAX, -FAY); }
+    if (L.type === 'quad') { ctx.scale(c.face, -0.9); ctx.drawImage(fr, -FAX, -FAY * 0.2 - 10, FW, FH); }
+    else { ctx.rotate(Math.PI / 2 * c.face); ctx.drawImage(fr, -FAX, -FAY, FW, FH); }
     ctx.restore();
     ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#5a0a0a'; ctx.beginPath(); ctx.ellipse(c.x * TS, c.y * TS + 4, 18, 7, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
   }
@@ -692,7 +694,7 @@ function drawObj(it, now) {
   let a = 1;
   if (playing && tt === T.TREE && ME.y < ty + 0.6 && ME.y > ty - 2.4 && Math.abs(ME.x - (tx + 0.5)) < 1.4) a = 0.42;
   ctx.globalAlpha = a;
-  ctx.drawImage(spr.c, x - spr.ax * sc, y - spr.ay * sc, spr.c.width * sc, spr.c.height * sc);
+  ctx.drawImage(spr.c, x - spr.ax * sc, y - spr.ay * sc, spr.c.lw * sc, spr.c.lh * sc);
   ctx.globalAlpha = 1;
 }
 function drawWall(tx, ty) {
@@ -710,7 +712,7 @@ function drawWall(tx, ty) {
 }
 function drawProp(p, t, lights) {
   const a = PROPART[p.k];
-  ctx.drawImage(a.c, p.x * TS - a.ax, p.y * TS - a.ay);
+  ctx.drawImage(a.c, p.x * TS - a.ax, p.y * TS - a.ay, a.c.lw, a.c.lh);
   if (a.fire) { const fx = p.x * TS - a.ax + a.fire[0], fy = p.y * TS - a.ay + a.fire[1]; flame(ctx, fx, fy, a.fire[2], t, p.x * 7 + p.y); lights.push([fx / TS, fy / TS, 3, 0.85]); if (Math.random() < 0.08) part({ x: fx, y: fy - 10, vx: (Math.random() - 0.5) * 20, vy: -50, life: 0.9, max: 0.9, s: 1.6, c: FIRE[0], add: true, grav: -10, drag: 0.5 }); }
   if (a.candles) for (const [cx, cy] of a.candles) { flame(ctx, p.x * TS - a.ax + cx, p.y * TS - a.ay + cy, 0.35, t, cx); }
 }
@@ -755,7 +757,7 @@ function drawEnt(it, now, t, lights) {
   if (dir === 1 || dir === 3 || L.type === 'golem' || L.type === 'dummy') ctx.scale(fs, 1);
   if (L.type === 'dummy' && e.hurtT > 0) ctx.rotate(Math.sin(now / 30) * 0.08);
   if (sc !== 1) ctx.scale(sc, sc);
-  ctx.drawImage(fr, -FAX, -FAY);
+  ctx.drawImage(fr, -FAX, -FAY, FW, FH);
   // fogo vivo
   if (it.look === 'goblin') { const hx = 14, hy = -48; flame(ctx, hx, hy, 0.6, t, e.id || 1); }
   if (it.look === 'salamandra') { for (let i = 0; i < 4; i++) flame(ctx, -16 + i * 9, -20, 0.45 + 0.1 * Math.sin(t * 3 + i), t, i * 3 + (e.id || 0)); }
@@ -1105,7 +1107,7 @@ cv.addEventListener('pointerdown', e => {
   }
 });
 cv.addEventListener('contextmenu', e => e.preventDefault());
-cv.addEventListener('wheel', e => { e.preventDefault(); zoom = clamp(zoom * (e.deltaY > 0 ? 0.9 : 1.1), 40, 112); }, { passive: false });
+cv.addEventListener('wheel', e => { e.preventDefault(); setZoom(zoom * (e.deltaY > 0 ? 0.9 : 1.1)); }, { passive: false });
 function targetNext() {
   const list = [...MON.values()].map(m => ({ m, d: Math.hypot(m.tx - ME.x, m.ty - ME.y) })).filter(o => o.d < 10).sort((a, b) => a.d - b.d);
   if (!list.length) { ME.target = null; return toast('Nenhuma criatura por perto.'); }
