@@ -2,7 +2,7 @@
 // ============================================================
 //  ARSON — núcleo: ruído, mapa, dados do jogo, colisão
 // ============================================================
-const VERSION = '0.3.2';
+const VERSION = '0.3.3';
 const TS = 64; // pixels de arte por tile
 
 function hash2(x, y, s) {

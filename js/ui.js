@@ -54,7 +54,9 @@ requestAnimationFrame(frame);
 let lastTick = performance.now(), stT = 0;
 function onTick() {
   const now = performance.now(), dt = Math.min(0.25, (now - lastTick) / 1000); lastTick = now;
-  if (!playing || !NET.ready || !ME) return;
+  if (!playing || !ME) return;
+  netWatchdog();
+  if (!NET.ready) return;
   if (NET.isHost) hostTick(dt);
   stT -= dt;
   if (stT <= 0) { stT = 0.1; toHost({ t: 'st', x: Math.round(ME.x * 1000) / 1000, y: Math.round(ME.y * 1000) / 1000, dir: ME.dir, mv: ME.mv ? 1 : 0, hp: Math.round(ME.hp), mhp: maxHp(), lvl: ME.lvl, dead: ME.dead, sk: skArr() }); }

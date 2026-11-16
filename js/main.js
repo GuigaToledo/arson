@@ -164,7 +164,15 @@ function backToSelect() {
   $('login').classList.remove('hidden');
   renderSelect();
 }
-function onNetReady() { updNet(); if (NET.isHost && !NET.offline) sysMsg('Conectado ao mundo de Arson.', 'sys'); else if (!NET.isHost) sysMsg('Conectado ao mundo de Arson.', 'sys'); else sysMsg('Sem conexão com o servidor de salas: jogando sozinho.', 'death'); }
+function onNetReady() { updNet(); updConn(); sysMsg('Conectado ao mundo de Arson.', 'sys'); }
+// faixa de conexão: aparece só enquanto não está conectado
+function updConn() {
+  const b = $('conn'); if (!b) return;
+  if (!playing || NET.ready) { b.hidden = true; return; }
+  b.hidden = false;
+  b.querySelector('.cs').textContent = NET.status;
+  const d = b.querySelector('.cl'); if (!d.hidden) d.textContent = NET.log.slice(-12).join('\n');
+}
 function onNetLost() { MON.clear(); REM.clear(); if (ME) ME.target = null; }
 
 // ------------------------------------------------------------
@@ -1046,7 +1054,7 @@ function updHud(now) {
   if (ME.task) { $('task').hidden = false; $('task').textContent = `Tarefa: ${ME.task.count}/${ME.task.need} ${MT[ME.task.type].name}`; } else $('task').hidden = true;
   updNet();
 }
-function updNet() { const n = NET.isHost ? SIM.players.size : REM.size + 1; $('net').innerHTML = `<i class="${NET.ready ? (NET.offline ? 'off' : 'on') : 'wait'}"></i>${NET.ready ? (NET.offline ? 'offline' : `online · ${n} jogador${n > 1 ? 'es' : ''}`) : esc(NET.status)}`; }
+function updNet() { const n = NET.isHost ? SIM.players.size : REM.size + 1; $('net').innerHTML = `<i class="${NET.ready ? 'on' : 'wait'}"></i>${NET.ready ? `online · ${n} jogador${n > 1 ? 'es' : ''}` : 'conectando…'}`; updConn(); }
 // minimapa
 const MINIBASE = (() => {
   const c = mk(W, H), g = c.getContext('2d'), img = g.createImageData(W, H);

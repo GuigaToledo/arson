@@ -140,6 +140,12 @@
   .m-opt > span { flex: 1; }
   .m-opt select, .m-opt input[type=range] { background: rgba(0,0,0,.5); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px; font: inherit; }
   .m-foot { margin-top: 14px !important; }
+  /* conexão */
+  #conn { position: fixed; left: 50%; top: 60px; transform: translateX(-50%); z-index: 6; padding: 8px 14px; font-size: 12px; max-width: 92vw; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  #conn .spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255,200,120,.3); border-top-color: var(--fire); animation: sp 0.8s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  #conn .ct { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; font-size: 11px; }
+  #conn .cl { flex-basis: 100%; margin: 4px 0 0; font-size: 10px; color: var(--muted); white-space: pre-wrap; max-height: 160px; overflow: auto; }
   /* toque */
   .tbtn { pointer-events: auto; width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,200,150,.3); background: rgba(14,10,8,.6); color: var(--text); font-size: 20px; cursor: pointer; }
   #bMenu { left: 252px; top: 14px; width: 38px; height: 38px; font-size: 18px; border-radius: 10px; }
@@ -182,6 +188,7 @@
 <div id="hint" class="hud">H · ajuda &nbsp; Enter · chat</div>
 <div id="dlg" class="glass" hidden></div>
 <div id="menu" class="glass" hidden></div>
+<div id="conn" class="glass" hidden><span class="spin"></span><span class="cs"></span><button class="ct" onclick="const l=this.parentNode.querySelector('.cl');l.hidden=!l.hidden;updConn()">detalhes</button><pre class="cl" hidden></pre></div>
 <button id="bMenu" class="hud tbtn mbtn" title="Menu (Esc)">☰</button>
 <div id="joy" class="hud touch-only"><div id="joyK"></div></div>
 <div id="tbtns" class="hud touch-only"><button id="bTarget" class="tbtn">◎</button><button id="bChat" class="tbtn">💬</button></div>
