@@ -14,3 +14,4 @@ Rede: PeerJS. O primeiro jogador hospeda o mundo e, se ele sair, outro assume au
 ## Créditos
 Modelos 3D e animações: **KayKit** por Kay Lousberg (www.kaylousberg.com), licença CC0 (domínio público). Licença em `models/LICENSE-KayKit-CC0.txt`.
 Motor 3D: Three.js (MIT). Rede: PeerJS (MIT).
+Texturas do chão: **ambientCG** (Grass004, Ground037, Ground081, Ground054, PavingStones070, Rock030), licença CC0.

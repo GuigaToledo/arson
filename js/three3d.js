@@ -31,13 +31,15 @@ function load3D(onProg) {
   const loader = new THREE.GLTFLoader();
   const files = [...new Set(Object.values(MODEL_DEF).map(d => d.f))].map(f => ['m', f, MODEL_BASE + f + '.glb'])
     .concat(RIG_FILES.M.map(f => ['M', f, MODEL_BASE + f + '.glb']), RIG_FILES.L.map(f => ['L', f, MODEL_BASE + f + '.glb']), WEAPON_FILES.map(f => ['w', f, MODEL_BASE + f + '.gltf']));
-  let done = 0;
-  return Promise.all(files.map(([k, name, url]) => loader.loadAsync(url).then(g => {
+  let done = 0, texArr = null;
+  const texP = loadTexArrays().then(t => { texArr = t; });
+  return Promise.all([texP].concat(files.map(([k, name, url]) => loader.loadAsync(url).then(g => {
     if (k === 'm') R3.models[name] = g.scene;
     else if (k === 'w') R3.weapons[name] = g.scene;
     else for (const c of g.animations) R3.clips[k][c.name] = c;
     done++; R3.prog = done / files.length; if (onProg) onProg(R3.prog);
-  }))).then(() => {
+  })))).then(() => {
+    buildGround(texArr);
     for (const [type, d] of Object.entries(MODEL_DEF)) {
       const b = new THREE.Box3().setFromObject(R3.models[d.f]);
       R3.hgt[type] = (b.max.y - b.min.y) * d.s * CHAR_SCALE;
@@ -73,7 +75,7 @@ function init3D() {
   sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.02;
   scene.add(sun); scene.add(sun.target);
   for (let i = 0; i < 2; i++) { const l = new THREE.PointLight(0xff8a3a, 0, 6, 2); scene.add(l); LIGHTS.push(l); }
-  buildGround(); buildWorld();
+  buildWorld();
   P3add = makeParticles(true); P3norm = makeParticles(false);
   SKY = new THREE.Color(); SKY_DAY = new THREE.Color(0x9cc3e6); SKY_VOLC = new THREE.Color(0x2a0c06);
   R3.ok = true;
@@ -90,9 +92,32 @@ function dataTex(src, linear, mul) {
   return t;
 }
 // chão: o mesmo desenho procedural de antes, agora com luz e sombras reais
-function buildGround() {
+// texturas reais (ambientCG, CC0) empilhadas em 2 "array textures": cores e relevo (normal map)
+const TEX_LAYERS = ['grass', 'forest', 'path', 'sand', 'stone', 'ash'];
+function loadTexArrays() {
+  if (!renderer.capabilities.isWebGL2 || !THREE.DataArrayTexture) return Promise.resolve(null);
+  const S = 512;
+  const load = n => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = MODEL_BASE + 'tex/' + n + '.jpg'; });
+  return Promise.all(TEX_LAYERS.flatMap(n => [load(n + '_c'), load(n + '_n')])).then(ims => {
+    const c = mk(S, S), g = c.getContext('2d', { willReadFrequently: true });
+    const arr = off => {
+      const data = new Uint8Array(S * S * 4 * TEX_LAYERS.length);
+      TEX_LAYERS.forEach((n, i) => { g.clearRect(0, 0, S, S); g.drawImage(ims[i * 2 + off], 0, 0, S, S); data.set(g.getImageData(0, 0, S, S).data, i * S * S * 4); });
+      const t = new THREE.DataArrayTexture(data, S, S, TEX_LAYERS.length);
+      t.format = THREE.RGBAFormat; t.type = THREE.UnsignedByteType;
+      t.wrapS = t.wrapT = THREE.RepeatWrapping; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
+      t.generateMipmaps = true; t.anisotropy = 8; t.needsUpdate = true;
+      return t;
+    };
+    return { col: arr(0), nrm: arr(1) };
+  }).catch(e => { console.warn('texturas PBR indisponíveis:', e); return null; });
+}
+function buildGround(tex) {
   const U = { uMap: { value: dataTex(MAP) }, uGrd: { value: dataTex(GRD) }, uDep: { value: dataTex(DEPTH, true, 60) }, uTime: { value: 0 } };
+  if (tex) { U.uCol = { value: tex.col }; U.uNrm = { value: tex.nrm }; }
   groundMat = new THREE.MeshStandardMaterial({ roughness: 0.92, metalness: 0 });
+  if (tex) groundMat.defines = { USE_PBR: '' };
+  R3.pbr = !!tex;
   groundMat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vW;')
@@ -101,6 +126,9 @@ function buildGround() {
       .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = vec4( groundColor(vW.xz), opacity );')
       .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = gRough;')
       .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
+#ifdef USE_PBR
+  if (gUseN > .5) { vec3 nw = normalize(vec3(gN.x, gN.z, gN.y)); normal = normalize((viewMatrix * vec4(nw, 0.)).xyz); } else
+#endif
   {
     vec3 dpx = dFdx(-vViewPosition), dpy = dFdy(-vViewPosition);
     float dhx = dFdx(gH), dhy = dFdy(gH);
@@ -122,6 +150,10 @@ const GROUND_GLSL = `
 uniform sampler2D uMap, uGrd, uDep; uniform float uTime;
 varying vec3 vW;
 float gH = 0., gEmis = 0., gRough = .92;
+#ifdef USE_PBR
+uniform highp sampler2DArray uCol, uNrm;
+vec3 gN = vec3(0., 0., 1.); float gUseN = 0.;
+#endif
 float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vn(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3. - 2. * f);
   return mix(mix(h21(i), h21(i + vec2(1., 0.)), u.x), mix(h21(i + vec2(0., 1.)), h21(i + vec2(1., 1.)), u.x), u.y); }
@@ -129,6 +161,31 @@ float fbm(vec2 p){ float s = 0., a = .5; for (int i = 0; i < 3; i++){ s += a * v
 float raw(vec2 t){ if (t.x < 0. || t.y < 0. || t.x > 127. || t.y > 127.) return 3.; return floor(texture2D(uMap, (t + .5) / 128.).r * 255. + .5); }
 float grd(vec2 t){ if (t.x < 0. || t.y < 0. || t.x > 127. || t.y > 127.) return 0.; return floor(texture2D(uGrd, (t + .5) / 128.).r * 255. + .5); }
 bool sharpT(float r){ return r == 4. || r == 5. || r == 12.; }
+#ifdef USE_PBR
+bool pbrT(float g){ return g == 0. || g == 2. || g == 4. || g == 8. || g == 9.; }
+vec3 nmap(vec2 uv, float L){ vec3 n = texture(uNrm, vec3(uv, L)).xyz * 2. - 1.; n.y = -n.y; return n; }
+// uma camada de textura real; a grama mistura duas escalas e manchas de grama de floresta (sem repetição visível)
+vec4 lay(vec2 w, float g, out vec3 nrm){
+  float L; vec2 uv; float rough;
+  if (g == 2.) { L = 3.; uv = w / 2.5; rough = .9; }
+  else if (g == 8.) { L = 2.; uv = w / 2.2; rough = .95; }
+  else if (g == 4.) { L = 4.; uv = w / 2.4; rough = .7; }
+  else if (g == 9.) { L = 5.; uv = w / 2.8; rough = .82; }
+  else { L = 0.; uv = w / 2.2; rough = .93; }
+  vec3 c = texture(uCol, vec3(uv, L)).rgb, n = nmap(uv, L);
+  if (L == 0.) {
+    vec2 uv2 = mat2(.8, -.6, .6, .8) * w / 5.3 + .37;
+    float m = smoothstep(.3, .7, vn(w * .35 + 4.)) * .5;
+    c = mix(c, texture(uCol, vec3(uv2, 0.)).rgb, m); n = normalize(mix(n, nmap(uv2, 0.), m));
+    float f = smoothstep(.62, .8, fbm(w * .12 + 20.)) * .7;
+    vec2 uf = w / 3.2;
+    c = mix(c, texture(uCol, vec3(uf, 1.)).rgb, f); n = normalize(mix(n, nmap(uf, 1.), f));
+    float l = dot(c, vec3(.3, .59, .11)); c = mix(vec3(l), c, 1.25) * vec3(.82, .92, .74); // grama mais viva e menos amarela
+  } else if (L == 5.) { c *= .8; }
+  nrm = n;
+  return vec4(c, rough);
+}
+#endif
 vec3 groundColor(vec2 w){
   vec2 tp = floor(w);
   float r0 = raw(tp), g;
@@ -141,6 +198,33 @@ vec3 groundColor(vec2 w){
   }
   float big = vn(w * .22), t = uTime;
   vec3 col;
+#ifdef USE_PBR
+  if (pbrT(g)) {
+    // segunda amostra com outro contorno: bordas suaves entre terrenos
+    vec2 j2 = vec2(vn(w * 1.7 + 41.) , vn(w * 1.7 + 63.)) - .5;
+    float g2 = sharpT(r0) ? g : grd(floor(w + j2 * .5));
+    if (!pbrT(g2)) g2 = g;
+    vec3 n1, n2;
+    vec4 a = lay(w, g, n1);
+    vec4 b = g2 == g ? a : lay(w, g2, n2);
+    if (g2 == g) n2 = n1;
+    col = mix(a.rgb, b.rgb, .5); gRough = mix(a.a, b.a, .5); gN = normalize(mix(n1, n2, .5)); gUseN = 1.;
+    if (g == 9.) {
+      float cr = abs(vn(w * 1.3) - .5), glow = smoothstep(.022, 0., cr);
+      col = mix(col * (1. - smoothstep(.05, .02, cr) * .4), vec3(1., .45, .1), glow * (.75 + .25 * sin(t * 2. + w.y * 3.)));
+      gEmis = glow;
+    }
+    if (r0 == 7.) {
+      vec2 cc = floor(w * 5.), o = vec2(h21(cc), h21(cc + 4.)) * .6 + .2;
+      float fd = length(fract(w * 5.) - o), pick = h21(cc + 7.);
+      vec3 fc = pick < .2 ? vec3(1., .85, .3) : pick < .4 ? vec3(1., .45, .58) : pick < .6 ? vec3(.95, .95, .95) : pick < .8 ? vec3(1., .6, .25) : vec3(.7, .55, 1.);
+      if (fd < .09) col = mix(fc, vec3(1., .92, .6), smoothstep(.035, 0., fd));
+    }
+    if (raw(tp - vec2(0., 1.)) == 5. && r0 != 5.) col *= mix(.6, 1., smoothstep(0., .45, fract(w.y)));
+    col *= .95 + big * .1;
+    return pow(col, vec3(2.2));
+  }
+#endif
   if (g == 1.) {
     float d = texture2D(uDep, w / 128.).r * 4.25;
     float k = clamp(d / 3., 0., 1.);
