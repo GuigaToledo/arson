@@ -1,0 +1,200 @@
+'use strict';
+// ============================================================
+//  ARSON — teclado, laços, menu do jogo, seleção de personagens
+// ============================================================
+addEventListener('keydown', e => {
+  if (!playing) return;
+  if (chatOpen) return;
+  const c = e.code;
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(c)) e.preventDefault();
+  if (c === 'Escape') {
+    if (!$('menu').hidden) closeMenu();
+    else if (!$('help').hidden) $('help').hidden = true;
+    else if (dlgNpc) closeDlg();
+    else if (ME.target != null) ME.target = null;
+    else openMenu('skills');
+    return;
+  }
+  if (c === 'KeyK') { if ($('menu').hidden) openMenu('skills'); else closeMenu(); return; }
+  if (!$('menu').hidden) return;
+  if (c === 'Enter' || c === 'NumpadEnter') { e.preventDefault(); openChat(); return; }
+  if (c === 'Space') { if (!e.repeat) targetNext(); return; }
+  const m = c.match(/^(?:Numpad|Digit)([1-9])$/);
+  if (m) { e.preventDefault(); castSlot(Number(m[1]) - 1); return; }
+  if (c === 'KeyQ') return usePot('hp');
+  if (c === 'KeyE') return usePot('mp');
+  if (c === 'KeyH') { $('help').hidden = !$('help').hidden; return; }
+  if (c === 'KeyM') { setMini(!miniOn); return; }
+  if (c === 'NumpadAdd' || c === 'Equal') setZoom(zoom * 1.1);
+  if (c === 'NumpadSubtract' || c === 'Minus') setZoom(zoom / 1.1);
+  keys.add(c);
+});
+addEventListener('keyup', e => keys.delete(e.code));
+addEventListener('blur', () => keys.clear());
+document.addEventListener('visibilitychange', () => { if (document.hidden) { keys.clear(); if (ME) ME.mv = false; saveGame(); } });
+function setZoom(z) { zoom = clamp(z, 40, 112); STORE.settings.zoom = Math.round(zoom); }
+function setMini(on) { miniOn = on; $('mini').style.display = on ? '' : 'none'; STORE.settings.mini = on; }
+
+// ------------------------------------------------------------
+//  Laços
+// ------------------------------------------------------------
+let lastF = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - lastF) / 1000); lastF = now;
+  pollPad();
+  if (playing) updateLocal(dt);
+  updateRemote(dt);
+  updateFx(dt, now);
+  render(now, dt);
+  if (playing) { updHud(now); drawMini(); perfWatch(dt); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+// tick independente da aba estar visível (worker não é estrangulado)
+let lastTick = performance.now(), stT = 0;
+function onTick() {
+  const now = performance.now(), dt = Math.min(0.25, (now - lastTick) / 1000); lastTick = now;
+  if (!playing || !NET.ready || !ME) return;
+  if (NET.isHost) hostTick(dt);
+  stT -= dt;
+  if (stT <= 0) { stT = 0.1; toHost({ t: 'st', x: Math.round(ME.x * 1000) / 1000, y: Math.round(ME.y * 1000) / 1000, dir: ME.dir, mv: ME.mv ? 1 : 0, hp: Math.round(ME.hp), mhp: maxHp(), lvl: ME.lvl, dead: ME.dead, sk: skArr() }); }
+}
+try { const wk = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),50)'], { type: 'text/javascript' }))); wk.onmessage = onTick; }
+catch (e) { setInterval(onTick, 50); }
+
+// ------------------------------------------------------------
+//  Menu do jogo
+// ------------------------------------------------------------
+let menuTab = 'skills';
+function openMenu(tab) { if (tab) menuTab = tab; $('menu').hidden = false; keys.clear(); renderMenu(); }
+function closeMenu() { $('menu').hidden = true; }
+function toggleMenu() { if ($('menu').hidden) openMenu(); else closeMenu(); }
+function renderMenu() {
+  if (!ME) return;
+  const tabs = [['skills', 'Habilidades'], ['config', 'Configurações'], ['save', 'Progresso']];
+  let h = `<div class="m-tabs">${tabs.map(([k, n]) => `<button data-tab="${k}" class="${k === menuTab ? 'on' : ''}">${n}</button>`).join('')}<button class="x" data-act="close">✕</button></div>`;
+  if (menuTab === 'skills') {
+    const a = xpToReach(ME.lvl), b = xpToReach(ME.lvl + 1);
+    h += `<div class="m-char"><b>${esc(ME.name)}</b> · ${VOC[ME.voc].nome}</div>`;
+    h += skRow('Nível', ME.lvl, (ME.xp - a) / (b - a), `${ME.xp - a} / ${b - a} xp`, 'Sobe matando criaturas. Aumenta vida, mana e dano.');
+    const tips = { magia: 'Sobe usando magias (cura também conta).', defesa: 'Sobe apanhando de criaturas.', espada: 'Sobe acertando criaturas com a espada.', distancia: 'Sobe acertando criaturas com o arco.' };
+    for (const k of SKV[ME.voc]) { const [lv, pts] = ME.sk[k], need = skNeed(k, lv); h += skRow(SKN[k], lv, pts / need, `${Math.floor(pts)} / ${need}`, tips[k]); }
+    const sk = skLv();
+    h += `<div class="m-note">Força: ataque básico ×${atkMult(ME.voc, sk).toFixed(2)} · magias ×${spellMult(ME.voc, sk).toFixed(2)} · dano recebido ÷${defDiv(sk).toFixed(2)}<br>Dica: os bonecos de treino fora do portão norte sobem todas as habilidades sem risco.</div>`;
+  } else if (menuTab === 'config') {
+    const s = STORE.settings;
+    h += `<label class="m-opt"><input type="checkbox" id="optAuto" ${s.auto ? 'checked' : ''}> <span><b>Modo automático</b><small>Poções infinitas, poção de mana automática, cura em 50% de vida, poção de vida em 25% e magias de ataque assim que recarregam. Ideal para celular e controle.</small></span></label>
+      <div class="m-opt"><span><b>Qualidade gráfica</b><small>Automática reduz sozinha em aparelhos lentos. Atual: ${Q.nome}.</small></span>
+      <select id="optQ">${[['auto', 'Automática'], ['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa']].map(([v, n]) => `<option value="${v}" ${s.quality === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <label class="m-opt"><input type="checkbox" id="optMini" ${miniOn ? 'checked' : ''}> <span><b>Minimapa</b></span></label>
+      <div class="m-opt"><span><b>Zoom</b></span><input type="range" id="optZoom" min="40" max="112" value="${Math.round(zoom)}"></div>`;
+  } else {
+    h += `<p class="m-note">Seu progresso é salvo sozinho neste navegador a cada poucos segundos. Para não perder nada se o navegador limpar os dados (ou para jogar em outro aparelho), exporte e guarde o código/arquivo.</p>
+      <div class="dlg-b"><button data-act="exp">Baixar arquivo de progresso</button><button data-act="copy">Copiar código</button></div>
+      <div class="dlg-b"><button data-act="imp">Importar arquivo</button><button data-act="paste">Colar código</button></div>`;
+  }
+  h += `<div class="dlg-b m-foot"><button data-act="close">Continuar jogando</button><button data-act="select" class="ghost">Trocar de personagem</button></div>`;
+  const box = $('menu'); box.innerHTML = h;
+  box.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { menuTab = b.dataset.tab; renderMenu(); });
+  box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => menuAct(b.dataset.act));
+  const oa = $('optAuto'); if (oa) oa.onchange = () => { STORE.settings.auto = oa.checked; document.body.classList.toggle('auto', oa.checked); saveGame(); toast(oa.checked ? 'Modo automático ligado' : 'Modo automático desligado'); };
+  const oq = $('optQ'); if (oq) oq.onchange = () => { STORE.settings.quality = oq.value; applyQuality(oq.value === 'auto' ? (IS_MOBILE ? 'media' : 'alta') : oq.value); saveGame(); renderMenu(); };
+  const om = $('optMini'); if (om) om.onchange = () => setMini(om.checked);
+  const oz = $('optZoom'); if (oz) oz.oninput = () => setZoom(Number(oz.value));
+}
+function skRow(name, lv, f, txt, tip) {
+  return `<div class="sk"><div class="sk-h"><b>${name}</b><span class="sk-lv">${lv}</span></div><div class="bar sk-bar"><i style="width:${clamp(f * 100, 0, 100).toFixed(1)}%"></i><span>${txt}</span></div><small>${tip}</small></div>`;
+}
+function menuAct(a) {
+  if (a === 'close') closeMenu();
+  else if (a === 'select') backToSelect();
+  else if (a === 'exp') downloadSave();
+  else if (a === 'copy') copySave();
+  else if (a === 'imp') pickImport();
+  else if (a === 'paste') pasteImport();
+}
+function downloadSave() {
+  const blob = new Blob([exportSave()], { type: 'text/plain' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `arson-progresso-${new Date().toISOString().slice(0, 10)}.txt`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast('Arquivo de progresso baixado.');
+}
+function copySave() {
+  const s = exportSave();
+  (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(() => toast('Código copiado. Guarde em um lugar seguro.'), () => prompt('Copie este código:', s));
+}
+function doImport(text) {
+  try {
+    const playingVoc = ME && ME.voc;
+    if (playingVoc) { netStop(); playing = false; ME = null; }
+    importSave(text);
+    toast('Progresso importado!');
+    if (playingVoc) backToSelect(); else renderSelect();
+  } catch (e) { alert('Não foi possível importar: ' + e.message); }
+}
+function pickImport() {
+  const i = document.createElement('input'); i.type = 'file'; i.accept = '.txt,.json,text/plain,application/json';
+  i.onchange = () => { const f = i.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { if (confirm('Importar vai substituir o progresso deste navegador. Continuar?')) doImport(r.result); }; r.readAsText(f); };
+  i.click();
+}
+function pasteImport() {
+  const s = prompt('Cole aqui o código de progresso (começa com ARSON1:)');
+  if (s && confirm('Importar vai substituir o progresso deste navegador. Continuar?')) doImport(s);
+}
+
+// ------------------------------------------------------------
+//  Seleção de personagens (3 vagas: guerreiro, mago, arqueiro)
+// ------------------------------------------------------------
+let selVoc = null;
+function renderSelect() {
+  const box = $('slots');
+  selVoc = selVoc || STORE.last || 'guerreiro';
+  box.innerHTML = VOCS.map(v => {
+    const c = STORE.chars[v], lv = levelFor(c.xp || 0);
+    const sk = SKV[v].map(k => `${SKN[k]} ${c.sk[k][0]}`).join(' · ');
+    return `<div class="slot-card ${v === selVoc ? 'sel' : ''}" data-v="${v}">
+      <canvas width="120" height="150"></canvas>
+      <div class="sc-voc">${VOC[v].nome}</div>
+      <input class="sc-name" maxlength="16" placeholder="Dê um nome" value="${esc(c.name || '')}">
+      <div class="sc-info">${c.name ? `Nível ${lv}<br><small>${sk}</small>` : '<small>Novo personagem</small>'}</div>
+      <button class="go play">JOGAR</button>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.slot-card').forEach(cd => {
+    const v = cd.dataset.v, cvs = cd.querySelector('canvas'), g = cvs.getContext('2d');
+    cd._draw = t => { g.clearRect(0, 0, cvs.width, cvs.height); g.save(); g.translate(cvs.width / 2, cvs.height - 6); g.scale(1.35, 1.35); g.drawImage(getFrame(v, 2, cd.classList.contains('sel') ? 1 + Math.floor(t / 110) % 8 : 0), -FAX, -FAY); g.restore(); };
+    cd._draw(0);
+    cd.onclick = e => { if (e.target.tagName === 'INPUT') return; selVoc = v; box.querySelectorAll('.slot-card').forEach(x => x.classList.toggle('sel', x === cd)); };
+    const inp = cd.querySelector('.sc-name');
+    inp.onfocus = () => { selVoc = v; box.querySelectorAll('.slot-card').forEach(x => x.classList.toggle('sel', x === cd)); };
+    inp.onchange = () => { const n = inp.value.trim().replace(/\s+/g, ' '); if (n && /^[A-Za-zÀ-ÿ ]{3,16}$/.test(n)) { STORE.chars[v].name = n; writeStore(); $('err').textContent = ''; } };
+    inp.onkeydown = e => { if (e.key === 'Enter') cd.querySelector('.play').click(); };
+    cd.querySelector('.play').onclick = ev => {
+      ev.stopPropagation();
+      const n = inp.value.trim().replace(/\s+/g, ' ');
+      if (!/^[A-Za-zÀ-ÿ ]{3,16}$/.test(n)) { $('err').textContent = `Dê um nome de 3 a 16 letras para o ${VOC[v].nome}.`; inp.focus(); return; }
+      STORE.chars[v].name = n;
+      STORE.settings.auto = $('autoMode').checked;
+      writeStore();
+      startGame(v);
+    };
+  });
+  $('autoMode').checked = !!STORE.settings.auto;
+}
+(function selAnim(t) { if (!playing) document.querySelectorAll('.slot-card.sel').forEach(cd => cd._draw && cd._draw(t)); requestAnimationFrame(selAnim); })(0);
+
+// ------------------------------------------------------------
+//  Inicialização
+// ------------------------------------------------------------
+(function init() {
+  applyQuality(STORE.settings.quality === 'auto' ? (IS_MOBILE ? 'media' : 'alta') : STORE.settings.quality, true);
+  zoom = clamp(STORE.settings.zoom || (IS_MOBILE ? 52 : 64), 40, 112);
+  miniOn = STORE.settings.mini !== false; $('mini').style.display = miniOn ? '' : 'none';
+  if (IS_MOBILE || navigator.maxTouchPoints > 0) document.body.classList.add('touch');
+  setupTouch();
+  $('autoMode').onchange = () => { STORE.settings.auto = $('autoMode').checked; writeStore(); };
+  $('selExp').onclick = downloadSave; $('selImp').onclick = pickImport; $('selPaste').onclick = pasteImport;
+  $('ver').textContent = 'v' + VERSION;
+  renderSelect();
+})();

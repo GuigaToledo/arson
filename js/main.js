@@ -6,8 +6,37 @@ const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
 const LC = mk(4, 4), lctx = LC.getContext('2d');
 let dpr = 1, zoom = 64, VIEW = { S: 1, ox: 0, oy: 0 }, vignette = null;
+// ------------------------------------------------------------
+//  Qualidade (automática para celulares e PCs lentos)
+// ------------------------------------------------------------
+const QUAL = {
+  alta: { nome: 'Alta', rs: 1, dprMax: 2, light: true, parts: 1800, cq: 1, shadows: true },
+  media: { nome: 'Média', rs: 1, dprMax: 1, light: true, parts: 700, cq: 1, shadows: true },
+  baixa: { nome: 'Baixa', rs: 0.7, dprMax: 1, light: false, parts: 250, cq: 0.5, shadows: false },
+};
+const QORDER = ['alta', 'media', 'baixa'];
+const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && Math.min(screen.width, screen.height) < 820);
+let Q = QUAL.alta, qName = 'alta';
+function applyQuality(name, silent) {
+  if (!QUAL[name]) name = 'alta';
+  const changed = QUAL[name].cq !== CQ;
+  qName = name; Q = QUAL[name];
+  if (changed) { CQ = Q.cq; chunkCache.clear(); chunkQueue = []; }
+  resize();
+  if (!silent) toast(`Qualidade gráfica: ${Q.nome}`);
+}
+const perf = { acc: 0, n: 0, slow: 0 };
+function perfWatch(dt) {
+  if (!STORE || STORE.settings.quality !== 'auto' || document.hidden) return;
+  perf.acc += dt; perf.n++;
+  if (perf.n >= 90) {
+    const avg = perf.acc / perf.n * 1000; perf.acc = 0; perf.n = 0;
+    if (avg > 27) perf.slow++; else perf.slow = 0;
+    if (perf.slow >= 2) { perf.slow = 0; const i = QORDER.indexOf(qName); if (i < QORDER.length - 1) applyQuality(QORDER[i + 1]); }
+  }
+}
 function resize() {
-  dpr = Math.min(2, window.devicePixelRatio || 1);
+  dpr = Math.min(Q.dprMax, window.devicePixelRatio || 1) * Q.rs;
   cv.width = Math.floor(innerWidth * dpr); cv.height = Math.floor(innerHeight * dpr);
   LC.width = Math.ceil(cv.width / 2); LC.height = Math.ceil(cv.height / 2);
   vignette = mk(cv.width, cv.height);
@@ -25,7 +54,6 @@ const GLOWG = (() => { const c = mk(128, 128), g = c.getContext('2d'); g.fillSty
 // ------------------------------------------------------------
 //  Estado
 // ------------------------------------------------------------
-const SAVE_KEY = 'arson-personagem-v1';
 let ME = null, playing = false;
 const MON = new Map(), REM = new Map();
 const FX = [], PART = [], TXT = [], DECALS = [], CORPSES = [], SPEECH = new Map();
@@ -33,32 +61,106 @@ let shake = 0, snapN = 0;
 const HEIGHTS = { rato: 26, javali: 46, lobo: 48, goblin: 70, salamandra: 30, golem: 96, arson: 170, human: 84 };
 const maxHp = () => maxHpOf(ME.voc, ME.lvl), maxMp = () => maxMpOf(ME.voc, ME.lvl);
 
-function loadSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return null; } }
-function saveGame() {
-  if (!ME) return;
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ uid: ME.uid, name: ME.name, voc: ME.voc, xp: ME.xp, gold: ME.gold, hpPot: ME.hpPot, mpPot: ME.mpPot, task: ME.task, hp: ME.hp, mp: ME.mp, x: ME.x, y: ME.y })); } catch (e) { }
+// ------------------------------------------------------------
+//  Salvamento (chave fixa para sempre; campos novos ganham padrão,
+//  então updates nunca apagam o progresso)
+// ------------------------------------------------------------
+const STORE_KEY = 'arson-save', STORE_BAK = 'arson-save-bak';
+const VOCS = ['guerreiro', 'mago', 'arqueiro'];
+const newUid = () => 'u' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+function defChar(voc) { return { voc, name: '', uid: newUid(), xp: 0, gold: 20, hpPot: 5, mpPot: 5, task: null, hp: null, mp: null, x: null, y: null, sk: { magia: [1, 0], defesa: [1, 0], espada: [1, 0], distancia: [1, 0] }, color: null, played: 0 }; }
+function normalizeStore(st) {
+  if (!st || typeof st !== 'object') st = {};
+  st.v = Math.max(1, st.v | 0);
+  if (!st.chars || typeof st.chars !== 'object') st.chars = {};
+  for (const v of VOCS) {
+    const base = defChar(v), c = st.chars[v] && typeof st.chars[v] === 'object' ? st.chars[v] : {};
+    const sk = Object.assign({}, base.sk, c.sk || {});
+    for (const k of SKILLS) if (!Array.isArray(sk[k]) || sk[k].length < 2) sk[k] = [Math.max(1, Number(sk[k]) || 1), 0];
+    st.chars[v] = Object.assign(base, c, { voc: v, sk });
+    if (!st.chars[v].uid) st.chars[v].uid = newUid();
+  }
+  st.settings = Object.assign({ auto: false, quality: 'auto', mini: true, zoom: 64 }, st.settings || {});
+  return st;
 }
-setInterval(saveGame, 10000);
+function loadStore() {
+  let st = null;
+  for (const k of [STORE_KEY, STORE_BAK]) { try { st = JSON.parse(localStorage.getItem(k)); } catch (e) { st = null; } if (st && st.chars) break; }
+  if (!st || !st.chars) { // migra o save da versão 0.2
+    try { const o = JSON.parse(localStorage.getItem('arson-personagem-v1')); if (o && VOCS.includes(o.voc)) st = { chars: { [o.voc]: o } }; } catch (e) { }
+  }
+  return normalizeStore(st);
+}
+let STORE = loadStore();
+function writeStore() {
+  try { const s = JSON.stringify(STORE); localStorage.setItem(STORE_KEY, s); localStorage.setItem(STORE_BAK, s); } catch (e) { }
+}
+function saveGame() {
+  if (ME) {
+    const c = STORE.chars[ME.voc];
+    Object.assign(c, { name: ME.name, uid: ME.uid, xp: ME.xp, gold: ME.gold, hpPot: ME.hpPot, mpPot: ME.mpPot, task: ME.task, hp: Math.round(ME.hp), mp: Math.round(ME.mp), x: ME.x, y: ME.y, sk: ME.sk, played: Date.now() });
+  }
+  writeStore();
+}
+setInterval(() => { if (playing) saveGame(); }, 5000);
 addEventListener('pagehide', saveGame);
-function helloMsg() { return { t: 'hi', uid: ME.uid, name: ME.name, voc: ME.voc, lvl: ME.lvl, x: ME.x, y: ME.y }; }
+function exportSave() {
+  saveGame();
+  const json = JSON.stringify(STORE);
+  return 'ARSON1:' + btoa(unescape(encodeURIComponent(json)));
+}
+function importSave(text) {
+  text = String(text || '').trim();
+  let json = text;
+  if (text.startsWith('ARSON1:')) json = decodeURIComponent(escape(atob(text.slice(7))));
+  const st = JSON.parse(json);
+  if (!st || !st.chars) throw new Error('arquivo inválido');
+  STORE = normalizeStore(st);
+  writeStore();
+}
+const skArr = () => SKILLS.map(k => ME.sk[k][0]);
+const skLv = () => { const o = {}; for (const k of SKILLS) o[k] = ME.sk[k][0]; return o; };
+function helloMsg() { return { t: 'hi', uid: ME.uid, name: ME.name, voc: ME.voc, lvl: ME.lvl, x: ME.x, y: ME.y, sk: skArr() }; }
+function skGain(k, amt) {
+  if (!ME || !SKV[ME.voc].includes(k)) return;
+  const s = ME.sk[k];
+  s[1] += amt;
+  let up = false;
+  while (s[1] >= skNeed(k, s[0])) { s[1] -= skNeed(k, s[0]); s[0]++; up = true; }
+  if (up) { sysMsg(`Sua habilidade de ${SKN[k]} subiu para ${s[0]}!`, 'lvl'); addText(ME.x, ME.y - 1, `${SKN[k]} ${s[0]}!`, '#9ad8ff'); if (!$('menu').hidden) renderMenu(); }
+}
 
-function startGame(sv) {
+function startGame(voc) {
+  const sv = STORE.chars[voc];
   ME = {
-    uid: sv.uid || ('u' + Math.random().toString(36).slice(2, 10)), name: sv.name, voc: sv.voc, xp: sv.xp || 0, gold: sv.gold != null ? sv.gold : 20,
-    hpPot: sv.hpPot != null ? sv.hpPot : 5, mpPot: sv.mpPot != null ? sv.mpPot : 5, task: sv.task || null,
-    x: sv.x || TEMPLO.x, y: sv.y || TEMPLO.y, dir: 2, mv: false, walk: 0, target: null, cds: {}, atkCd: 0, atkT: 0, potCd: 0, regenT: 2, dead: false,
+    uid: sv.uid, name: sv.name, voc, xp: sv.xp || 0, gold: sv.gold != null ? sv.gold : 20,
+    hpPot: sv.hpPot != null ? sv.hpPot : 5, mpPot: sv.mpPot != null ? sv.mpPot : 5, task: sv.task || null, sk: JSON.parse(JSON.stringify(sv.sk)),
+    x: sv.x || TEMPLO.x, y: sv.y || TEMPLO.y, dir: 2, mv: false, walk: 0, target: null, cds: {}, atkCd: 0, atkT: 0, potCd: 0, regenT: 2, autoT: 0, dead: false,
   };
   ME.lvl = levelFor(ME.xp);
   ME.hp = clamp(sv.hp || maxHp(), 1, maxHp()); ME.mp = clamp(sv.mp != null ? sv.mp : maxMp(), 0, maxMp());
-  if (hitCircle(ME.x, ME.y, 0.28, false)) { ME.x = TEMPLO.x; ME.y = TEMPLO.y; }
+  if (!isFinite(ME.x) || !isFinite(ME.y) || hitCircle(ME.x, ME.y, 0.28, false)) { ME.x = TEMPLO.x; ME.y = TEMPLO.y; }
+  STORE.last = voc;
   saveGame();
   $('login').classList.add('hidden');
   document.body.classList.add('playing');
-  playing = true;
+  document.body.classList.toggle('auto', !!STORE.settings.auto);
+  $('log').innerHTML = ''; $('feed').innerHTML = '';
+  playing = true; zoneName = '';
   buildHotbar();
   sysMsg(`Bem-vindo a Arson, ${ME.name}!`, 'lvl');
-  sysMsg('Aperte H para ver os controles.', 'sys');
+  sysMsg(STORE.settings.auto ? 'Modo automático ligado: poções infinitas e magias automáticas.' : 'Aperte H para ver os controles.', 'sys');
   netStart();
+}
+function backToSelect() {
+  saveGame();
+  netStop();
+  playing = false; ME = null;
+  MON.clear(); REM.clear(); FX.length = 0; PART.length = 0; TXT.length = 0; CORPSES.length = 0; DECALS.length = 0; SPEECH.clear();
+  closeMenu(); closeDlg(); closeChat();
+  document.body.classList.remove('playing');
+  $('login').classList.remove('hidden');
+  renderSelect();
 }
 function onNetReady() { updNet(); if (NET.isHost && !NET.offline) sysMsg('Conectado ao mundo de Arson.', 'sys'); else if (!NET.isHost) sysMsg('Conectado ao mundo de Arson.', 'sys'); else sysMsg('Sem conexão com o servidor de salas: jogando sozinho.', 'death'); }
 function onNetLost() { MON.clear(); REM.clear(); if (ME) ME.target = null; }
@@ -70,7 +172,7 @@ function clientRecv(m) {
   if (!m || typeof m !== 'object') return;
   switch (m.t) {
     case 's': applySnap(m); break;
-    case 'hit': if (ME && !ME.dead) { ME.hp -= m.dmg; if (ME.hp <= 0) die(m.src); } break;
+    case 'hit': if (ME && !ME.dead) { ME.hp -= m.dmg; skGain('defesa', 1); if (ME.hp <= 0) die(m.src); } break;
     case 'rew': reward(m); break;
     case 'chat': {
       SPEECH.set(m.uid, { text: m.text, until: performance.now() + 4000 + m.text.length * 50 });
@@ -110,22 +212,25 @@ let chatOpen = false;
 function updateLocal(dt) {
   if (ME.dead) { ME.mv = false; return; }
   let ix = 0, iy = 0;
-  if (!chatOpen) {
+  if (!chatOpen && $('menu').hidden) {
     if (keys.has('KeyA') || keys.has('ArrowLeft')) ix -= 1;
     if (keys.has('KeyD') || keys.has('ArrowRight')) ix += 1;
     if (keys.has('KeyW') || keys.has('ArrowUp')) iy -= 1;
     if (keys.has('KeyS') || keys.has('ArrowDown')) iy += 1;
+    ix += PAD.x + JOY.x; iy += PAD.y + JOY.y;
   }
-  const len = Math.hypot(ix, iy);
+  let len = Math.hypot(ix, iy);
   const spd = VOC[ME.voc].spd * (1 + Math.min(0.25, ME.lvl * 0.004));
-  if (len) {
-    ix /= len; iy /= len;
+  if (len > 0.15) {
+    const k = Math.min(1, len) / len; ix *= k; iy *= k; // analógico: velocidade proporcional
+    len = Math.hypot(ix, iy); const nx = ix / len, ny = iy / len;
     const ox = ME.x, oy = ME.y;
     moveCircle(ME, ix * spd * dt, iy * spd * dt, 0.28, false);
     ME.walk += Math.hypot(ME.x - ox, ME.y - oy);
     ME.mv = Math.hypot(ME.x - ox, ME.y - oy) > 0.0005;
-    if (ME.atkT <= 0) ME.dir = Math.abs(ix) > Math.abs(iy) ? (ix > 0 ? 1 : 3) : (iy > 0 ? 2 : 0);
+    if (ME.atkT <= 0) ME.dir = Math.abs(nx) > Math.abs(ny) ? (nx > 0 ? 1 : 3) : (ny > 0 ? 2 : 0);
   } else ME.mv = false;
+  if (STORE.settings.auto) autoPlay(dt);
   for (const m of MON.values()) {
     const d = Math.hypot(ME.x - m.x, ME.y - m.y), md = 0.26 + MT[m.type].r * 0.8;
     if (d < md && d > 0.001) moveCircle(ME, (ME.x - m.x) / d * (md - d) * 0.5, (ME.y - m.y) / d * (md - d) * 0.5, 0.28, false);
@@ -146,6 +251,7 @@ function updateLocal(dt) {
     if (d <= VOC[ME.voc].range + MT[tg.type].r + 0.3 && ME.atkCd <= 0) {
       ME.atkCd = VOC[ME.voc].aspd; ME.atkT = 0.3; faceTo(tg.tx, tg.ty);
       toHost({ t: 'atk', tg: tg.id });
+      if (ME.voc !== 'mago') skGain(PRIM[ME.voc], 1);
     }
   }
   if (dlgNpc && Math.hypot(dlgNpc.x - ME.x, dlgNpc.y - ME.y) > 4) closeDlg();
@@ -172,24 +278,105 @@ function castSlot(i) {
     ax = c.tx; ay = c.ty;
   }
   ME.mp -= s.mana; ME.cds[s.k] = s.cd; ME.atkT = 0.3;
+  skGain('magia', s.mana);
   if (s.type !== 'heal') faceTo(ax, ay);
   let v = 0;
-  if (s.type === 'heal') { v = Math.round((s.base + s.perL * ME.lvl) * (0.85 + Math.random() * 0.15)); ME.hp = Math.min(maxHp(), ME.hp + v); addEvent({ k: 'heal', x: ME.x, y: ME.y, v }, performance.now()); }
+  if (s.type === 'heal') { v = Math.round((s.base + s.perL * ME.lvl) * (1 + 0.05 * ME.sk.magia[0]) * (0.85 + Math.random() * 0.15)); ME.hp = Math.min(maxHp(), ME.hp + v); addEvent({ k: 'heal', x: ME.x, y: ME.y, v }, performance.now()); }
   SPEECH.set(ME.uid, { text: s.nome, until: performance.now() + 1500, spell: true });
   toHost({ t: 'cast', k: s.k, tg: tg ? tg.id : null, ax, ay, v, useTarget: !!tg });
 }
 function usePot(kind) {
-  if (!ME || ME.dead || ME.potCd > 0) return;
+  if (!ME || ME.dead || ME.potCd > 0) return false;
+  const inf = STORE.settings.auto;
   if (kind === 'hp') {
-    if (ME.hpPot <= 0) return toast('Sem poções de vida. Compre com Brann na cidade.');
-    ME.hpPot--; const v = 90 + ME.lvl * 3; ME.hp = Math.min(maxHp(), ME.hp + v);
+    if (!inf && ME.hpPot <= 0) { toast('Sem poções de vida. Compre com Brann na cidade.'); return false; }
+    if (!inf) ME.hpPot--;
+    const v = 90 + ME.lvl * 3; ME.hp = Math.min(maxHp(), ME.hp + v);
     addEvent({ k: 'heal', x: ME.x, y: ME.y, v }, performance.now()); toHost({ t: 'fx', e: { k: 'heal', v } });
   } else {
-    if (ME.mpPot <= 0) return toast('Sem poções de mana. Compre com Brann na cidade.');
-    ME.mpPot--; const v = 60 + ME.lvl * 3; ME.mp = Math.min(maxMp(), ME.mp + v);
+    if (!inf && ME.mpPot <= 0) { toast('Sem poções de mana. Compre com Brann na cidade.'); return false; }
+    if (!inf) ME.mpPot--;
+    const v = 60 + ME.lvl * 3; ME.mp = Math.min(maxMp(), ME.mp + v);
     addText(ME.x, ME.y, '+' + v, '#6aa8ff');
   }
   ME.potCd = 1;
+  return true;
+}
+// ------------------------------------------------------------
+//  Modo automático (celular / controle)
+// ------------------------------------------------------------
+function autoPlay(dt) {
+  ME.autoT -= dt; if (ME.autoT > 0 || ME.dead) return;
+  ME.autoT = 0.15;
+  const list = SPELLS[ME.voc], heal = list.find(s => s.type === 'heal');
+  const atk = list.filter(s => s.type !== 'heal' && ME.lvl >= s.lvl);
+  const hpF = ME.hp / maxHp();
+  // 25%: poção de vida além da cura
+  if (hpF <= 0.25) usePot('hp');
+  // 50%: magia de cura (toma mana antes se faltar)
+  if (hpF <= 0.5 && (ME.cds[heal.k] || 0) <= 0) {
+    if (ME.mp < heal.mana) usePot('mp');
+    if (ME.mp >= heal.mana) { castSlot(list.indexOf(heal)); return; }
+  }
+  const minMana = Math.min(heal.mana, ...atk.map(s => s.mana));
+  if (ME.mp < minMana || ME.mp < maxMp() * 0.12) usePot('mp');
+  if (isPZ(ME.x, ME.y)) return;
+  let tg = ME.target != null ? MON.get(ME.target) : null;
+  if (!tg) { const n = nearestMon(ME.x, ME.y, 7); if (n) { ME.target = n.id; tg = n; } }
+  if (!tg) return;
+  const d = Math.hypot(tg.tx - ME.x, tg.ty - ME.y);
+  for (let i = atk.length - 1; i >= 0; i--) {
+    const s = atk[i];
+    if ((ME.cds[s.k] || 0) > 0) continue;
+    const reach = s.type === 'area' && s.at === 'self' ? s.radius + MT[tg.type].r : s.type === 'cone' ? s.range : s.range;
+    if (d > reach + 0.3) continue;
+    if (ME.mp < s.mana) { usePot('mp'); if (ME.mp < s.mana) continue; }
+    castSlot(list.indexOf(s));
+    return;
+  }
+}
+// ------------------------------------------------------------
+//  Controle (Xbox / qualquer gamepad) e toque
+// ------------------------------------------------------------
+const PAD = { x: 0, y: 0, prev: [] };
+function pollPad() {
+  PAD.x = 0; PAD.y = 0;
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  for (const gp of pads) {
+    if (!gp) continue;
+    let ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
+    if (Math.hypot(ax, ay) < 0.25) { ax = 0; ay = 0; }
+    const b = i => gp.buttons[i] && gp.buttons[i].pressed;
+    if (b(14)) ax = -1; if (b(15)) ax = 1; if (b(12)) ay = -1; if (b(13)) ay = 1;
+    PAD.x = ax; PAD.y = ay;
+    const now = gp.buttons.map(x => x.pressed);
+    const hit = i => now[i] && !PAD.prev[i];
+    if (playing) {
+      if (hit(9)) toggleMenu();
+      if ($('menu').hidden) {
+        if (hit(0)) targetNext();           // A: próximo alvo
+        if (hit(1)) usePot('hp');           // B: poção de vida
+        if (hit(2)) usePot('mp');           // X: poção de mana
+        if (hit(3)) { const h = SPELLS[ME.voc].findIndex(s => s.type === 'heal'); castSlot(h); } // Y: cura
+        if (hit(4)) castSlot(0); if (hit(5)) castSlot(1); if (hit(6)) castSlot(2); if (hit(7)) castSlot(3); // LB RB LT RT
+      }
+    } else if (hit(0) || hit(9)) { const b2 = document.querySelector('.slot-card.sel .play'); if (b2) b2.click(); }
+    PAD.prev = now;
+    break;
+  }
+}
+const JOY = { x: 0, y: 0, id: null, cx: 0, cy: 0 };
+function setupTouch() {
+  const j = $('joy'), k = $('joyK');
+  const R = 55;
+  j.addEventListener('pointerdown', e => { JOY.id = e.pointerId; const r = j.getBoundingClientRect(); JOY.cx = r.left + r.width / 2; JOY.cy = r.top + r.height / 2; j.setPointerCapture(e.pointerId); moveJ(e); e.preventDefault(); });
+  const moveJ = e => { if (e.pointerId !== JOY.id) return; let dx = e.clientX - JOY.cx, dy = e.clientY - JOY.cy; const d = Math.hypot(dx, dy); if (d > R) { dx *= R / d; dy *= R / d; } JOY.x = dx / R; JOY.y = dy / R; k.style.transform = `translate(${dx}px,${dy}px)`; };
+  j.addEventListener('pointermove', moveJ);
+  const end = e => { if (e.pointerId !== JOY.id) return; JOY.id = null; JOY.x = 0; JOY.y = 0; k.style.transform = ''; };
+  j.addEventListener('pointerup', end); j.addEventListener('pointercancel', end);
+  $('bTarget').onclick = () => targetNext();
+  $('bChat').onclick = () => openChat();
+  $('bMenu').onclick = () => toggleMenu();
 }
 function reward(r) {
   const t = MT[r.mt];
@@ -821,7 +1008,8 @@ function updHud(now) {
   const a = xpToReach(ME.lvl), b = xpToReach(ME.lvl + 1);
   $('xpF').style.width = (100 * (ME.xp - a) / (b - a)) + '%';
   $('lvl').textContent = ME.lvl; $('nm').textContent = ME.name;
-  $('gold').textContent = ME.gold; $('php').textContent = ME.hpPot; $('pmp').textContent = ME.mpPot;
+  const inf = STORE.settings.auto;
+  $('gold').textContent = ME.gold; $('php').textContent = inf ? '∞' : ME.hpPot; $('pmp').textContent = inf ? '∞' : ME.mpPot;
   const sl = $('spells').children;
   SPELLS[ME.voc].forEach((s, i) => {
     const el = sl[i]; if (!el) return;
@@ -871,8 +1059,8 @@ function drawMini() {
 let mouse = { x: innerWidth / 2, y: innerHeight / 2 };
 function mouseWorld() { return { x: (mouse.x * dpr - VIEW.ox) / (TS * VIEW.S), y: (mouse.y * dpr - VIEW.oy) / (TS * VIEW.S) }; }
 addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-cv.addEventListener('mousedown', e => {
-  if (!playing) return;
+cv.addEventListener('pointerdown', e => {
+  if (!playing || e.button > 0) return;
   mouse.x = e.clientX; mouse.y = e.clientY;
   const w = mouseWorld();
   let best = null, bd = 9;
@@ -912,81 +1100,3 @@ ci.addEventListener('keydown', e => {
     closeChat(); e.preventDefault();
   } else if (e.key === 'Escape') { closeChat(); e.preventDefault(); }
 });
-addEventListener('keydown', e => {
-  if (!playing) return;
-  if (chatOpen) return;
-  const c = e.code;
-  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(c)) e.preventDefault();
-  if (c === 'Enter' || c === 'NumpadEnter') { e.preventDefault(); openChat(); return; }
-  if (c === 'Space') { if (!e.repeat) targetNext(); return; }
-  if (c === 'Escape') { if (!$('help').hidden) $('help').hidden = true; else if (dlgNpc) closeDlg(); else ME.target = null; return; }
-  const m = c.match(/^(?:Numpad|Digit)([1-9])$/);
-  if (m) { e.preventDefault(); castSlot(Number(m[1]) - 1); return; }
-  if (c === 'KeyQ') return usePot('hp');
-  if (c === 'KeyE') return usePot('mp');
-  if (c === 'KeyH') { $('help').hidden = !$('help').hidden; return; }
-  if (c === 'KeyM') { miniOn = !miniOn; $('mini').style.display = miniOn ? '' : 'none'; return; }
-  if (c === 'NumpadAdd' || c === 'Equal') zoom = clamp(zoom * 1.1, 40, 112);
-  if (c === 'NumpadSubtract' || c === 'Minus') zoom = clamp(zoom / 1.1, 40, 112);
-  keys.add(c);
-});
-addEventListener('keyup', e => keys.delete(e.code));
-addEventListener('blur', () => keys.clear());
-document.addEventListener('visibilitychange', () => { if (document.hidden) { keys.clear(); if (ME) ME.mv = false; saveGame(); } });
-
-// ------------------------------------------------------------
-//  Laços
-// ------------------------------------------------------------
-let lastF = performance.now();
-function frame(now) {
-  const dt = Math.min(0.05, (now - lastF) / 1000); lastF = now;
-  if (playing) updateLocal(dt);
-  updateRemote(dt);
-  updateFx(dt, now);
-  render(now, dt);
-  if (playing) { updHud(now); drawMini(); }
-  requestAnimationFrame(frame);
-}
-requestAnimationFrame(frame);
-// tick independente da aba estar visível (worker não é estrangulado)
-let lastTick = performance.now(), stT = 0;
-function onTick() {
-  const now = performance.now(), dt = Math.min(0.25, (now - lastTick) / 1000); lastTick = now;
-  if (!playing || !NET.ready) return;
-  if (NET.isHost) hostTick(dt);
-  stT -= dt;
-  if (stT <= 0) { stT = 0.1; toHost({ t: 'st', x: Math.round(ME.x * 1000) / 1000, y: Math.round(ME.y * 1000) / 1000, dir: ME.dir, mv: ME.mv ? 1 : 0, hp: Math.round(ME.hp), mhp: maxHp(), lvl: ME.lvl, dead: ME.dead }); }
-}
-try { const wk = new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),50)'], { type: 'text/javascript' }))); wk.onmessage = onTick; }
-catch (e) { setInterval(onTick, 50); }
-
-// ------------------------------------------------------------
-//  Tela inicial
-// ------------------------------------------------------------
-(function loginUI() {
-  const sv = loadSave();
-  let voc = 'guerreiro';
-  const cards = document.querySelectorAll('.voc');
-  cards.forEach(cd => {
-    const c = cd.querySelector('canvas'), g = c.getContext('2d');
-    const draw = (t) => { g.clearRect(0, 0, c.width, c.height); g.save(); g.translate(c.width / 2, c.height - 8); g.scale(1.3, 1.3); g.drawImage(getFrame(cd.dataset.v, 2, 1 + Math.floor(t / 110) % 8), -FAX, -FAY); g.restore(); };
-    draw(0); cd._draw = draw;
-    cd.onclick = () => { voc = cd.dataset.v; cards.forEach(x => x.classList.toggle('sel', x === cd)); };
-  });
-  (function anim(t) { cards.forEach(cd => { if (cd.classList.contains('sel')) cd._draw(t); }); if (!playing) requestAnimationFrame(anim); })(0);
-  if (sv && sv.name) {
-    $('cont').hidden = false;
-    $('contInfo').textContent = `${sv.name} · ${VOC[sv.voc].nome} nível ${levelFor(sv.xp || 0)}`;
-    $('btnCont').onclick = () => startGame(sv);
-    $('btnNovo').onclick = () => { $('cont').hidden = true; $('novo').hidden = false; $('nome').focus(); };
-    $('novo').hidden = true;
-  }
-  $('novo').onsubmit = e => {
-    e.preventDefault();
-    const name = $('nome').value.trim().replace(/\s+/g, ' ');
-    if (!/^[A-Za-zÀ-ÿ ]{3,16}$/.test(name)) { $('err').textContent = 'Nome: 3 a 16 letras.'; return; }
-    if (sv && sv.name && !confirm(`Criar um personagem novo apaga ${sv.name}. Continuar?`)) return;
-    startGame({ name, voc });
-  };
-  $('ver').textContent = 'v' + VERSION;
-})();

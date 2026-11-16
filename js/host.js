@@ -27,6 +27,12 @@ function hostInit() {
   place('salamandra', 18, (x, y) => ash(x, y) && Math.hypot(x - VX, y - VY) > 8);
   place('golem', 10, (x, y) => ash(x, y) && Math.hypot(x - VX, y - VY) < 18 && Math.hypot(x - VX, y - VY) > 4);
   spawnMon('arson', VX + 0.5, VY + 0.5);
+  for (const [x, y] of DUMMIES) spawnMon('boneco', x, y);
+}
+function parseSk(a) {
+  if (!Array.isArray(a)) return { magia: 1, defesa: 1, espada: 1, distancia: 1 };
+  const f = v => clamp(Number(v) || 1, 1, 100000);
+  return { magia: f(a[0]), defesa: f(a[1]), espada: f(a[2]), distancia: f(a[3]) };
 }
 function spawnMon(type, x, y) {
   const t = MT[type];
@@ -49,6 +55,7 @@ function hostRecv(uid, d) {
       p = p || { uid, x: TEMPLO.x, y: TEMPLO.y, dir: 2, mv: 0, hp: 1, mhp: 1, lastAtk: 0, atkT: 0 };
       p.name = String(d.name || 'Viajante').slice(0, 16); p.voc = VOC[d.voc] ? d.voc : 'guerreiro'; p.lvl = clamp(d.lvl | 0, 1, 999);
       if (typeof d.x === 'number') { p.x = d.x; p.y = d.y; }
+      p.sk = parseSk(d.sk);
       p.seen = now;
       SIM.players.set(uid, p);
       if (isNew && uid !== ME.uid) broadcast({ t: 'sys', text: `${p.name} entrou no mundo.`, c: 'sys' });
@@ -59,6 +66,7 @@ function hostRecv(uid, d) {
       if (!p) return;
       if (typeof d.x === 'number' && isFinite(d.x) && isFinite(d.y)) { p.x = clamp(d.x, 0, W); p.y = clamp(d.y, 0, H); }
       p.dir = d.dir | 0; p.mv = d.mv ? 1 : 0; p.hp = d.hp | 0; p.mhp = Math.max(1, d.mhp | 0); p.lvl = clamp(d.lvl | 0, 1, 999); p.dead = !!d.dead; p.pz = isPZ(p.x, p.y);
+      if (d.sk) p.sk = parseSk(d.sk);
       p.seen = now;
       break;
     }
@@ -71,7 +79,7 @@ function hostRecv(uid, d) {
       p.lastAtk = now; p.atkT = 0.3;
       if (v.proj) ev({ k: 'proj', f: v.proj, x: p.x, y: p.y - 0.5, x1: m.x, y1: m.y - 0.35, d: 0 });
       else ev({ k: 'slash', x: m.x, y: m.y - 0.35, a: Math.atan2(m.y - p.y, m.x - p.x) });
-      hurtMon(m, roll(v.atk0 + v.atkL * p.lvl, MT[m.type].def), uid);
+      hurtMon(m, roll((v.atk0 + v.atkL * p.lvl) * atkMult(p.voc, p.sk), MT[m.type].def), uid);
       break;
     }
     case 'cast': if (p) hostCast(p, d, now); break;
@@ -118,7 +126,7 @@ function hostCast(p, d, now) {
   if (s.type === 'heal') { ev({ k: 'heal', x: p.x, y: p.y, v: d.v | 0, uid: p.uid }); return; }
   if (p.pz) return;
   p.atkT = 0.3;
-  const power = s.base + s.perL * p.lvl;
+  const power = (s.base + s.perL * p.lvl) * spellMult(p.voc, p.sk);
   const ax = typeof d.ax === 'number' && isFinite(d.ax) ? d.ax : p.x, ay = typeof d.ay === 'number' && isFinite(d.ay) ? d.ay : p.y;
   const pick = () => {
     let m = SIM.byId.get(d.tg);
@@ -177,6 +185,7 @@ function hurtMon(m, dmg, uid) {
   ev({ k: 'dmg', x: m.x, y: m.y, v: dmg, c: '#ff5a4a' });
   const p = SIM.players.get(uid);
   if (!m.tgt && p && !p.pz) m.tgt = uid;
+  if (MT[m.type].dummy) { m.hp = m.mhp; m.dmg.clear(); return; } // imortal
   if (m.hp <= 0) killMon(m);
 }
 function killMon(m) {
@@ -206,11 +215,12 @@ function monAttack(m, p) {
   const t = MT[m.type];
   m.atkT = 0.35;
   if (t.proj) ev({ k: 'proj', f: t.proj, x: m.x, y: m.y - 0.4, x1: p.x, y1: p.y - 0.5 });
+  if (t.dummy) { hurtPlayer(p, 1, t.name, true); return; }
   if (R() < 0.12) { ev({ k: 'txt', x: p.x, y: p.y, v: 'errou', c: '#bbbbbb' }); return; }
   hurtPlayer(p, t.atk * (0.5 + R() * 0.5), t.name);
 }
-function hurtPlayer(p, raw, src) {
-  const dmg = Math.max(1, Math.round(raw * (1 - VOC[p.voc].armor * 0.5) - p.lvl * 0.2));
+function hurtPlayer(p, raw, src, fixed) {
+  const dmg = fixed ? 1 : Math.max(1, Math.round(raw * (1 - VOC[p.voc].armor * 0.5) / defDiv(p.sk) - p.lvl * 0.2));
   ev({ k: 'dmg', x: p.x, y: p.y, v: dmg, c: '#ff2020', pl: 1 });
   sendTo(p.uid, { t: 'hit', dmg, src });
 }
@@ -245,7 +255,13 @@ function hostTick(dt) {
     if (!near) { m.mv = false; m.tgt = null; continue; }
     m.atkT = Math.max(0, m.atkT - dt); m.acd -= dt; m.scan -= dt; m.spc -= dt;
     let p = m.tgt ? SIM.players.get(m.tgt) : null;
-    if (p && (p.dead || p.pz || dist(m, p) > 14)) { p = null; m.tgt = null; }
+    if (p && (p.dead || p.pz || dist(m, p) > (t.dummy ? 3.2 : 14))) { p = null; m.tgt = null; }
+    if (t.dummy) { // boneco: parado, só revida
+      if (!p && m.scan <= 0) { m.scan = 0.5; let bd = t.aggro; for (const q of plist) { if (q.dead || q.pz) continue; const d = dist(m, q); if (d < bd) { bd = d; p = q; } } if (p) m.tgt = p.uid; }
+      if (p) { m.face = p.x >= m.x ? 1 : -1; if (dist(m, p) <= t.range + 0.6 && m.acd <= 0) { m.acd = t.aspd; monAttack(m, p); } }
+      m.mv = false;
+      continue;
+    }
     if (!p && m.scan <= 0) {
       m.scan = 0.4;
       let bd = t.aggro;

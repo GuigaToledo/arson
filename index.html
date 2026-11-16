@@ -104,7 +104,48 @@
   .note { text-align: center; color: var(--muted); font-size: 11px; margin-top: 6px; }
   #cont { text-align: center; } #contInfo { margin: 4px 0 4px; font-size: 14px; }
   #ver { position: fixed; right: 10px; bottom: 8px; font-size: 10px; color: rgba(255,255,255,.3); z-index: 11; }
-  @media (max-width: 700px) { #stat { width: 170px; } #mini { width: 110px; height: 110px; } #net { top: 128px; width: 110px; } .slot { width: 40px; height: 40px; } .slot canvas { width: 40px; height: 40px; } }
+  /* seleção de personagens */
+  .card { width: 640px; }
+  #slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .slot-card { border: 1px solid var(--line); border-radius: 12px; padding: 8px 8px 10px; text-align: center; background: rgba(0,0,0,.35); cursor: pointer; transition: border-color .15s, background .15s; }
+  .slot-card canvas { display: block; margin: 0 auto; }
+  .slot-card.sel { border-color: var(--fire); background: rgba(80,30,10,.45); box-shadow: inset 0 0 0 1px var(--fire); }
+  .sc-voc { font: bold 15px Georgia, serif; color: var(--fire2); }
+  .sc-name { margin: 6px 0 4px; text-align: center; padding: 7px 6px !important; }
+  .sc-info { min-height: 34px; font-size: 12px; } .sc-info small { color: var(--muted); font-size: 10px; }
+  .slot-card .go { margin-top: 6px; padding: 9px; font-size: 13px; letter-spacing: 2px; }
+  .slot-card:not(.sel) .go { filter: grayscale(.7) brightness(.7); }
+  .auto-opt { display: flex !important; gap: 8px; align-items: flex-start; text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; color: var(--text) !important; margin: 10px 0 0 !important; cursor: pointer; }
+  .auto-opt input, .m-opt input[type=checkbox] { width: auto !important; margin-top: 2px; accent-color: var(--fire); }
+  .sel-foot { display: flex; gap: 6px; margin-top: 10px; } .sel-foot .btn { font-size: 11px; padding: 7px 6px; }
+  /* menu do jogo */
+  #menu { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, 94vw); max-height: 90vh; overflow-y: auto; padding: 14px 18px; z-index: 7; pointer-events: auto; }
+  .m-tabs { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .m-tabs button { background: transparent; border: 0; color: var(--muted); font: bold 13px Verdana, sans-serif; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+  .m-tabs button.on { color: var(--fire2); background: rgba(255,150,60,.12); }
+  .m-tabs .x { margin-left: auto; }
+  .m-char { margin-bottom: 8px; font-size: 14px; }
+  .sk { margin: 8px 0 10px; } .sk-h { display: flex; justify-content: space-between; align-items: baseline; }
+  .sk-lv { font: bold 20px Georgia, serif; color: var(--fire2); }
+  .sk-bar { height: 12px; margin: 3px 0 2px; } .sk-bar > i { background: linear-gradient(90deg, #ff9a3a, #ffe066); } .sk-bar > span { line-height: 12px; font-size: 9px; }
+  .sk small, .m-opt small { color: var(--muted); font-size: 11px; display: block; }
+  .m-note { color: var(--muted); font-size: 11px; margin: 10px 0; line-height: 1.5; }
+  .m-opt { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .m-opt > span { flex: 1; }
+  .m-opt select, .m-opt input[type=range] { background: rgba(0,0,0,.5); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px; font: inherit; }
+  .m-foot { margin-top: 14px !important; }
+  /* toque */
+  .tbtn { pointer-events: auto; width: 46px; height: 46px; border-radius: 50%; border: 1px solid rgba(255,200,150,.3); background: rgba(14,10,8,.6); color: var(--text); font-size: 20px; cursor: pointer; }
+  #bMenu { left: 252px; top: 14px; width: 38px; height: 38px; font-size: 18px; border-radius: 10px; }
+  .touch-only { visibility: hidden; } body.touch.playing .touch-only { visibility: visible; }
+  #joy { left: 28px; bottom: 28px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.15); pointer-events: auto; touch-action: none; }
+  #joyK { position: absolute; left: 40px; top: 40px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,200,150,.35); border: 2px solid rgba(255,220,180,.5); }
+  #tbtns { right: 20px; bottom: 96px; display: flex; flex-direction: column; gap: 10px; }
+  body.touch #feed { bottom: 170px; } body.touch #hint { display: none; }
+  body.auto .pot { box-shadow: inset 0 0 0 1px rgba(255,210,60,.5); }
+  @media (max-width: 700px) {
+    #slots { grid-template-columns: 1fr 1fr 1fr; gap: 5px; } .slot-card canvas { width: 80px; height: 100px; } .sc-voc { font-size: 12px; } .card { padding: 14px 10px; } .logo { font-size: 48px; }
+    #bMenu { left: 192px; } #stat { width: 170px; } #mini { width: 110px; height: 110px; } #net { top: 128px; width: 110px; } .slot { width: 40px; height: 40px; } .slot canvas { width: 40px; height: 40px; } }
 </style>
 </head>
 <body>
@@ -134,6 +175,10 @@
 <div id="toast"></div>
 <div id="hint" class="hud">H · ajuda &nbsp; Enter · chat</div>
 <div id="dlg" class="glass" hidden></div>
+<div id="menu" class="glass" hidden></div>
+<button id="bMenu" class="hud tbtn mbtn" title="Menu (Esc)">☰</button>
+<div id="joy" class="hud touch-only"><div id="joyK"></div></div>
+<div id="tbtns" class="hud touch-only"><button id="bTarget" class="tbtn">◎</button><button id="bChat" class="tbtn">💬</button></div>
 <div id="help" class="glass" hidden>
   <h2>Controles</h2>
   <table>
@@ -145,7 +190,9 @@
     <tr><td>Enter</td><td>abrir o chat · Enter de novo envia e fecha</td></tr>
     <tr><td>Roda do mouse / + −</td><td>zoom</td></tr>
     <tr><td>M</td><td>mostrar/ocultar minimapa</td></tr>
-    <tr><td>Esc</td><td>soltar alvo / fechar janelas</td></tr>
+    <tr><td>Esc</td><td>soltar alvo / fechar janelas / abrir menu</td></tr>
+    <tr><td>K</td><td>habilidades (magia, defesa, espada, distância)</td></tr>
+    <tr><td>Controle Xbox</td><td>analógico anda · A alvo · B/X poções · Y cura · LB/RB/LT/RT magias 1–4 · Start menu</td></tr>
   </table>
   <p>Com um alvo selecionado, as magias vão nele. Sem alvo, cones e áreas miram no cursor do mouse. O ataque básico é automático quando o alvo está ao alcance. Na cidade (Cinzaforte) ninguém ataca. Fale "oi" perto de Brann (poções) e Lira (cura e tarefas).</p>
 </div>
@@ -154,25 +201,11 @@
   <div class="card">
     <div class="logo">ARSON</div>
     <div class="tag">As terras queimam. Só os fortes renascem das cinzas.</div>
-    <div id="cont" hidden>
-      <div class="note">Continuar como</div>
-      <div id="contInfo"></div>
-      <button class="go" id="btnCont">JOGAR</button>
-      <button class="btn" id="btnNovo" style="width:100%;margin-top:8px">Novo personagem</button>
-    </div>
-    <form id="novo" autocomplete="off">
-      <label for="nome">Nome do personagem</label>
-      <input id="nome" maxlength="16" required>
-      <label>Vocação</label>
-      <div class="vocs">
-        <div class="voc sel" data-v="guerreiro"><canvas width="110" height="140"></canvas><b>Guerreiro</b><small>vida e defesa</small></div>
-        <div class="voc" data-v="mago"><canvas width="110" height="140"></canvas><b>Mago</b><small>fogo e raios</small></div>
-        <div class="voc" data-v="arqueiro"><canvas width="110" height="140"></canvas><b>Arqueiro</b><small>longa distância</small></div>
-      </div>
-      <button class="go" type="submit" id="formBtn">ENTRAR NO MUNDO</button>
-      <div id="err"></div>
-      <div class="note">Todos os jogadores estão no mesmo mundo. Seu progresso fica salvo neste navegador.</div>
-    </form>
+    <div id="slots"></div>
+    <div id="err"></div>
+    <label class="auto-opt"><input type="checkbox" id="autoMode"> <span><b>Modo automático</b> — para celular ou controle de Xbox: poções infinitas, cura e magias automáticas</span></label>
+    <div class="sel-foot"><button class="btn" id="selExp">Exportar progresso</button><button class="btn" id="selImp">Importar arquivo</button><button class="btn" id="selPaste">Colar código</button></div>
+    <div class="note">Todos jogam no mesmo mundo. Cada personagem salva sozinho neste navegador.</div>
   </div>
 </div>
 <div id="ver"></div>
@@ -183,5 +216,6 @@
 <script src="js/net.js"></script>
 <script src="js/host.js"></script>
 <script src="js/main.js"></script>
+<script src="js/ui.js"></script>
 </body>
 </html>

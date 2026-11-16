@@ -140,19 +140,22 @@ function groundColor(u, v, ix, iy) {
 const CH = 8, CPX = CH * TS;
 const chunkCache = new Map();
 function chunkKey(cx, cy) { return cx * 1000 + cy; }
+let CQ = 1; // resolução do chão (1 = cheia, 0.5 = metade)
 function buildChunk(cx, cy) {
-  const c = mk(CPX, CPX), g = c.getContext('2d');
-  const img = g.createImageData(CPX, CPX), d = img.data;
+  const N = Math.round(CPX * CQ), pt = TS * CQ;
+  const c = mk(N, N), g = c.getContext('2d');
+  const img = g.createImageData(N, N), d = img.data;
   const bx = cx * CH, by = cy * CH;
   let i = 0;
-  for (let py = 0; py < CPX; py++) {
-    const v = by + (py + 0.5) / TS;
-    for (let px = 0; px < CPX; px++) {
-      groundColor(bx + (px + 0.5) / TS, v, cx * CPX + px, cy * CPX + py);
+  for (let py = 0; py < N; py++) {
+    const v = by + (py + 0.5) / pt;
+    for (let px = 0; px < N; px++) {
+      groundColor(bx + (px + 0.5) / pt, v, cx * N + px, cy * N + py);
       d[i] = OR; d[i + 1] = OG; d[i + 2] = OB; d[i + 3] = 255; i += 4;
     }
   }
   g.putImageData(img, 0, 0);
+  g.scale(CQ, CQ);
   // detalhes
   for (let ty = by; ty < by + CH; ty++) for (let tx = bx; tx < bx + CH; tx++) {
     const t = tileAt(tx, ty), ox = (tx - bx) * TS, oy = (ty - by) * TS, r = prng(tx * 7919 + ty * 104729 + 1);
@@ -438,7 +441,32 @@ const LOOKS = {
   salamandra: { type: 'quad', len: 58, h: 12, leg: 6, head: 9, col: '#d4521a', belly: '#ffb03a', tail: 'lizard', tailCol: '#c4461a', ear: 'none', eye: '#1a0a04', spots: '#5a1a08', lizard: true },
   golem: { type: 'golem' },
   arson: { type: 'boss' },
+  boneco: { type: 'dummy' },
 };
+function drawDummy(g, atk) {
+  const tilt = atk ? Math.sin(atk * Math.PI) * 0.18 : 0;
+  g.fillStyle = 'rgba(0,0,0,.2)'; g.beginPath(); g.ellipse(0, -1, 10, 3, 0, 0, 7); g.fill();
+  g.fillStyle = lg(g, -3, 0, 3, 0, [[0, '#5e3f24'], [1, '#2e1d10']]); g.fillRect(-3, -40, 6, 40);
+  g.strokeStyle = OUT; g.lineWidth = 1; g.strokeRect(-3, -40, 6, 40);
+  g.save(); g.translate(0, -30); g.rotate(tilt);
+  // braços (travessa)
+  g.fillStyle = lg(g, 0, -34, 0, -28, [[0, '#7a5230'], [1, '#4a2e17']]); g.fillRect(-24, -34, 48, 6); g.strokeRect(-24, -34, 48, 6);
+  for (const sx of [-1, 1]) { g.strokeStyle = '#d9b860'; g.lineWidth = 2; for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(sx * 24, -33 + i * 1.5); g.lineTo(sx * (28 + i), -35 + i * 3); g.stroke(); } }
+  // corpo de palha
+  g.fillStyle = lg(g, -14, 0, 14, 0, [[0, '#e8cc78'], [0.5, '#c9a64e'], [1, '#8a6e2a']]);
+  g.beginPath(); g.ellipse(0, -18, 14, 20, 0, 0, 7); g.fill(); g.strokeStyle = OUT; g.lineWidth = 1.3; g.stroke();
+  g.strokeStyle = 'rgba(120,90,30,.6)'; g.lineWidth = 1; for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(-10 + i * 2.5, -34); g.lineTo(-11 + i * 2.6, -2); g.stroke(); }
+  g.strokeStyle = '#6b4422'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(-13, -24); g.lineTo(13, -24); g.moveTo(-12, -10); g.lineTo(12, -10); g.stroke();
+  // alvo no peito
+  for (const [r, c] of [[8, '#e8e2d0'], [5.5, '#b3261e'], [3, '#e8e2d0'], [1.4, '#b3261e']]) { g.fillStyle = c; g.beginPath(); g.arc(0, -18, r, 0, 7); g.fill(); }
+  // cabeça de saco
+  g.fillStyle = rg(g, -3, -48, 1, 0, -45, 11, [[0, '#e6d6b0'], [1, '#a8936a']]); g.beginPath(); g.arc(0, -45, 10, 0, 7); g.fill(); g.strokeStyle = OUT; g.lineWidth = 1.3; g.stroke();
+  g.strokeStyle = '#3a2a1a'; g.lineWidth = 1.8;
+  for (const ex of [-4, 4]) { g.beginPath(); g.moveTo(ex - 2, -48); g.lineTo(ex + 2, -44); g.moveTo(ex + 2, -48); g.lineTo(ex - 2, -44); g.stroke(); }
+  g.beginPath(); g.moveTo(-4, -40); g.lineTo(4, -40); g.stroke();
+  g.strokeStyle = '#8a6e2a'; g.lineWidth = 2; g.beginPath(); g.moveTo(-5, -54); g.lineTo(-7, -59); g.moveTo(0, -55); g.lineTo(0, -60); g.moveTo(5, -54); g.lineTo(7, -59); g.stroke();
+  g.restore();
+}
 
 function limb(g, x1, y1, x2, y2, w, col, out) {
   g.lineCap = 'round';
@@ -714,6 +742,7 @@ function getFrame(look, dir, fi) {
   if (L.type === 'human') drawHuman(g, L, ddir, ph, atk);
   else if (L.type === 'quad') drawQuad(g, L, ph, atk);
   else if (L.type === 'golem') drawGolem(g, ph, atk);
+  else if (L.type === 'dummy') drawDummy(g, atk);
   frameCache.set(key, tmp);
   return tmp;
 }

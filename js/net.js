@@ -98,6 +98,12 @@ function hostAccept(c) {
   c.on('close', gone);
   c.on('error', gone);
 }
+function netStop() {
+  ++NET.gen;
+  killPeer();
+  NET.ready = false; NET.isHost = false; NET.offline = false; NET.status = 'desconectado';
+  SIM.on = false;
+}
 // --- envio
 function toHost(msg) {
   if (!NET.ready) return;

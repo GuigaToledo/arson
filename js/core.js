@@ -2,7 +2,7 @@
 // ============================================================
 //  ARSON — núcleo: ruído, mapa, dados do jogo, colisão
 // ============================================================
-const VERSION = '0.2.0';
+const VERSION = '0.3.0';
 const TS = 64; // pixels de arte por tile
 
 function hash2(x, y, s) {
@@ -192,7 +192,23 @@ const MT = {
   salamandra: { name: 'Salamandra', hp: 260, atk: 26, def: 4, xp: 160, spd: 3.0, range: 3.5, aspd: 1.7, gold: [20, 50], pot: 0.2, proj: 'fogo', r: 0.35, aggro: 7 },
   golem: { name: 'Golem de Brasa', hp: 520, atk: 40, def: 8, xp: 380, spd: 1.9, range: 1.2, aspd: 2.0, gold: [40, 90], pot: 0.3, r: 0.45, aggro: 6 },
   arson: { name: 'Arson, o Coração em Chamas', hp: 4000, atk: 70, def: 10, xp: 4000, spd: 2.2, range: 1.6, aspd: 1.5, gold: [500, 1000], pot: 1, boss: true, respawn: 600, r: 0.7, aggro: 8 },
+  boneco: { name: 'Boneco de Treino', hp: 1000, atk: 1, def: 0, xp: 0, spd: 0, range: 1.3, aspd: 2, gold: [0, 0], pot: 0, r: 0.35, aggro: 2.6, dummy: true },
 };
+// bonecos de treino: do lado de fora do portão norte
+const DUMMIES = [[CX - 5.5, CY - 11.5], [CX - 3.5, CY - 11.5], [CX + 4.5, CY - 11.5], [CX + 6.5, CY - 11.5]];
+
+// ------------------------------------------------------------
+//  Habilidades (sobem sem limite)
+// ------------------------------------------------------------
+const SKILLS = ['magia', 'defesa', 'espada', 'distancia'];
+const SKN = { magia: 'Magia', defesa: 'Defesa', espada: 'Espada', distancia: 'Distância' };
+const SKV = { guerreiro: ['espada', 'magia', 'defesa'], mago: ['magia', 'defesa'], arqueiro: ['distancia', 'magia', 'defesa'] };
+const PRIM = { guerreiro: 'espada', mago: 'magia', arqueiro: 'distancia' };
+const skNeed = (k, l) => Math.round({ magia: 30, defesa: 10, espada: 12, distancia: 12 }[k] * Math.pow(l, 1.5));
+// multiplicadores de força (sk = { magia, defesa, espada, distancia } em níveis)
+const atkMult = (voc, sk) => 1 + 0.04 * ((sk && sk[PRIM[voc]]) || 1);
+const spellMult = (voc, sk) => voc === 'mago' ? 1 + 0.06 * ((sk && sk.magia) || 1) : 1 + 0.03 * ((sk && sk.magia) || 1) + 0.03 * ((sk && sk[PRIM[voc]]) || 1);
+const defDiv = sk => 1 + 0.04 * ((sk && sk.defesa) || 1);
 const xpToReach = l => l <= 1 ? 0 : Math.round(60 * Math.pow(l - 1, 2.2));
 function levelFor(xp) { let l = 1; while (xpToReach(l + 1) <= xp) l++; return l; }
 const maxHpOf = (voc, lvl) => VOC[voc].hp0 + VOC[voc].hpL * (lvl - 1);
