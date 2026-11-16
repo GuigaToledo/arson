@@ -85,7 +85,12 @@ function renderMenu() {
     h += `<div class="m-note">Força: ataque básico ×${atkMult(ME.voc, sk).toFixed(2)} · magias ×${spellMult(ME.voc, sk).toFixed(2)} · dano recebido ÷${defDiv(sk).toFixed(2)}<br>Dica: os bonecos de treino fora do portão norte sobem todas as habilidades sem risco.</div>`;
   } else if (menuTab === 'config') {
     const s = STORE.settings;
-    h += `<label class="m-opt"><input type="checkbox" id="optAuto" ${s.auto ? 'checked' : ''}> <span><b>Modo automático</b><small>Poções infinitas, poção de mana automática, cura em 50% de vida, poção de vida em 25% e magias de ataque assim que recarregam. Ideal para celular e controle.</small></span></label>
+    h += `<label class="m-opt"><input type="checkbox" id="optAuto" ${s.auto ? 'checked' : ''}> <span><b>Modo automático</b><small>Poções infinitas e magias de ataque assim que recarregam. Ideal para celular e controle. Ajuste a cura e as poções abaixo.</small></span></label>
+      <div class="m-sub">
+        ${autoRow('healOn', 'heal', 'Magia de cura', 'quando a vida chegar a', '#5dff7a')}
+        ${autoRow('potHpOn', 'potHp', 'Poção de vida', 'quando a vida chegar a', '#ff6a5a')}
+        ${autoRow('potMpOn', 'potMp', 'Poção de mana', 'quando a mana chegar a', '#6aa8ff')}
+      </div>
       <div class="m-opt"><span><b>Qualidade gráfica</b><small>Automática ajusta sozinha para o seu computador. Atual: <b>${Q.nome}</b>.<br>Detectado: ${esc(HW.gpu || 'placa de vídeo desconhecida')} · ${HW.cores} núcleos${HW.mem ? ' · ' + HW.mem + ' GB' : ''} · monitor ${HW.hz} Hz</small></span>
       <select id="optQ">${[['auto', 'Automática'], ['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa']].map(([v, n]) => `<option value="${v}" ${s.quality === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <label class="m-opt"><input type="checkbox" id="optMini" ${miniOn ? 'checked' : ''}> <span><b>Minimapa</b></span></label>
@@ -99,10 +104,19 @@ function renderMenu() {
   const box = $('menu'); box.innerHTML = h;
   box.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { menuTab = b.dataset.tab; renderMenu(); });
   box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => menuAct(b.dataset.act));
+  box.querySelectorAll('[data-ac]').forEach(el => {
+    const k = el.dataset.ac, A = STORE.settings.autoCfg;
+    if (el.type === 'checkbox') el.onchange = () => { A[k] = el.checked; writeStore(); };
+    else el.oninput = () => { A[k] = Number(el.value); const o = box.querySelector(`[data-out="${k}"]`); if (o) o.textContent = el.value + '%'; writeStore(); };
+  });
   const oa = $('optAuto'); if (oa) oa.onchange = () => { STORE.settings.auto = oa.checked; document.body.classList.toggle('auto', oa.checked); saveGame(); toast(oa.checked ? 'Modo automático ligado' : 'Modo automático desligado'); };
   const oq = $('optQ'); if (oq) oq.onchange = () => { STORE.settings.quality = oq.value; applyQuality(oq.value === 'auto' ? autoQualityStart() : oq.value); saveGame(); renderMenu(); };
   const om = $('optMini'); if (om) om.onchange = () => setMini(om.checked);
   const oz = $('optZoom'); if (oz) oz.oninput = () => setZoom(Number(oz.value));
+}
+function autoRow(onK, pctK, name, when, col) {
+  const A = STORE.settings.autoCfg;
+  return `<div class="ac-row"><label><input type="checkbox" data-ac="${onK}" ${A[onK] ? 'checked' : ''}> <b style="color:${col}">${name}</b></label><span class="ac-when">${when} <b data-out="${pctK}">${A[pctK]}%</b></span><input type="range" min="5" max="95" step="5" value="${A[pctK]}" data-ac="${pctK}"></div>`;
 }
 function skRow(name, lv, f, txt, tip) {
   return `<div class="sk"><div class="sk-h"><b>${name}</b><span class="sk-lv">${lv}</span></div><div class="bar sk-bar"><i style="width:${clamp(f * 100, 0, 100).toFixed(1)}%"></i><span>${txt}</span></div><small>${tip}</small></div>`;

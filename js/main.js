@@ -106,6 +106,7 @@ function normalizeStore(st) {
     if (!st.chars[v].uid) st.chars[v].uid = newUid();
   }
   st.settings = Object.assign({ auto: false, quality: 'auto', mini: true, zoom: 64 }, st.settings || {});
+  st.settings.autoCfg = Object.assign({ healOn: true, heal: 50, potHpOn: true, potHp: 25, potMpOn: true, potMp: 12 }, st.settings.autoCfg || {});
   return st;
 }
 function loadStore() {
@@ -343,21 +344,22 @@ function usePot(kind) {
 // ------------------------------------------------------------
 //  Modo automático (celular / controle)
 // ------------------------------------------------------------
+function autoCfg() { return STORE.settings.autoCfg; }
 function autoPlay(dt) {
   ME.autoT -= dt; if (ME.autoT > 0 || ME.dead) return;
   ME.autoT = 0.15;
   const list = SPELLS[ME.voc], heal = list.find(s => s.type === 'heal');
   const atk = list.filter(s => s.type !== 'heal' && ME.lvl >= s.lvl);
-  const hpF = ME.hp / maxHp();
-  // 25%: poção de vida além da cura
-  if (hpF <= 0.25) usePot('hp');
-  // 50%: magia de cura (toma mana antes se faltar)
-  if (hpF <= 0.5 && (ME.cds[heal.k] || 0) <= 0) {
-    if (ME.mp < heal.mana) usePot('mp');
+  const hpF = ME.hp / maxHp(), A = autoCfg();
+  // poção de vida (além da cura)
+  if (A.potHpOn && hpF * 100 <= A.potHp) usePot('hp');
+  // magia de cura (toma mana antes se faltar e a poção de mana estiver ligada)
+  if (A.healOn && hpF * 100 <= A.heal && (ME.cds[heal.k] || 0) <= 0) {
+    if (ME.mp < heal.mana && A.potMpOn) usePot('mp');
     if (ME.mp >= heal.mana) { castSlot(list.indexOf(heal)); return; }
   }
   const minMana = Math.min(heal.mana, ...atk.map(s => s.mana));
-  if (ME.mp < minMana || ME.mp < maxMp() * 0.12) usePot('mp');
+  if (A.potMpOn && (ME.mp < minMana || ME.mp * 100 / maxMp() <= A.potMp)) usePot('mp');
   if (isPZ(ME.x, ME.y)) return;
   // mira sempre o inimigo mais próximo, inclusive os distantes (até 12 quadrados)
   let tg = nearestMon(ME.x, ME.y, 12);
@@ -370,7 +372,7 @@ function autoPlay(dt) {
     if ((ME.cds[s.k] || 0) > 0) continue;
     const reach = s.type === 'area' && s.at === 'self' ? s.radius + MT[tg.type].r : s.type === 'cone' ? s.range : s.range;
     if (d > reach + 0.3) continue;
-    if (ME.mp < s.mana) { usePot('mp'); if (ME.mp < s.mana) continue; }
+    if (ME.mp < s.mana) { if (A.potMpOn) usePot('mp'); if (ME.mp < s.mana) continue; }
     castSlot(list.indexOf(s));
     return;
   }
