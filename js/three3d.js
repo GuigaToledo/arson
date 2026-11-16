@@ -433,7 +433,7 @@ function stepParticles(sys, dt) {
 // ------------------------------------------------------------
 //  Personagens animados
 // ------------------------------------------------------------
-function makeActor(type, col) {
+function makeActor(type, col, parent) {
   const d = MODEL_DEF[type]; if (!d) return null;
   const m = THREE.SkeletonUtils.clone(R3.models[d.f]);
   m.scale.setScalar(d.s * CHAR_SCALE);
@@ -452,7 +452,7 @@ function makeActor(type, col) {
     const bone = m.getObjectByName(slot), src = R3.weapons[w];
     if (bone && src) { const c = src.clone(); c.traverse(o => { if (o.isMesh) o.castShadow = true; }); bone.add(c); }
   }
-  const root = new THREE.Group(); root.add(m); scene.add(root);
+  const root = new THREE.Group(); root.add(m); (parent || scene).add(root);
   const mixer = new THREE.AnimationMixer(m);
   const a = { type, root, m, mixer, d, clips: R3.clips[d.rig], act: null, cur: '', lock: 0, yaw: 0, px: null, pz: null, dying: false, dieT: 0 };
   if (!d.still) play(a, 'Idle_A');
@@ -472,7 +472,7 @@ function play(a, name, once, dur) {
   if (once) a.lock = dur || clip.duration;
   return true;
 }
-function disposeActor(a) { scene.remove(a.root); a.mixer.stopAllAction(); }
+function disposeActor(a) { if (a.root.parent) a.root.parent.remove(a.root); a.mixer.stopAllAction(); }
 function actorFor(key, type, col) {
   let a = ACT.get(key);
   const ck = col ? col.join(',') : '';

@@ -13,7 +13,7 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0806; color: var(--text); font: 13px/1.4 Verdana, Geneva, sans-serif; user-select: none; }
   #gl, #cv { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; }
   #cv { cursor: crosshair; }
-  body:not(.playing) #gl { visibility: hidden; }
+  body:not(.playing):not(.title3d) #gl { visibility: hidden; }
   .hud { position: fixed; pointer-events: none; display: none; }
   body.playing .hud { display: block; }
   .glass { background: var(--glass); border: 1px solid var(--line); border-radius: 10px; backdrop-filter: blur(4px); }
@@ -234,7 +234,6 @@
     <div class="tag">As terras queimam. Só os fortes renascem das cinzas.</div>
     <div id="slots"></div>
     <div id="err"></div>
-    <div class="note">Alvo, magias, cura e poções automáticas: dentro do jogo, em Menu → Automação.</div>
     <div class="sel-foot"><button class="btn" id="selExp">Exportar progresso</button><button class="btn" id="selImp">Importar arquivo</button><button class="btn" id="selPaste">Colar código</button></div>
     <div class="note">Todos jogam no mesmo mundo. Cada personagem salva sozinho neste navegador.</div>
     <div class="note" id="load3d">Carregando gráficos 3D…</div>
@@ -247,14 +246,15 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/SkeletonUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/BufferGeometryUtils.js"></script>
-<script src="js/core.js?v=0.6.0"></script>
-<script src="js/art.js?v=0.6.0"></script>
-<script src="js/gl.js?v=0.6.0"></script>
-<script src="js/net.js?v=0.6.0"></script>
-<script src="js/host.js?v=0.6.0"></script>
-<script src="js/main.js?v=0.6.0"></script>
-<script src="js/three3d.js?v=0.6.0"></script>
-<script src="js/title.js?v=0.6.0"></script>
-<script src="js/ui.js?v=0.6.0"></script>
+<script src="js/core.js?v=0.6.1"></script>
+<script src="js/art.js?v=0.6.1"></script>
+<script src="js/gl.js?v=0.6.1"></script>
+<script src="js/net.js?v=0.6.1"></script>
+<script src="js/host.js?v=0.6.1"></script>
+<script src="js/main.js?v=0.6.1"></script>
+<script src="js/title3d.js?v=0.6.1"></script>
+<script src="js/three3d.js?v=0.6.1"></script>
+<script src="js/title.js?v=0.6.1"></script>
+<script src="js/ui.js?v=0.6.1"></script>
 </body>
 </html>

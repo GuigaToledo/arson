@@ -160,6 +160,7 @@ function skGain(k, amt) {
 }
 
 function startGame(voc) {
+  if (typeof hideTitle3D === 'function') hideTitle3D();
   const sv = STORE.chars[voc];
   ME = {
     uid: sv.uid, name: sv.name, voc, xp: sv.xp || 0, gold: sv.gold != null ? sv.gold : 20,

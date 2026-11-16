@@ -45,7 +45,9 @@ function frame(now) {
   if (playing) updateLocal(dt);
   updateRemote(dt);
   updateFx(dt, now);
-  if (playing) render(now, dt); else drawTitle(now);
+  if (playing) render(now, dt);
+  else if (R3.ready) { document.body.classList.add('title3d'); renderTitle3D(now, dt); }
+  else drawTitle(now);
   if (playing) { updHud(now); drawMini(); perfWatch(dt); }
   requestAnimationFrame(frame);
 }
@@ -185,7 +187,7 @@ function renderSelect() {
   }).join('');
   box.querySelectorAll('.slot-card').forEach(cd => {
     const v = cd.dataset.v, cvs = cd.querySelector('canvas'), g = cvs.getContext('2d');
-    cd._draw = t => { g.clearRect(0, 0, cvs.width, cvs.height); g.save(); g.translate(cvs.width / 2, cvs.height - 6); g.scale(1.35, 1.35); g.drawImage(getFrame(lookFor(v, STORE.chars[v].color), 2, cd.classList.contains('sel') ? 1 + Math.floor(t / 110) % 8 : 0), -FAX, -FAY, FW, FH); g.restore(); };
+    cd._draw = (t, dt) => { if (drawPreview3D(cvs, v, STORE.chars[v].color, cd.classList.contains('sel'), dt || 0.016)) return; g.clearRect(0, 0, cvs.width, cvs.height); g.save(); g.translate(cvs.width / 2, cvs.height - 6); g.scale(1.35, 1.35); g.drawImage(getFrame(lookFor(v, STORE.chars[v].color), 2, cd.classList.contains('sel') ? 1 + Math.floor(t / 110) % 8 : 0), -FAX, -FAY, FW, FH); g.restore(); };
     cd._draw(0);
     cd.querySelectorAll('.sw').forEach(sw => sw.onclick = ev => {
       ev.stopPropagation();
@@ -212,7 +214,12 @@ function renderSelect() {
     };
   });
 }
-(function selAnim(t) { if (!playing) document.querySelectorAll('.slot-card.sel').forEach(cd => cd._draw && cd._draw(t)); requestAnimationFrame(selAnim); })(0);
+let selLast = 0;
+(function selAnim(t) {
+  const dt = Math.min(0.05, (t - selLast) / 1000 || 0.016); selLast = t;
+  if (!playing) document.querySelectorAll(R3.ready ? '.slot-card' : '.slot-card.sel').forEach(cd => cd._draw && cd._draw(t, dt));
+  requestAnimationFrame(selAnim);
+})(0);
 
 // ------------------------------------------------------------
 //  Inicialização
@@ -229,7 +236,7 @@ function renderSelect() {
   renderSelect();
   // carrega o mundo 3D em segundo plano
   const lp = $('load3d');
-  load3D(p => { lp.textContent = `Carregando gráficos 3D… ${Math.round(p * 100)}%`; }).then(ok => { lp.textContent = ok ? '' : 'Gráficos 3D indisponíveis neste aparelho: usando 2D.'; if (ok) setTimeout(() => lp.remove(), 50); });
+  load3D(p => { lp.textContent = `Carregando gráficos 3D… ${Math.round(p * 100)}%`; }).then(ok => { lp.textContent = ok ? '' : 'Gráficos 3D indisponíveis neste aparelho: usando 2D.'; if (ok) { setTimeout(() => lp.remove(), 50); if (!playing) renderSelect(); } });
   // voltando de uma atualização automática: entra direto com o mesmo personagem
   try {
     const r = JSON.parse(sessionStorage.getItem('arson-resume') || 'null');
