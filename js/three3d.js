@@ -21,6 +21,7 @@ const MODEL_DEF = {
   sacerdotisa: { f: 'Cleric', rig: 'M', s: 1 },
 };
 const MODEL_BASE = (document.currentScript && document.currentScript.src) ? document.currentScript.src.replace(/js\/three3d\.js.*$/, 'models/') : 'models/';
+const CHAR_SCALE = 0.7; // personagens e monstros em relação ao cenário
 const RIG_FILES = { M: ['Rig_Medium_General', 'Rig_Medium_MovementBasic', 'Rig_Medium_CombatMelee', 'Rig_Medium_CombatRanged'], L: ['Rig_Large_General', 'Rig_Large_MovementBasic', 'Rig_Large_CombatMelee'] };
 const WEAPON_FILES = ['sword_1handed', 'shield_round', 'staff', 'bow_withString'];
 
@@ -39,7 +40,7 @@ function load3D(onProg) {
   }))).then(() => {
     for (const [type, d] of Object.entries(MODEL_DEF)) {
       const b = new THREE.Box3().setFromObject(R3.models[d.f]);
-      R3.hgt[type] = (b.max.y - b.min.y) * d.s;
+      R3.hgt[type] = (b.max.y - b.min.y) * d.s * CHAR_SCALE;
     }
     R3.ready = true; return true;
   }).catch(e => { console.warn('falha ao carregar modelos 3D:', e); R3.failed = true; return false; });
@@ -49,7 +50,7 @@ function load3D(onProg) {
 //  Cena
 // ------------------------------------------------------------
 let renderer, scene, camera, sun, hemi, groundMat, P3add, P3norm;
-const ACT = new Map(), FX3 = [], DEATHS = [], LIGHTS = [];
+const ACT = new Map(), FX3 = [], DEATHS = [], LIGHTS = [], CHUNKS = [];
 let _v, _ray, _plane;
 function init3D() {
   _v = new THREE.Vector3(); _ray = new THREE.Raycaster(); _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -64,16 +65,17 @@ function init3D() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x9cc3e6);
   scene.fog = new THREE.Fog(0x9cc3e6, 22, 46);
-  camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.3, 80);
+  camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.3, 60);
   hemi = new THREE.HemisphereLight(0xcfe3ff, 0x4a3a28, 0.75); scene.add(hemi);
   sun = new THREE.DirectionalLight(0xfff0d8, 2.1);
   sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
-  const sc = sun.shadow.camera; sc.left = -16; sc.right = 16; sc.top = 16; sc.bottom = -16; sc.near = 1; sc.far = 50;
+  const sc = sun.shadow.camera; sc.left = -11; sc.right = 11; sc.top = 11; sc.bottom = -11; sc.near = 1; sc.far = 40;
   sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.02;
   scene.add(sun); scene.add(sun.target);
-  for (let i = 0; i < 4; i++) { const l = new THREE.PointLight(0xff8a3a, 0, 6, 2); scene.add(l); LIGHTS.push(l); }
+  for (let i = 0; i < 2; i++) { const l = new THREE.PointLight(0xff8a3a, 0, 6, 2); scene.add(l); LIGHTS.push(l); }
   buildGround(); buildWorld();
   P3add = makeParticles(true); P3norm = makeParticles(false);
+  SKY = new THREE.Color(); SKY_DAY = new THREE.Color(0x9cc3e6); SKY_VOLC = new THREE.Color(0x2a0c06);
   R3.ok = true;
   addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
   return true;
@@ -122,7 +124,7 @@ float gH = 0., gEmis = 0., gRough = .92;
 float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vn(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3. - 2. * f);
   return mix(mix(h21(i), h21(i + vec2(1., 0.)), u.x), mix(h21(i + vec2(0., 1.)), h21(i + vec2(1., 1.)), u.x), u.y); }
-float fbm(vec2 p){ float s = 0., a = .5; for (int i = 0; i < 4; i++){ s += a * vn(p); p = p * 2.03 + 17.1; a *= .5; } return s / .9375; }
+float fbm(vec2 p){ float s = 0., a = .5; for (int i = 0; i < 3; i++){ s += a * vn(p); p = p * 2.03 + 17.1; a *= .5; } return s / .875; }
 float raw(vec2 t){ if (t.x < 0. || t.y < 0. || t.x > 127. || t.y > 127.) return 3.; return floor(texture2D(uMap, (t + .5) / 128.).r * 255. + .5); }
 float grd(vec2 t){ if (t.x < 0. || t.y < 0. || t.x > 127. || t.y > 127.) return 0.; return floor(texture2D(uGrd, (t + .5) / 128.).r * 255. + .5); }
 bool sharpT(float r){ return r == 4. || r == 5. || r == 12.; }
@@ -136,7 +138,7 @@ vec3 groundColor(vec2 w){
     float rq = raw(tq);
     g = sharpT(rq) ? grd(tp) : grd(tq);
   }
-  float big = fbm(w * .22), t = uTime;
+  float big = vn(w * .22), t = uTime;
   vec3 col;
   if (g == 1.) {
     float d = texture2D(uDep, w / 128.).r * 4.25;
@@ -241,7 +243,7 @@ function treeGeo(pine, seed) {
   parts.push(colorize(trunk, () => hexRGB(0x5a3c22)));
   if (pine) {
     for (let i = 0; i < 4; i++) {
-      const c = new THREE.ConeGeometry(0.62 - i * 0.12, 0.75, 9, 1);
+      const c = new THREE.ConeGeometry(0.62 - i * 0.12, 0.75, 7, 1);
       c.translate(0, 0.65 + i * 0.42, 0);
       jiggle(c, 0.12, seed + i);
       parts.push(colorize(c, (x, y) => { const k = clamp((y - 0.6) / 2, 0, 1); return hexRGB(0x1d4a1b).map((v, j) => v * (0.75 + k * 0.6 + (r() - 0.5) * 0.15)); }));
@@ -249,7 +251,7 @@ function treeGeo(pine, seed) {
   } else {
     const blobs = [[0, 1.35, 0, 0.6], [0.35, 1.2, 0.15, 0.45], [-0.32, 1.22, -0.1, 0.46], [0.05, 1.68, -0.05, 0.42], [-0.1, 1.15, 0.36, 0.4], [0.15, 1.2, -0.38, 0.4]];
     for (const [x, y, z, s] of blobs) {
-      const b = new THREE.IcosahedronGeometry(s, 2);
+      const b = new THREE.IcosahedronGeometry(s, 1);
       jiggle(b, 0.28, seed * 3 + x * 10);
       b.translate(x, y, z);
       parts.push(colorize(b, (vx, vy) => { const k = clamp((vy - 0.8) / 1.2, 0, 1); const base = hexRGB(0x2e6a24); const n = 0.75 + k * 0.55 + (r() - 0.5) * 0.18; return [base[0] * n, base[1] * n, base[2] * n]; }));
@@ -288,8 +290,14 @@ function buildWorld() {
     else if (t === T.WALL) lists.wall.push([x, y]);
   }
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0 });
-  const inst = (geo, arr, fn, shadow) => {
+  const inst = (geo, all, fn, shadow) => {
+    const groups = new Map();
+    for (const p of all) { const k = Math.floor(p[0] / 16) * 100 + Math.floor(p[1] / 16); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p); }
+    for (const [k, arr] of groups) instChunk(geo, arr, fn, shadow, Math.floor(k / 100) * 16 + 8, (k % 100) * 16 + 8);
+  };
+  const instChunk = (geo, arr, fn, shadow, cx, cz) => {
     const m = new THREE.InstancedMesh(geo, mat, arr.length);
+    m.frustumCulled = false; CHUNKS.push({ m, cx, cz });
     const o = new THREE.Object3D(), col = new THREE.Color();
     arr.forEach(([x, y], i) => {
       const h = hash2(x, y, 302);
@@ -319,7 +327,7 @@ function buildWorld() {
   }, true);
   const wallMat = new THREE.MeshStandardMaterial({ map: brick, roughness: 0.9 });
   const wg = new THREE.BoxGeometry(1, 1.3, 1); wg.translate(0, 0.65, 0);
-  const wm = new THREE.InstancedMesh(wg, wallMat, lists.wall.length);
+  const wm = new THREE.InstancedMesh(wg, wallMat, lists.wall.length); wm.frustumCulled = false;
   const crenG = new THREE.BoxGeometry(0.3, 0.28, 0.3); crenG.translate(0, 1.44, 0);
   const crens = [];
   const o = new THREE.Object3D();
@@ -328,7 +336,7 @@ function buildWorld() {
     if ((x + y) % 2 === 0) crens.push([x + 0.5, y + 0.5]);
   });
   wm.castShadow = true; wm.receiveShadow = true; scene.add(wm);
-  const cm = new THREE.InstancedMesh(crenG, wallMat, crens.length);
+  const cm = new THREE.InstancedMesh(crenG, wallMat, crens.length); cm.frustumCulled = false;
   crens.forEach(([x, y], i) => { o.position.set(x, 0, y); o.updateMatrix(); cm.setMatrixAt(i, o.matrix); });
   cm.castShadow = true; scene.add(cm);
   buildProps();
@@ -428,11 +436,11 @@ function stepParticles(sys, dt) {
 function makeActor(type, col) {
   const d = MODEL_DEF[type]; if (!d) return null;
   const m = THREE.SkeletonUtils.clone(R3.models[d.f]);
-  m.scale.setScalar(d.s);
+  m.scale.setScalar(d.s * CHAR_SCALE);
   const tint = col && col[0] >= 0 && d.tintParts ? new THREE.Color(OUTFIT[col[0]]) : null;
   m.traverse(o => {
     if (!o.isMesh) return;
-    o.castShadow = true; o.frustumCulled = false;
+    o.castShadow = true; o.frustumCulled = true;
     if (d.tint || d.emis || (tint && d.tintParts.test(o.name))) {
       o.material = o.material.clone();
       if (d.tint) o.material.color.setHex(d.tint);
@@ -481,6 +489,11 @@ function driveActor(a, e, dt, opts) {
   a.px = x; a.pz = z;
   if (e.hurtT > 0) e.hurtT = Math.max(0, e.hurtT - dt);
   a.root.position.set(x, 0, z);
+  const far = Math.hypot(x - camT.x, z - camT.z);
+  a.root.visible = far < 17;
+  const sh = far < 9 && Q.shadows;
+  if (a.sh !== sh) { a.sh = sh; a.m.traverse(o => { if (o.isMesh) o.castShadow = sh; }); }
+  if (!a.root.visible) { a.lock -= dt; return; }
   let want = a.yaw;
   if (opts.face != null) want = opts.face;
   else if (sp > 0.3) want = Math.atan2(dx, dz);
@@ -626,7 +639,7 @@ function stepFx3(dt, t) {
 // ------------------------------------------------------------
 //  Quadro 3D
 // ------------------------------------------------------------
-let camT = { x: 0, z: 0 };
+let camT = { x: 0, z: 0 }, SKY, SKY_DAY, SKY_VOLC;
 function render3D(now, dt) {
   const t = now / 1000;
   R3.groundU.uTime.value = t % 1000;
@@ -664,7 +677,7 @@ function render3D(now, dt) {
   const fx = playing && ME ? ME.x : CX + 0.5, fz = playing && ME ? ME.y : CY + 0.5;
   camT.x += (fx - camT.x) * Math.min(1, dt * 10); camT.z += (fz - camT.z) * Math.min(1, dt * 10);
   if (Math.abs(fx - camT.x) > 6) { camT.x = fx; camT.z = fz; }
-  const dist = 9.5 * 84 / zoom, pitch = 0.98;
+  const dist = 8.6 * 84 / zoom, pitch = 1.0;
   let sx = 0, sz = 0; if (shake > 0) { sx = (Math.random() - 0.5) * shake * 0.01; sz = (Math.random() - 0.5) * shake * 0.01; }
   camera.position.set(camT.x + sx, Math.sin(pitch) * dist, camT.z + Math.cos(pitch) * dist + sz);
   camera.lookAt(camT.x + sx, 0.5, camT.z + sz);
@@ -673,9 +686,12 @@ function render3D(now, dt) {
   const vd = Math.hypot(camT.x - VX, camT.z - VY), amb = clamp((34 - vd) / 18, 0, 1);
   sun.intensity = 2.1 - amb * 1.4; sun.color.setRGB(1, 0.94 - amb * 0.35, 0.85 - amb * 0.6);
   hemi.intensity = 0.75 - amb * 0.35;
-  const sky = new THREE.Color(0x9cc3e6).lerp(new THREE.Color(0x2a0c06), amb);
-  scene.background = sky; scene.fog.color.copy(sky);
+  SKY.copy(SKY_DAY).lerp(SKY_VOLC, amb);
+  scene.background.copy(SKY); scene.fog.color.copy(SKY);
   sun.castShadow = Q.shadows;
+  const smap = qName === 'alta' ? 2048 : 1024;
+  if (sun.shadow.mapSize.x !== smap) { sun.shadow.mapSize.set(smap, smap); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+  for (const c of CHUNKS) c.m.visible = Math.abs(c.cx - camT.x) < 30 && Math.abs(c.cz - camT.z) < 26;
   renderer.render(scene, camera);
   // textos por cima (nomes, barras, números)
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
