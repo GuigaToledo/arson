@@ -73,7 +73,7 @@ function closeMenu() { $('menu').hidden = true; }
 function toggleMenu() { if ($('menu').hidden) openMenu(); else closeMenu(); }
 function renderMenu() {
   if (!ME) return;
-  const tabs = [['skills', 'Habilidades'], ['config', 'Configurações'], ['save', 'Progresso']];
+  const tabs = [['skills', 'Habilidades'], ['auto', 'Automação'], ['config', 'Configurações'], ['save', 'Progresso']];
   let h = `<div class="m-tabs">${tabs.map(([k, n]) => `<button data-tab="${k}" class="${k === menuTab ? 'on' : ''}">${n}</button>`).join('')}<button class="x" data-act="close">✕</button></div>`;
   if (menuTab === 'skills') {
     const a = xpToReach(ME.lvl), b = xpToReach(ME.lvl + 1);
@@ -83,16 +83,17 @@ function renderMenu() {
     for (const k of SKV[ME.voc]) { const [lv, pts] = ME.sk[k], need = skNeed(k, lv); h += skRow(SKN[k], lv, pts / need, `${Math.floor(pts)} / ${need}`, tips[k]); }
     const sk = skLv();
     h += `<div class="m-note">Força: ataque básico ×${atkMult(ME.voc, sk).toFixed(2)} · magias ×${spellMult(ME.voc, sk).toFixed(2)} · dano recebido ÷${defDiv(sk).toFixed(2)}<br>Dica: os bonecos de treino fora do portão norte sobem todas as habilidades sem risco.</div>`;
+  } else if (menuTab === 'auto') {
+    h += `<p class="m-note" style="margin-top:0">Ligue só o que quiser. Tudo vale na hora e fica salvo.</p>
+      ${autoToggle('tgtOn', 'Alvo automático', 'Mira sempre o inimigo mais próximo (até 12 quadrados).', '#ffd23a')}
+      ${autoToggle('atkOn', 'Magias de ataque automáticas', 'Lança as magias de ataque assim que recarregam, no alvo.', '#ff8a3a')}
+      ${autoRow('healOn', 'heal', 'Cura automática', 'quando a vida chegar a', '#5dff7a')}
+      ${autoRow('potHpOn', 'potHp', 'Poção de vida automática', 'quando a vida chegar a', '#ff6a5a')}
+      ${autoRow('potMpOn', 'potMp', 'Poção de mana automática', 'quando a mana chegar a', '#6aa8ff')}
+      ${autoToggle('infOn', 'Poções infinitas', 'As poções não acabam (pensado para celular e controle).', '#e9dccd')}`;
   } else if (menuTab === 'config') {
     const s = STORE.settings;
-    h += `<label class="m-opt"><input type="checkbox" id="optAuto" ${s.auto ? 'checked' : ''}> <span><b>Modo automático</b><small>Poções infinitas, mira no inimigo mais próximo e magias de ataque assim que recarregam. Ideal para celular e controle.</small></span></label>
-      <div class="m-opt m-head"><span><b>Cura e poções automáticas</b><small>Funcionam com ou sem o modo automático. Ligue ou desligue cada uma e escolha a porcentagem. Fora do modo automático, usa as poções do seu inventário.</small></span></div>
-      <div class="m-sub">
-        ${autoRow('healOn', 'heal', 'Magia de cura', 'quando a vida chegar a', '#5dff7a')}
-        ${autoRow('potHpOn', 'potHp', 'Poção de vida', 'quando a vida chegar a', '#ff6a5a')}
-        ${autoRow('potMpOn', 'potMp', 'Poção de mana', 'quando a mana chegar a', '#6aa8ff')}
-      </div>
-      <div class="m-opt"><span><b>Qualidade gráfica</b><small>Automática ajusta sozinha para o seu computador. Atual: <b>${Q.nome}</b>.<br>Detectado: ${esc(HW.gpu || 'placa de vídeo desconhecida')} · ${HW.cores} núcleos${HW.mem ? ' · ' + HW.mem + ' GB' : ''} · monitor ${HW.hz} Hz</small></span>
+    h += `      <div class="m-opt"><span><b>Qualidade gráfica</b><small>Automática ajusta sozinha para o seu computador. Atual: <b>${Q.nome}</b>.<br>Detectado: ${esc(HW.gpu || 'placa de vídeo desconhecida')} · ${HW.cores} núcleos${HW.mem ? ' · ' + HW.mem + ' GB' : ''} · monitor ${HW.hz} Hz</small></span>
       <select id="optQ">${[['auto', 'Automática'], ['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa']].map(([v, n]) => `<option value="${v}" ${s.quality === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <label class="m-opt"><input type="checkbox" id="optMini" ${miniOn ? 'checked' : ''}> <span><b>Minimapa</b></span></label>
       <div class="m-opt"><span><b>Zoom</b></span><input type="range" id="optZoom" min="40" max="140" value="${Math.round(zoom)}"></div>`;
@@ -107,13 +108,16 @@ function renderMenu() {
   box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => menuAct(b.dataset.act));
   box.querySelectorAll('[data-ac]').forEach(el => {
     const k = el.dataset.ac, A = STORE.settings.autoCfg;
-    if (el.type === 'checkbox') el.onchange = () => { A[k] = el.checked; writeStore(); };
+    if (el.type === 'checkbox') el.onchange = () => { A[k] = el.checked; if (k === 'infOn') document.body.classList.toggle('auto', el.checked); writeStore(); };
     else el.oninput = () => { A[k] = Number(el.value); const o = box.querySelector(`[data-out="${k}"]`); if (o) o.textContent = el.value + '%'; writeStore(); };
   });
-  const oa = $('optAuto'); if (oa) oa.onchange = () => { STORE.settings.auto = oa.checked; document.body.classList.toggle('auto', oa.checked); saveGame(); toast(oa.checked ? 'Modo automático ligado' : 'Modo automático desligado'); };
   const oq = $('optQ'); if (oq) oq.onchange = () => { STORE.settings.quality = oq.value; applyQuality(oq.value === 'auto' ? autoQualityStart() : oq.value); saveGame(); renderMenu(); };
   const om = $('optMini'); if (om) om.onchange = () => setMini(om.checked);
   const oz = $('optZoom'); if (oz) oz.oninput = () => setZoom(Number(oz.value));
+}
+function autoToggle(onK, name, desc, col) {
+  const A = STORE.settings.autoCfg;
+  return `<div class="ac-row ac-tg"><label><input type="checkbox" data-ac="${onK}" ${A[onK] ? 'checked' : ''}> <b style="color:${col}">${name}</b></label><small>${desc}</small></div>`;
 }
 function autoRow(onK, pctK, name, when, col) {
   const A = STORE.settings.autoCfg;
@@ -203,12 +207,10 @@ function renderSelect() {
       const n = inp.value.trim().replace(/\s+/g, ' ');
       if (!/^[A-Za-zÀ-ÿ ]{3,16}$/.test(n)) { $('err').textContent = `Dê um nome de 3 a 16 letras para o ${VOC[v].nome}.`; inp.focus(); return; }
       STORE.chars[v].name = n;
-      STORE.settings.auto = $('autoMode').checked;
       writeStore();
       startGame(v);
     };
   });
-  $('autoMode').checked = !!STORE.settings.auto;
 }
 (function selAnim(t) { if (!playing) document.querySelectorAll('.slot-card.sel').forEach(cd => cd._draw && cd._draw(t)); requestAnimationFrame(selAnim); })(0);
 
@@ -222,7 +224,6 @@ function renderSelect() {
   miniOn = STORE.settings.mini !== false; $('mini').style.display = miniOn ? '' : 'none';
   if (IS_MOBILE || navigator.maxTouchPoints > 0) document.body.classList.add('touch');
   setupTouch();
-  $('autoMode').onchange = () => { STORE.settings.auto = $('autoMode').checked; writeStore(); };
   $('selExp').onclick = downloadSave; $('selImp').onclick = pickImport; $('selPaste').onclick = pasteImport;
   $('ver').textContent = 'v' + VERSION;
   renderSelect();

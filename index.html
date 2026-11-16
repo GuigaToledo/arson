@@ -154,6 +154,8 @@
   .ac-row input[type=checkbox] { accent-color: var(--fire); }
   .ac-when { color: var(--muted); font-size: 11px; text-align: right; } .ac-when b { color: var(--text); }
   .ac-row input[type=range] { grid-column: 1 / 3; width: 100%; accent-color: var(--fire); }
+  .ac-row { padding: 8px 0; border-bottom: 1px solid var(--line); margin: 0; }
+  .ac-tg small { grid-column: 1 / 3; color: var(--muted); font-size: 11px; padding-left: 22px; }
   /* conexão */
   #conn { position: fixed; left: 50%; top: 60px; transform: translateX(-50%); z-index: 6; padding: 8px 14px; font-size: 12px; max-width: 92vw; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   #conn .spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255,200,120,.3); border-top-color: var(--fire); animation: sp 0.8s linear infinite; }
@@ -232,7 +234,7 @@
     <div class="tag">As terras queimam. Só os fortes renascem das cinzas.</div>
     <div id="slots"></div>
     <div id="err"></div>
-    <label class="auto-opt"><input type="checkbox" id="autoMode"> <span><b>Modo automático</b> — para celular ou controle de Xbox: poções infinitas, cura e magias automáticas</span></label>
+    <div class="note">Alvo, magias, cura e poções automáticas: dentro do jogo, em Menu → Automação.</div>
     <div class="sel-foot"><button class="btn" id="selExp">Exportar progresso</button><button class="btn" id="selImp">Importar arquivo</button><button class="btn" id="selPaste">Colar código</button></div>
     <div class="note">Todos jogam no mesmo mundo. Cada personagem salva sozinho neste navegador.</div>
     <div class="note" id="load3d">Carregando gráficos 3D…</div>
@@ -245,14 +247,14 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/SkeletonUtils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/BufferGeometryUtils.js"></script>
-<script src="js/core.js?v=0.5.7"></script>
-<script src="js/art.js?v=0.5.7"></script>
-<script src="js/gl.js?v=0.5.7"></script>
-<script src="js/net.js?v=0.5.7"></script>
-<script src="js/host.js?v=0.5.7"></script>
-<script src="js/main.js?v=0.5.7"></script>
-<script src="js/three3d.js?v=0.5.7"></script>
-<script src="js/title.js?v=0.5.7"></script>
-<script src="js/ui.js?v=0.5.7"></script>
+<script src="js/core.js?v=0.6.0"></script>
+<script src="js/art.js?v=0.6.0"></script>
+<script src="js/gl.js?v=0.6.0"></script>
+<script src="js/net.js?v=0.6.0"></script>
+<script src="js/host.js?v=0.6.0"></script>
+<script src="js/main.js?v=0.6.0"></script>
+<script src="js/three3d.js?v=0.6.0"></script>
+<script src="js/title.js?v=0.6.0"></script>
+<script src="js/ui.js?v=0.6.0"></script>
 </body>
 </html>

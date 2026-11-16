@@ -106,7 +106,10 @@ function normalizeStore(st) {
     if (!st.chars[v].uid) st.chars[v].uid = newUid();
   }
   st.settings = Object.assign({ auto: false, quality: 'auto', mini: true, zoom: 64 }, st.settings || {});
-  st.settings.autoCfg = Object.assign({ healOn: true, heal: 50, potHpOn: true, potHp: 25, potMpOn: true, potMp: 12 }, st.settings.autoCfg || {});
+  const oldAuto = !!st.settings.auto, hadNew = st.settings.autoCfg && 'tgtOn' in st.settings.autoCfg;
+  st.settings.autoCfg = Object.assign({ tgtOn: false, atkOn: false, infOn: false, healOn: true, heal: 50, potHpOn: true, potHp: 25, potMpOn: true, potMp: 12 }, st.settings.autoCfg || {});
+  if (oldAuto && !hadNew) Object.assign(st.settings.autoCfg, { tgtOn: true, atkOn: true, infOn: true }); // quem usava o modo automático continua igual
+  delete st.settings.auto;
   return st;
 }
 function loadStore() {
@@ -174,12 +177,12 @@ function startGame(voc) {
   saveGame();
   $('login').classList.add('hidden');
   document.body.classList.add('playing');
-  document.body.classList.toggle('auto', !!STORE.settings.auto);
+  document.body.classList.toggle('auto', !!STORE.settings.autoCfg.infOn);
   $('log').innerHTML = ''; $('feed').innerHTML = '';
   playing = true; zoneName = '';
   buildHotbar();
   sysMsg(`Bem-vindo a Arson, ${ME.name}!`, 'lvl');
-  sysMsg(STORE.settings.auto ? 'Modo automático ligado: poções infinitas e magias automáticas.' : 'Aperte H para ver os controles.', 'sys');
+  sysMsg('Aperte H para ver os controles. Menu (Esc) → Automação para ligar alvo, magias, cura e poções automáticas.', 'sys');
   netStart();
 }
 function backToSelect() {
@@ -326,7 +329,7 @@ function castSlot(i) {
 }
 function usePot(kind, silent) {
   if (!ME || ME.dead || ME.potCd > 0) return false;
-  const inf = STORE.settings.auto;
+  const inf = STORE.settings.autoCfg.infOn;
   if (kind === 'hp') {
     if (!inf && ME.hpPot <= 0) { if (!silent) toast('Sem poções de vida. Compre com Brann na cidade.'); return false; }
     if (!inf) ME.hpPot--;
@@ -350,29 +353,28 @@ function autoPlay(dt) {
   ME.autoT = 0.15;
   const list = SPELLS[ME.voc], heal = list.find(s => s.type === 'heal');
   const atk = list.filter(s => s.type !== 'heal' && ME.lvl >= s.lvl);
-  const hpF = ME.hp / maxHp(), A = autoCfg(), auto = STORE.settings.auto;
-  // cura e poções automáticas: valem com ou sem o modo automático (cada uma liga/desliga)
+  const hpF = ME.hp / maxHp(), A = autoCfg();
+  // cada automação liga/desliga sozinha (menu → Automação)
   if (A.potHpOn && hpF * 100 <= A.potHp) usePot('hp', true);
   if (A.healOn && hpF * 100 <= A.heal && (ME.cds[heal.k] || 0) <= 0 && ME.lvl >= heal.lvl) {
     if (ME.mp < heal.mana && A.potMpOn) usePot('mp', true);
     if (ME.mp >= heal.mana) { castSlot(list.indexOf(heal)); return; }
   }
   const minMana = Math.min(heal.mana, ...atk.map(s => s.mana));
-  if (A.potMpOn && ((auto && ME.mp < minMana) || ME.mp * 100 / maxMp() <= A.potMp)) usePot('mp', true);
-  // daqui para baixo, só no modo automático: mira e magias de ataque
-  if (!auto || isPZ(ME.x, ME.y)) return;
-  // mira sempre o inimigo mais próximo, inclusive os distantes (até 12 quadrados)
-  let tg = nearestMon(ME.x, ME.y, 12);
-  if (tg) ME.target = tg.id;
-  else tg = ME.target != null ? MON.get(ME.target) : null;
-  if (!tg) return;
+  if (A.potMpOn && ((A.atkOn && ME.mp < minMana) || ME.mp * 100 / maxMp() <= A.potMp)) usePot('mp', true);
+  if (isPZ(ME.x, ME.y)) return;
+  // alvo automático: sempre o inimigo mais próximo, inclusive os distantes (até 12 quadrados)
+  let tg = null;
+  if (A.tgtOn) { tg = nearestMon(ME.x, ME.y, 12); if (tg) ME.target = tg.id; }
+  if (!tg) tg = ME.target != null ? MON.get(ME.target) : null;
+  if (!A.atkOn || !tg) return;
   const d = Math.hypot(tg.tx - ME.x, tg.ty - ME.y);
   for (let i = atk.length - 1; i >= 0; i--) {
     const s = atk[i];
     if ((ME.cds[s.k] || 0) > 0) continue;
     const reach = s.type === 'area' && s.at === 'self' ? s.radius + MT[tg.type].r : s.type === 'cone' ? s.range : s.range;
     if (d > reach + 0.3) continue;
-    if (ME.mp < s.mana) { if (A.potMpOn) usePot('mp'); if (ME.mp < s.mana) continue; }
+    if (ME.mp < s.mana) { if (A.potMpOn) usePot('mp', true); if (ME.mp < s.mana) continue; }
     castSlot(list.indexOf(s));
     return;
   }
@@ -1130,7 +1132,7 @@ function updHud(now) {
   const a = xpToReach(ME.lvl), b = xpToReach(ME.lvl + 1);
   $('xpF').style.width = (100 * (ME.xp - a) / (b - a)) + '%';
   $('lvl').textContent = ME.lvl; $('nm').textContent = ME.name;
-  const inf = STORE.settings.auto;
+  const inf = STORE.settings.autoCfg.infOn;
   $('gold').textContent = ME.gold; $('php').textContent = inf ? '∞' : ME.hpPot; $('pmp').textContent = inf ? '∞' : ME.mpPot;
   const sl = $('spells').children;
   SPELLS[ME.voc].forEach((s, i) => {
