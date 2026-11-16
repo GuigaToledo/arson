@@ -214,4 +214,40 @@ function renderSelect() {
   // carrega o mundo 3D em segundo plano
   const lp = $('load3d');
   load3D(p => { lp.textContent = `Carregando gráficos 3D… ${Math.round(p * 100)}%`; }).then(ok => { lp.textContent = ok ? '' : 'Gráficos 3D indisponíveis neste aparelho: usando 2D.'; if (ok) setTimeout(() => lp.remove(), 50); });
+  // voltando de uma atualização automática: entra direto com o mesmo personagem
+  try {
+    const r = JSON.parse(sessionStorage.getItem('arson-resume') || 'null');
+    sessionStorage.removeItem('arson-resume');
+    if (r && r.voc && Date.now() - r.t < 90000 && STORE.chars[r.voc] && STORE.chars[r.voc].name) {
+      setTimeout(() => { startGame(r.voc); sysMsg(`Jogo atualizado para a versão ${VERSION}.`, 'lvl'); }, 50);
+    }
+  } catch (e) { }
+  setTimeout(checkUpdate, 15000);
+  setInterval(checkUpdate, 45000);
 })();
+
+// ------------------------------------------------------------
+//  Atualização automática (sem F5, sem perder o login)
+// ------------------------------------------------------------
+let updating = false;
+function checkUpdate() {
+  if (updating || location.protocol === 'file:') return;
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
+    if (!j || !j.v || j.v === VERSION) return;
+    // proteção: se já recarregamos para essa versão e o servidor ainda entrega a antiga, espera 5 min
+    let last = null; try { last = JSON.parse(sessionStorage.getItem('arson-upd') || 'null'); } catch (e) { }
+    if (last && last.v === j.v && Date.now() - last.t < 300000) return;
+    try { sessionStorage.setItem('arson-upd', JSON.stringify({ v: j.v, t: Date.now() })); } catch (e) { }
+    applyUpdate(j.v);
+  }).catch(() => { });
+}
+function applyUpdate(v) {
+  updating = true;
+  if (playing) { centerMsg('Atualizando o jogo…', `Versão ${v}. Você volta em instantes no mesmo lugar.`); saveGame(); }
+  try { if (playing && ME) sessionStorage.setItem('arson-resume', JSON.stringify({ voc: ME.voc, t: Date.now() })); } catch (e) { }
+  setTimeout(() => {
+    const u = new URL(location.href);
+    u.searchParams.set('u', v); // endereço novo = página nova, sem cache antigo
+    location.replace(u.toString());
+  }, playing ? 1500 : 300);
+}
