@@ -736,15 +736,24 @@ function drawEnt(it, now, t, lights) {
     ctx.strokeStyle = 'rgba(255,120,90,.35)'; ctx.lineWidth = 6; ctx.stroke();
   }
   if (it.look === 'arson') { drawArson(x, y, t, e.atkT > 0, lights); return; }
-  const { dir, fi, L } = entFrame(it);
+  const ef = entFrame(it), fi = ef.fi, L = ef.L;
   const sc = it.look === 'golem' ? 1.25 : 1;
   ctx.fillStyle = 'rgba(0,0,0,.32)';
   ctx.beginPath(); ctx.ellipse(x, y - 1, (L.type === 'quad' ? L.len * 0.55 : 15) * sc, 6 * sc, 0, 0, 7); ctx.fill();
-  // virada suave: a escala horizontal passa por zero ao trocar de lado
-  const want = dir === 3 ? -1 : dir === 1 ? 1 : (e.fs == null ? 1 : Math.sign(e.fs) || 1);
-  if (e.fs == null) e.fs = want;
-  e.fs += clamp(want - e.fs, -frameDt * 9, frameDt * 9);
-  const fs = Math.abs(e.fs) < 0.25 ? 0.25 * (Math.sign(e.fs) || 1) : e.fs;
+  // virada de verdade: passa pelas poses intermediárias (lado -> frente -> outro lado),
+  // um quarto de volta a cada 60 ms, pelo caminho mais curto
+  let dir = ef.dir;
+  const sym = L.type === 'golem' || L.type === 'dummy';
+  if (!sym) {
+    if (e.vd == null) e.vd = dir;
+    e.turnT = (e.turnT || 0) - frameDt;
+    if (e.vd !== dir && e.turnT <= 0) {
+      const diff = (dir - e.vd + 4) % 4;
+      const step = diff === 1 ? 1 : diff === 3 ? -1 : (e.vd === 3 ? -1 : 1);
+      e.vd = (e.vd + step + 4) % 4; e.turnT = 0.06;
+    }
+    dir = e.vd;
+  }
   // avanço do ataque na direção que está olhando
   let lx = 0, ly = 0;
   if ((e.atkT || 0) > 0 && L.type !== 'dummy') {
@@ -754,7 +763,7 @@ function drawEnt(it, now, t, lights) {
   if (e.hurtT > 0) { e.hurtT -= frameDt; lx += (Math.random() - 0.5) * 3; }
   const fr = e.hurtT > 0 ? getTint(it.look, dir, fi) : getFrame(it.look, dir, fi);
   ctx.save(); ctx.translate(x + lx, y + ly);
-  if (dir === 1 || dir === 3 || L.type === 'golem' || L.type === 'dummy') ctx.scale(fs, 1);
+  if (dir === 3) ctx.scale(-1, 1);
   if (L.type === 'dummy' && e.hurtT > 0) ctx.rotate(Math.sin(now / 30) * 0.08);
   if (sc !== 1) ctx.scale(sc, sc);
   ctx.drawImage(fr, -FAX, -FAY, FW, FH);
