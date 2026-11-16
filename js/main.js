@@ -204,7 +204,7 @@ function applySnap(s) {
     if (uid === ME.uid) continue;
     let p = REM.get(uid);
     if (!p) { p = { uid, x: x / 100, y: y / 100, walk: 0, atkT: 0 }; REM.set(uid, p); }
-    Object.assign(p, { name, voc, lvl, tx: x / 100, ty: y / 100, dir, hp, mvF: fl & 1, dead: !!(fl & 4), seen: st, look: lookFor(voc, col) });
+    Object.assign(p, { name, voc, lvl, tx: x / 100, ty: y / 100, dir, hp, mvF: fl & 1, dead: !!(fl & 4), seen: st, look: lookFor(voc, col), col });
     if ((fl & 2) && p.atkT <= 0) p.atkT = 0.3;
   }
   for (const [uid, p] of REM) if (p.seen !== st) REM.delete(uid);
@@ -289,7 +289,8 @@ function castSlot(i) {
   skGain('magia', s.mana);
   if (s.type !== 'heal') faceTo(ax, ay);
   let v = 0;
-  if (s.type === 'heal') { v = Math.round((s.base + s.perL * ME.lvl) * (1 + 0.05 * ME.sk.magia[0]) * (0.85 + Math.random() * 0.15)); ME.hp = Math.min(maxHp(), ME.hp + v); addEvent({ k: 'heal', x: ME.x, y: ME.y, v }, performance.now()); }
+  if (s.type === 'heal') { v = Math.round((s.base + s.perL * ME.lvl) * (1 + 0.05 * ME.sk.magia[0]) * (0.85 + Math.random() * 0.15)); ME.hp = Math.min(maxHp(), ME.hp + v); addEvent({ k: 'heal', x: ME.x, y: ME.y, v, local: 1 }, performance.now()); }
+  ME.casting = s.type !== 'heal' || true;
   SPEECH.set(ME.uid, { text: s.nome, until: performance.now() + 1500, spell: true });
   toHost({ t: 'cast', k: s.k, tg: tg ? tg.id : null, ax, ay, v, useTarget: !!tg });
 }
@@ -480,7 +481,7 @@ function npcAction(a) {
 //  Efeitos
 // ------------------------------------------------------------
 function addText(x, y, text, color, big) { TXT.push({ x, y, text, color, t0: performance.now(), dur: big ? 1600 : 1000, big }); }
-function part(o) { if (PART.length < Q.parts) PART.push(o); }
+function part(o) { if (!R3.ready && PART.length < Q.parts) PART.push(o); }
 function burst(x, y, n, col, spd, life, opt) {
   opt = opt || {};
   for (let i = 0; i < n; i++) {
@@ -492,14 +493,17 @@ const FIRE = [[255, 220, 120], [255, 150, 40], [255, 90, 20], [220, 50, 10]];
 const SMOKE = [[90, 84, 80], [60, 56, 54], [120, 112, 104]];
 function addEvent(e, now) {
   // efeitos próprios já foram mostrados localmente; ignora o eco da rede
-  if (e.uid && ME && e.uid === ME.uid && (e.k === 'heal' || e.k === 'lvl' || e.k === 'pdie')) return;
+  if (e.uid && ME && e.uid === ME.uid && (e.k === 'heal' || e.k === 'lvl' || e.k === 'pdie') && !e.local) return;
+  if (R3.ready) {
+    fx3Event(e);
+    if (e.k === 'dmg') { markHurt(e); addText(e.x, e.y, String(e.v), e.c); }
+    else if (e.k === 'txt') addText(e.x, e.y, e.v, e.c);
+    else if (e.k === 'heal' && e.v) addText(e.x, e.y, '+' + e.v, '#5dff7a');
+    else if (e.k === 'lvl' && e.uid && e.uid !== ME.uid) addText(e.x, e.y, 'NÍVEL!', '#ffd23a', true);
+    return;
+  }
   switch (e.k) {
-    case 'dmg': {
-      let best = null, bd = 0.9;
-      const cands = [...MON.values(), ...REM.values()]; if (ME && e.pl) cands.push(ME);
-      for (const o of cands) { const d = Math.hypot((o.tx != null ? o.tx : o.x) - e.x, (o.ty != null ? o.ty : o.y) - e.y); if (d < bd) { bd = d; best = o; } }
-      if (best) best.hurtT = 0.2;
-    }
+    case 'dmg': markHurt(e);
       addText(e.x, e.y - 0.6, String(e.v), e.c); burst(e.x, e.y - 0.4, 6, [[200, 20, 20], [140, 10, 10]], 90, 0.4, { add: false, grav: 300, s: 2.5 }); break;
     case 'txt': addText(e.x, e.y - 0.6, e.v, e.c); break;
     case 'proj': FX.push({ k: 'proj', f: e.f, x0: e.x, y0: e.y, x1: e.x1, y1: e.y1, t0: now, dur: Math.max(110, Math.hypot(e.x1 - e.x, e.y1 - e.y) * (e.f === 'flecha' ? 45 : 70)), big: e.big }); break;
@@ -527,7 +531,14 @@ function addEvent(e, now) {
   }
 }
 
+function markHurt(e) {
+  let best = null, bd = 0.9;
+  const cands = [...MON.values(), ...REM.values()]; if (ME && e.pl) cands.push(ME);
+  for (const o of cands) { const d = Math.hypot((o.tx != null ? o.tx : o.x) - e.x, (o.ty != null ? o.ty : o.y) - e.y); if (d < bd) { bd = d; best = o; } }
+  if (best) best.hurtT = 0.25;
+}
 function updateFx(dt, now) {
+  if (R3.ready && FX.length) FX.length = 0;
   for (let i = PART.length - 1; i >= 0; i--) {
     const p = PART[i]; p.life -= dt;
     if (p.life <= 0) { PART.splice(i, 1); continue; }
@@ -559,6 +570,8 @@ function updateRemote(dt) {
 let firstFrame = true, frameDt = 0.016;
 function render(now, dt) {
   frameDt = dt || 0.016;
+  if (R3.ready) { render3D(now, dt); return; }
+  if (R3.failed && !GLR.tried) initGL2D();
   const cw = cv.width, ch = cv.height, S = zoom * dpr / TS;
   let camX, camY;
   if (playing) { camX = ME.x; camY = ME.y - 0.5; }
@@ -980,8 +993,10 @@ function W2S(x, y) { return [VIEW.ox + x * TS * VIEW.S, VIEW.oy + y * TS * VIEW.
 function drawOverlayText(now) {
   const fs = Math.round(11 * dpr * Math.max(0.85, zoom / 64));
   ctx.textAlign = 'center'; ctx.lineJoin = 'round';
-  const label = (e, name, hp, col, h, spKey) => {
-    const [sx, sy0] = W2S(e.x, e.y); const sy = sy0 - h * VIEW.S;
+  const label = (e, name, hp, col, h, spKey, look) => {
+    let sx, sy;
+    if (R3.ready) { const p = proj3(e.x, e.y, headH(look)); if (p[2] > 1) return; sx = p[0]; sy = p[1] + 4 * dpr; }
+    else { const [a, b] = W2S(e.x, e.y); sx = a; sy = b - h * VIEW.S; }
     ctx.font = `bold ${fs}px Verdana, sans-serif`; ctx.lineWidth = 3 * dpr; ctx.strokeStyle = 'rgba(0,0,0,.85)';
     ctx.strokeText(name, sx, sy - 9 * dpr); ctx.fillStyle = col; ctx.fillText(name, sx, sy - 9 * dpr);
     if (hp != null) {
@@ -999,12 +1014,14 @@ function drawOverlayText(now) {
       }
     }
   };
-  for (const n of NPCS) label(n, n.name, null, '#7fdcff', HEIGHTS.human, n.id);
-  for (const m of MON.values()) label(m, MT[m.type].name, m.hp, ME.target === m.id ? '#ff8a7a' : '#e6d6c6', HEIGHTS[m.type] * (m.type === 'golem' ? 1.25 : 1), 'm' + m.id);
-  for (const p of REM.values()) if (!p.dead) label(p, p.name, p.hp, '#ffffff', HEIGHTS.human, p.uid);
-  if (!ME.dead) label(ME, ME.name, Math.round(100 * ME.hp / maxHp()), '#ffe066', HEIGHTS.human, ME.uid);
+  for (const n of NPCS) label(n, n.name, null, '#7fdcff', HEIGHTS.human, n.id, n.look);
+  for (const m of MON.values()) label(m, MT[m.type].name, m.hp, ME.target === m.id ? '#ff8a7a' : '#e6d6c6', HEIGHTS[m.type] * (m.type === 'golem' ? 1.25 : 1), 'm' + m.id, m.type);
+  for (const p of REM.values()) if (!p.dead) label(p, p.name, p.hp, '#ffffff', HEIGHTS.human, p.uid, p.voc);
+  if (!ME.dead) label(ME, ME.name, Math.round(100 * ME.hp / maxHp()), '#ffe066', HEIGHTS.human, ME.uid, ME.voc);
   for (const tx of TXT) {
-    const p = (now - tx.t0) / tx.dur, [sx, sy] = W2S(tx.x, tx.y);
+    const p = (now - tx.t0) / tx.dur;
+    let sx, sy;
+    if (R3.ready) { const q = proj3(tx.x, tx.y, 1.3); sx = q[0]; sy = q[1]; } else { [sx, sy] = W2S(tx.x, tx.y - 0.6); }
     ctx.globalAlpha = 1 - p * p;
     ctx.font = `bold ${Math.round((tx.big ? 20 : 14) * dpr)}px Verdana, sans-serif`;
     const yy = sy - p * 40 * dpr;
@@ -1138,11 +1155,18 @@ function drawMini() {
 //  Controles
 // ------------------------------------------------------------
 let mouse = { x: innerWidth / 2, y: innerHeight / 2 };
-function mouseWorld() { return { x: (mouse.x * dpr - VIEW.ox) / (TS * VIEW.S), y: (mouse.y * dpr - VIEW.oy) / (TS * VIEW.S) }; }
+function mouseWorld() {
+  if (R3.ready) return mouseGround(); return { x: (mouse.x * dpr - VIEW.ox) / (TS * VIEW.S), y: (mouse.y * dpr - VIEW.oy) / (TS * VIEW.S) }; }
 addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 cv.addEventListener('pointerdown', e => {
   if (!playing || e.button > 0) return;
   mouse.x = e.clientX; mouse.y = e.clientY;
+  if (R3.ready) {
+    const h = pick3(e.clientX, e.clientY);
+    if (h && h.kind === 'm') { ME.target = h.e.id; return; }
+    if (h && h.kind === 'n') { if (Math.hypot(h.e.x - ME.x, h.e.y - ME.y) < 3.5) openDlg(h.e); else toast(`Aproxime-se de ${h.e.name} para conversar.`); }
+    return;
+  }
   const w = mouseWorld();
   let best = null, bd = 9;
   for (const m of MON.values()) {

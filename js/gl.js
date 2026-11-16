@@ -5,7 +5,9 @@
 //  Sem WebGL, o jogo volta para os blocos pintados em canvas.
 // ============================================================
 const GLR = { ok: false };
-(function initGL() {
+// usado só se o 3D não carregar
+function initGL2D() {
+  if (GLR.tried) return; GLR.tried = true;
   const c = document.getElementById('gl');
   let gl = null;
   try { gl = c.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' }); } catch (e) { }
@@ -171,7 +173,7 @@ void main(){
   gl.uniform1i(U('uMap'), 0); gl.uniform1i(U('uGrd'), 1); gl.uniform1i(U('uDep'), 2);
   Object.assign(GLR, { ok: true, gl, c, uRes: U('uRes'), uCam: U('uCam'), uScale: U('uScale'), uTime: U('uTime'), uQ: U('uQ') });
   c.addEventListener('webglcontextlost', e => { e.preventDefault(); GLR.ok = false; });
-})();
+}
 function glDraw(camX0, camY0, scale, time, hq) {
   const { gl, c } = GLR;
   if (c.width !== cv.width || c.height !== cv.height) { c.width = cv.width; c.height = cv.height; }

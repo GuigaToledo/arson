@@ -211,4 +211,7 @@ function renderSelect() {
   $('selExp').onclick = downloadSave; $('selImp').onclick = pickImport; $('selPaste').onclick = pasteImport;
   $('ver').textContent = 'v' + VERSION;
   renderSelect();
+  // carrega o mundo 3D em segundo plano
+  const lp = $('load3d');
+  load3D(p => { lp.textContent = `Carregando gráficos 3D… ${Math.round(p * 100)}%`; }).then(ok => { lp.textContent = ok ? '' : 'Gráficos 3D indisponíveis neste aparelho: usando 2D.'; if (ok) setTimeout(() => lp.remove(), 50); });
 })();

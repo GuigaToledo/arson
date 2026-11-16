@@ -2,7 +2,7 @@
 // ============================================================
 //  ARSON — núcleo: ruído, mapa, dados do jogo, colisão
 // ============================================================
-const VERSION = '0.4.3';
+const VERSION = '0.5.0';
 const TS = 64; // pixels de arte por tile
 
 function hash2(x, y, s) {
@@ -185,11 +185,11 @@ const SPELLS = {
   ],
 };
 const MT = {
-  rato: { name: 'Rato de Cinzas', hp: 30, atk: 5, def: 0, xp: 12, spd: 2.4, range: 0.9, aspd: 1.5, gold: [0, 6], pot: 0.05, r: 0.25, aggro: 5 },
-  javali: { name: 'Javali Chamuscado', hp: 60, atk: 9, def: 1, xp: 28, spd: 2.7, range: 1.0, aspd: 1.6, gold: [2, 12], pot: 0.08, r: 0.33, aggro: 5 },
-  lobo: { name: 'Lobo Fumegante', hp: 110, atk: 14, def: 2, xp: 55, spd: 3.4, range: 1.0, aspd: 1.3, gold: [5, 20], pot: 0.1, r: 0.33, aggro: 7 },
-  goblin: { name: 'Goblin Incendiário', hp: 140, atk: 16, def: 2, xp: 75, spd: 2.8, range: 4.5, aspd: 1.8, gold: [10, 30], pot: 0.15, proj: 'fogo', r: 0.3, aggro: 7 },
-  salamandra: { name: 'Salamandra', hp: 260, atk: 26, def: 4, xp: 160, spd: 3.0, range: 3.5, aspd: 1.7, gold: [20, 50], pot: 0.2, proj: 'fogo', r: 0.35, aggro: 7 },
+  rato: { name: 'Esqueleto Lacaio', hp: 30, atk: 5, def: 0, xp: 12, spd: 2.4, range: 0.9, aspd: 1.5, gold: [0, 6], pot: 0.05, r: 0.25, aggro: 5 },
+  javali: { name: 'Esqueleto Guerreiro', hp: 60, atk: 9, def: 1, xp: 28, spd: 2.7, range: 1.0, aspd: 1.6, gold: [2, 12], pot: 0.08, r: 0.33, aggro: 5 },
+  lobo: { name: 'Lobisomem', hp: 110, atk: 14, def: 2, xp: 55, spd: 3.4, range: 1.0, aspd: 1.3, gold: [5, 20], pot: 0.1, r: 0.33, aggro: 7 },
+  goblin: { name: 'Esqueleto Mago', hp: 140, atk: 16, def: 2, xp: 75, spd: 2.8, range: 4.5, aspd: 1.8, gold: [10, 30], pot: 0.15, proj: 'fogo', r: 0.3, aggro: 7 },
+  salamandra: { name: 'Cria das Chamas', hp: 260, atk: 26, def: 4, xp: 160, spd: 3.0, range: 3.5, aspd: 1.7, gold: [20, 50], pot: 0.2, proj: 'fogo', r: 0.35, aggro: 7 },
   golem: { name: 'Golem de Brasa', hp: 520, atk: 40, def: 8, xp: 380, spd: 1.9, range: 1.2, aspd: 2.0, gold: [40, 90], pot: 0.3, r: 0.45, aggro: 6 },
   arson: { name: 'Arson, o Coração em Chamas', hp: 4000, atk: 70, def: 10, xp: 4000, spd: 2.2, range: 1.6, aspd: 1.5, gold: [500, 1000], pot: 1, boss: true, respawn: 600, r: 0.7, aggro: 8 },
   boneco: { name: 'Boneco de Treino', hp: 1000, atk: 1, def: 0, xp: 0, spd: 0, range: 1.3, aspd: 2, gold: [0, 0], pot: 0, r: 0.35, aggro: 2.6, dummy: true },

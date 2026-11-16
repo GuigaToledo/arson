@@ -228,17 +228,23 @@
     <label class="auto-opt"><input type="checkbox" id="autoMode"> <span><b>Modo automático</b> — para celular ou controle de Xbox: poções infinitas, cura e magias automáticas</span></label>
     <div class="sel-foot"><button class="btn" id="selExp">Exportar progresso</button><button class="btn" id="selImp">Importar arquivo</button><button class="btn" id="selPaste">Colar código</button></div>
     <div class="note">Todos jogam no mesmo mundo. Cada personagem salva sozinho neste navegador.</div>
+    <div class="note" id="load3d">Carregando gráficos 3D…</div>
   </div>
 </div>
 <div id="ver"></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/SkeletonUtils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="js/core.js"></script>
 <script src="js/art.js"></script>
 <script src="js/gl.js"></script>
 <script src="js/net.js"></script>
 <script src="js/host.js"></script>
 <script src="js/main.js"></script>
+<script src="js/three3d.js"></script>
 <script src="js/title.js"></script>
 <script src="js/ui.js"></script>
 </body>
