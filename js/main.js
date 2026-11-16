@@ -268,7 +268,7 @@ function updateLocal(dt) {
     ME.mv = Math.hypot(ME.x - ox, ME.y - oy) > 0.0005;
     if (ME.atkT <= 0) ME.dir = Math.abs(nx) > Math.abs(ny) ? (nx > 0 ? 1 : 3) : (ny > 0 ? 2 : 0);
   } else ME.mv = false;
-  if (STORE.settings.auto) autoPlay(dt);
+  autoPlay(dt);
   for (const m of MON.values()) {
     const d = Math.hypot(ME.x - m.x, ME.y - m.y), md = 0.26 + MT[m.type].r * 0.8;
     if (d < md && d > 0.001) moveCircle(ME, (ME.x - m.x) / d * (md - d) * 0.5, (ME.y - m.y) / d * (md - d) * 0.5, 0.28, false);
@@ -324,16 +324,16 @@ function castSlot(i) {
   SPEECH.set(ME.uid, { text: s.nome, until: performance.now() + 1500, spell: true });
   toHost({ t: 'cast', k: s.k, tg: tg ? tg.id : null, ax, ay, v, useTarget: !!tg });
 }
-function usePot(kind) {
+function usePot(kind, silent) {
   if (!ME || ME.dead || ME.potCd > 0) return false;
   const inf = STORE.settings.auto;
   if (kind === 'hp') {
-    if (!inf && ME.hpPot <= 0) { toast('Sem poções de vida. Compre com Brann na cidade.'); return false; }
+    if (!inf && ME.hpPot <= 0) { if (!silent) toast('Sem poções de vida. Compre com Brann na cidade.'); return false; }
     if (!inf) ME.hpPot--;
     const v = 90 + ME.lvl * 3; ME.hp = Math.min(maxHp(), ME.hp + v);
     addEvent({ k: 'heal', x: ME.x, y: ME.y, v }, performance.now()); toHost({ t: 'fx', e: { k: 'heal', v } });
   } else {
-    if (!inf && ME.mpPot <= 0) { toast('Sem poções de mana. Compre com Brann na cidade.'); return false; }
+    if (!inf && ME.mpPot <= 0) { if (!silent) toast('Sem poções de mana. Compre com Brann na cidade.'); return false; }
     if (!inf) ME.mpPot--;
     const v = 60 + ME.lvl * 3; ME.mp = Math.min(maxMp(), ME.mp + v);
     addText(ME.x, ME.y, '+' + v, '#6aa8ff');
@@ -350,17 +350,17 @@ function autoPlay(dt) {
   ME.autoT = 0.15;
   const list = SPELLS[ME.voc], heal = list.find(s => s.type === 'heal');
   const atk = list.filter(s => s.type !== 'heal' && ME.lvl >= s.lvl);
-  const hpF = ME.hp / maxHp(), A = autoCfg();
-  // poção de vida (além da cura)
-  if (A.potHpOn && hpF * 100 <= A.potHp) usePot('hp');
-  // magia de cura (toma mana antes se faltar e a poção de mana estiver ligada)
-  if (A.healOn && hpF * 100 <= A.heal && (ME.cds[heal.k] || 0) <= 0) {
-    if (ME.mp < heal.mana && A.potMpOn) usePot('mp');
+  const hpF = ME.hp / maxHp(), A = autoCfg(), auto = STORE.settings.auto;
+  // cura e poções automáticas: valem com ou sem o modo automático (cada uma liga/desliga)
+  if (A.potHpOn && hpF * 100 <= A.potHp) usePot('hp', true);
+  if (A.healOn && hpF * 100 <= A.heal && (ME.cds[heal.k] || 0) <= 0 && ME.lvl >= heal.lvl) {
+    if (ME.mp < heal.mana && A.potMpOn) usePot('mp', true);
     if (ME.mp >= heal.mana) { castSlot(list.indexOf(heal)); return; }
   }
   const minMana = Math.min(heal.mana, ...atk.map(s => s.mana));
-  if (A.potMpOn && (ME.mp < minMana || ME.mp * 100 / maxMp() <= A.potMp)) usePot('mp');
-  if (isPZ(ME.x, ME.y)) return;
+  if (A.potMpOn && ((auto && ME.mp < minMana) || ME.mp * 100 / maxMp() <= A.potMp)) usePot('mp', true);
+  // daqui para baixo, só no modo automático: mira e magias de ataque
+  if (!auto || isPZ(ME.x, ME.y)) return;
   // mira sempre o inimigo mais próximo, inclusive os distantes (até 12 quadrados)
   let tg = nearestMon(ME.x, ME.y, 12);
   if (tg) ME.target = tg.id;

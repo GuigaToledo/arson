@@ -85,7 +85,8 @@ function renderMenu() {
     h += `<div class="m-note">Força: ataque básico ×${atkMult(ME.voc, sk).toFixed(2)} · magias ×${spellMult(ME.voc, sk).toFixed(2)} · dano recebido ÷${defDiv(sk).toFixed(2)}<br>Dica: os bonecos de treino fora do portão norte sobem todas as habilidades sem risco.</div>`;
   } else if (menuTab === 'config') {
     const s = STORE.settings;
-    h += `<label class="m-opt"><input type="checkbox" id="optAuto" ${s.auto ? 'checked' : ''}> <span><b>Modo automático</b><small>Poções infinitas e magias de ataque assim que recarregam. Ideal para celular e controle. Ajuste a cura e as poções abaixo.</small></span></label>
+    h += `<label class="m-opt"><input type="checkbox" id="optAuto" ${s.auto ? 'checked' : ''}> <span><b>Modo automático</b><small>Poções infinitas, mira no inimigo mais próximo e magias de ataque assim que recarregam. Ideal para celular e controle.</small></span></label>
+      <div class="m-opt m-head"><span><b>Cura e poções automáticas</b><small>Funcionam com ou sem o modo automático. Ligue ou desligue cada uma e escolha a porcentagem. Fora do modo automático, usa as poções do seu inventário.</small></span></div>
       <div class="m-sub">
         ${autoRow('healOn', 'heal', 'Magia de cura', 'quando a vida chegar a', '#5dff7a')}
         ${autoRow('potHpOn', 'potHp', 'Poção de vida', 'quando a vida chegar a', '#ff6a5a')}
