@@ -45,7 +45,7 @@ function frame(now) {
   if (playing) updateLocal(dt);
   updateRemote(dt);
   updateFx(dt, now);
-  render(now, dt);
+  if (playing) render(now, dt); else drawTitle(now);
   if (playing) { updHud(now); drawMini(); perfWatch(dt); }
   requestAnimationFrame(frame);
 }
