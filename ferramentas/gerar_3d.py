@@ -40,6 +40,25 @@ def find_glb(x, found):
     return found
 
 
+def sem_fundo(name, img):
+    """Recorta o personagem do fundo (rembg) e centraliza num quadrado transparente."""
+    from PIL import Image
+    from rembg import remove, new_session
+    out_dir = 'arte/gerar3d/sem_fundo'
+    os.makedirs(out_dir, exist_ok=True)
+    im = remove(Image.open(img).convert('RGB'), session=new_session('isnet-general-use'))
+    bbox = im.getchannel('A').point(lambda a: 255 if a > 20 else 0).getbbox()
+    if bbox:
+        im = im.crop(bbox)
+    side = int(max(im.size) * 1.1)
+    sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+    sq.paste(im, ((side - im.size[0]) // 2, (side - im.size[1]) // 2))
+    path = os.path.join(out_dir, name + '.png')
+    sq.save(path)
+    print('sem fundo:', path, sq.size)
+    return path
+
+
 def generate(client, api, img):
     from gradio_client import handle_file
     eps = api.get('named_endpoints', {})
@@ -67,6 +86,8 @@ def generate(client, api, img):
         print('arquivos:', files)
         if files:
             textured = [f for f in files if 'textur' in f.lower()]
+            if ep == '/generation_all' and not textured:
+                continue
             return (textured or files)[-1] if ep == '/generation_all' else files[0]
     return None
 
@@ -94,7 +115,12 @@ def main():
             traceback.print_exc()
             continue
         for name, img in list(todo):
-            out = generate(client, api, img)
+            try:
+                clean = sem_fundo(name, img)
+            except Exception:
+                traceback.print_exc()
+                clean = img
+            out = generate(client, api, clean)
             if out:
                 ext = os.path.splitext(out)[1]
                 shutil.copy(out, os.path.join(DST, name + ext))
