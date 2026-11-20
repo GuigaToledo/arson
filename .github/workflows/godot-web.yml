@@ -28,6 +28,25 @@ jobs:
           pip install --quiet pillow
           python3 ferramentas/processar_objetos.py arte/objetos godot/assets/objetos
 
+      - name: Gerar 3D grátis (Hunyuan3D no Hugging Face)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -n "$(python3 ferramentas/gerar_3d.py --listar)" ]; then
+            pip install --quiet gradio_client
+            timeout 1500 python3 ferramentas/gerar_3d.py || true
+          fi
+
+      - name: Rig e animação automáticos (Blender)
+        run: |
+          for m in arte/modelos_gerados/*; do
+            [ -f "$m" ] || continue
+            n=$(basename "${m%.*}")
+            [ -f "arte/personagens/$n/modelo.glb" ] && continue
+            rot=$(python3 -c "import json,sys;print(json.load(open('arte/gerar3d/personagens/$n.json')).get('rotacao',0))" 2>/dev/null || echo 0)
+            bash ferramentas/blender.sh -b --factory-startup -P ferramentas/blender_autorig.py -- "$m" "arte/personagens/$n" "$rot" 2>&1 | grep -vE "^Fra:|^Info" | tail -30
+          done
+
       - name: Personagens que mudaram
         id: chars
         run: |
@@ -44,12 +63,10 @@ jobs:
       - name: Renderizar personagens no Blender (8 direções)
         if: steps.chars.outputs.list != ''
         run: |
-          wget -q https://download.blender.org/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz
-          tar -xf blender-4.2.3-linux-x64.tar.xz
           for item in ${{ steps.chars.outputs.list }}; do
             n=${item%%:*}; h=${item##*:}
             rm -rf /tmp/render_$n
-            ./blender-4.2.3-linux-x64/blender -b --factory-startup -P ferramentas/blender_sprites.py -- "arte/personagens/$n" "/tmp/render_$n" 2>&1 | grep -vE "^Fra:|Rendering|Sample|Denois|Path Tracing|Synchroniz|Updating|Loading|Finished|Saved:" | tail -40
+            bash ferramentas/blender.sh -b --factory-startup -P ferramentas/blender_sprites.py -- "arte/personagens/$n" "/tmp/render_$n" 2>&1 | grep -vE "^Fra:|Rendering|Sample|Denois|Path Tracing|Synchroniz|Updating|Loading|Finished|Saved:" | tail -40
             rm -rf "godot/assets/personagens/$n"
             python3 ferramentas/montar_sprites.py "/tmp/render_$n" "godot/assets/personagens/$n" "$n"
             echo "$h" > "godot/assets/personagens/$n/hash.txt"
@@ -88,7 +105,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add jogo godot/assets
+          git add jogo godot/assets arte
           if git diff --cached --quiet; then echo "Nada mudou"; exit 0; fi
           git commit -m "build: jogo web (${GITHUB_SHA::7})"
           for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
