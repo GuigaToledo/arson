@@ -1,0 +1,100 @@
+class_name CharacterVisual
+extends Node2D
+## Monta o personagem em camadas (corpo + um nó por slot), mantém todas
+## sincronizadas na mesma direção/animação/quadro e reordena as camadas
+## conforme a direção (capa atrás ou na frente, escudo do lado certo...).
+
+const FPS := 10.0
+const S := EquipSlot.Slot
+const BASE_DEPTH := {
+	-1: 0.0,
+	EquipSlot.Slot.LEGS: 0.1,
+	EquipSlot.Slot.FEET: 0.15,
+	EquipSlot.Slot.CHEST: 0.2,
+	EquipSlot.Slot.HANDS: 0.3,
+	EquipSlot.Slot.SHOULDERS: 0.4,
+	EquipSlot.Slot.ACCESSORIES: 0.45,
+	EquipSlot.Slot.HEAD: 0.5,
+}
+
+var body_colors: Dictionary = {}
+var equipment: EquipmentComponent
+var layers: Dictionary = {}
+var dir := "S"
+var anim := "idle"
+var _phase := 0.0
+var _time := 0.0
+var _frame := 0
+var _frame_acc := 0.0
+var _order_key := ""
+var _eye_light: PointLight2D
+
+
+func setup(eq: EquipmentComponent) -> void:
+	equipment = eq
+	for s in [-1] + EquipSlot.all():
+		var l := EquipLayer.new()
+		l.slot = s
+		l.body_colors = body_colors
+		l.name = "Corpo" if s == -1 else EquipSlot.slot_name(s)
+		add_child(l)
+		layers[s] = l
+		if s != -1:
+			l.set_item(eq.get_item(s))
+		else:
+			l.set_item(null)
+	eq.equipment_changed.connect(_on_equipment_changed)
+	if body_colors.get("glow_eyes", false):
+		_eye_light = LightKit.make(Color(1, 0.55, 0.15), 0.45, 0.08, false, 0.1)
+		add_child(_eye_light)
+	_reorder(true)
+
+
+func _on_equipment_changed(slot: int, item: EquipmentItem) -> void:
+	layers[slot].set_item(item)
+
+
+func tick(delta: float, new_dir: String, new_anim: String, speed: float) -> void:
+	_time += delta
+	if new_anim != anim:
+		_frame = 0
+	dir = new_dir
+	anim = new_anim
+	if anim == "walk" or anim == "run":
+		_phase += delta * speed * 0.085
+	else:
+		_phase = lerpf(_phase, roundf(_phase / PI) * PI, delta * 8.0)
+	_frame_acc += delta * FPS
+	while _frame_acc >= 1.0:
+		_frame_acc -= 1.0
+		_frame += 1
+	var pose := PlaceholderPainter.pose(dir, anim, _phase, _time)
+	for l: EquipLayer in layers.values():
+		l.update_pose(dir, anim, _frame, pose)
+	if _eye_light:
+		_eye_light.visible = pose.toward
+		_eye_light.position = pose.head + Vector2(0, 0.5)
+	_reorder(false)
+
+
+## Profundidade de cada camada para a direção atual (menor = desenhado antes).
+func _depth(slot: int, f: Vector2) -> float:
+	var r := Vector2(-f.y, f.x)
+	if slot == S.CAPE:
+		return -1.0 - f.y * 5.0
+	if slot == S.MAIN_HAND:
+		return 1.0 if r.y >= -0.05 else -2.0
+	if slot == S.OFF_HAND:
+		return 1.1 if r.y <= 0.05 else -2.1
+	return BASE_DEPTH.get(slot, 0.0)
+
+
+func _reorder(force: bool) -> void:
+	if not force and _order_key == dir:
+		return
+	_order_key = dir
+	var f := Iso.dir_vector(dir)
+	var keys: Array = layers.keys()
+	keys.sort_custom(func(a, b): return _depth(a, f) < _depth(b, f))
+	for i in keys.size():
+		move_child(layers[keys[i]], i)

@@ -1,0 +1,26 @@
+; Arson — RPG isométrico 2D (Godot 4)
+config_version=5
+
+[application]
+
+config/name="Arson"
+config/description="RPG isométrico 2D de fantasia medieval realista."
+run/main_scene="res://scenes/tavern.tscn"
+config/features=PackedStringArray("4.4", "GL Compatibility")
+
+[autoload]
+
+ItemDB="*res://scripts/equipment/item_db.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.02, 0.015, 0.015, 1)

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"amuleto_nucleo"
+display_name = "Amuleto do Núcleo de Fogo"
+item_type = "acessório"
+slot = 9
+stats = {"magia": 3}
+placeholder_style = &"amulet"
+placeholder_color = Color(0.2, 0.18, 0.16, 1)
+placeholder_accent = Color(1, 0.45, 0.1, 1)
+glow = 0.35

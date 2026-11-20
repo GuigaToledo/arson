@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"elmo_ferro"
+display_name = "Elmo de Ferro"
+item_type = "armadura"
+slot = 0
+stats = {"defesa": 3}
+placeholder_style = &"helm"
+placeholder_color = Color(0.4, 0.4, 0.43, 1)
+placeholder_accent = Color(1, 0.62, 0.15, 1)
+glow = 0

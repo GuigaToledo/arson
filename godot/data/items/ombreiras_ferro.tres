@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"ombreiras_ferro"
+display_name = "Ombreiras de Ferro"
+item_type = "armadura"
+slot = 2
+stats = {"defesa": 2}
+placeholder_style = &"pauldron"
+placeholder_color = Color(0.38, 0.38, 0.4, 1)
+placeholder_accent = Color(0.2, 0.18, 0.17, 1)
+glow = 0

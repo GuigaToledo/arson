@@ -1,0 +1,61 @@
+name: Godot - build web
+
+# A cada push que mexe no projeto Godot: importa, roda a cena por alguns
+# segundos para pegar erros de script, exporta para a web e publica em /jogo/.
+on:
+  push:
+    branches: [main]
+    paths: ["godot/**", ".github/workflows/godot-web.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: godot-web
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: "4.4.1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baixar Godot e modelos de exportação
+        run: |
+          base=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
+          wget -q $base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          wget -q $base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          unzip -q Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 $HOME/godot
+          unzip -q Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          mkdir -p $HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mv templates/* $HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
+
+      - name: Importar recursos
+        run: $HOME/godot --headless --path godot --import 2>&1 | tee import.log || true
+
+      - name: Rodar a cena (teste de erros)
+        run: |
+          timeout 120 $HOME/godot --headless --path godot --quit-after 300 2>&1 | tee run.log || true
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Invalid call|Invalid access" import.log run.log; then
+            echo "::error::Erros de script encontrados"
+            exit 1
+          fi
+
+      - name: Exportar para web
+        run: |
+          mkdir -p jogo
+          $HOME/godot --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/jogo/index.html" 2>&1 | tee export.log
+          test -f jogo/index.pck
+
+      - name: Publicar em /jogo/
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add jogo
+          if git diff --cached --quiet; then echo "Nada mudou"; exit 0; fi
+          git commit -m "build: jogo web (${GITHUB_SHA::7})"
+          for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done

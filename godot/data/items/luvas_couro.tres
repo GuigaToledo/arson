@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"luvas_couro"
+display_name = "Luvas de Couro"
+item_type = "armadura"
+slot = 3
+stats = {"defesa": 1}
+placeholder_style = &"gloves"
+placeholder_color = Color(0.24, 0.16, 0.1, 1)
+placeholder_accent = Color(0, 0, 0, 1)
+glow = 0

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"gibao_verde"
+display_name = "Gibão Verde"
+item_type = "roupa"
+slot = 1
+stats = {"defesa": 1}
+placeholder_style = &"vest"
+placeholder_color = Color(0.18, 0.24, 0.14, 1)
+placeholder_accent = Color(0.1, 0.08, 0.05, 1)
+glow = 0
