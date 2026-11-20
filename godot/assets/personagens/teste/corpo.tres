@@ -10,4 +10,5 @@ display_name = "teste"
 item_type = "corpo"
 sprite_frames = ExtResource("2")
 animations = PackedStringArray("idle", "walk", "run")
-anchor = Vector2(0.0, -62.1)
+anchor = Vector2(0.0, -48.6)
+sprite_scale = 0.6829
