@@ -1,0 +1,31 @@
+{
+  "modelo": "modelo.glb",
+  "animacoes": {
+    "idle": {
+      "arquivo": "modelo.glb",
+      "acao": "idle"
+    },
+    "walk": {
+      "arquivo": "modelo.glb",
+      "acao": "walk"
+    },
+    "run": {
+      "arquivo": "modelo.glb",
+      "acao": "run"
+    },
+    "cast": {
+      "arquivo": "modelo.glb",
+      "acao": "cast"
+    },
+    "attack": {
+      "arquivo": "modelo.glb",
+      "acao": "attack"
+    },
+    "damage": {
+      "arquivo": "modelo.glb",
+      "acao": "damage"
+    }
+  },
+  "quadros": 8,
+  "amostras": 24
+}
