@@ -89,6 +89,14 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 	ci.draw_circle(p.head, 5.6, hair)
 	if not p.away:
 		ci.draw_circle(p.head + fwd(p, 1.8) + Vector2(0, 1.0), 4.6, skin)
+	if c.get("core", false) and p.toward:
+		var cc: Vector2 = Vector2(0, -51 + p.bob) + fwd(p, 3)
+		ci.draw_circle(cc, 7.0, Color(1, 0.35, 0.05, 0.25))
+		ci.draw_circle(cc, 4.2, Color(1, 0.45, 0.08))
+		ci.draw_circle(cc, 2.0, Color(1, 0.9, 0.6))
+		for k in 5:
+			var a := TAU * k / 5.0 + 0.4
+			ci.draw_line(cc + Vector2(cos(a), sin(a) * 0.6) * 4.0, cc + Vector2(cos(a), sin(a) * 0.6) * 9.5, Color(1, 0.4, 0.05, 0.8), 1.0)
 	eyes(ci, p, c.get("eyes", Color(1, 0.62, 0.15)), c.get("glow_eyes", false))
 
 
@@ -154,6 +162,10 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 			ci.draw_circle(top, 2.0, Color(1, 0.95, 0.75))
 		"mimic":
 			draw_mimic(ci, p, it)
+		"wolfcape":
+			draw_wolfcape_back(ci, p, it)
+		"wolfskirt":
+			draw_wolfskirt(ci, p, it)
 		"amulet":
 			if not p.away:
 				var c := amulet_pos(p)
@@ -172,28 +184,103 @@ static func amulet_pos(p: Dictionary) -> Vector2:
 
 
 static func shield_center(p: Dictionary) -> Vector2:
-	return p.handL + lat(p, -3) + fwd(p, 5) + Vector2(0, -6)
+	return Vector2(p.handL.x, -34.0 + p.bob) + lat(p, -4) + fwd(p, 7)
 
 
 static func draw_mimic(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 	var c := shield_center(p)
 	var f: Vector2 = p.f
-	var face := absf(f.y) * 0.7 + 0.3
-	var hw := 8.0 * face
-	var hh := 14.0
-	var rect := PackedVector2Array([c + Vector2(-hw, -hh), c + Vector2(hw, -hh), c + Vector2(hw, hh), c + Vector2(-hw, hh)])
-	ci.draw_colored_polygon(rect, it.placeholder_color)
-	ci.draw_polyline(PackedVector2Array([rect[0], rect[1], rect[2], rect[3], rect[0]]), Color(0.45, 0.4, 0.32), 1.5)
-	if p.toward and face > 0.5:
+	var face := absf(f.y) * 0.75 + 0.25
+	var hw := 12.0 * face
+	var hh := 27.0
+	var rect := PackedVector2Array([c + Vector2(-hw, -hh + 3), c + Vector2(0, -hh), c + Vector2(hw, -hh + 3), c + Vector2(hw, hh - 2), c + Vector2(0, hh), c + Vector2(-hw, hh - 2)])
+	ci.draw_colored_polygon(rect, it.placeholder_color.darkened(0.1))
+	var rim := rect.duplicate()
+	rim.append(rect[0])
+	ci.draw_polyline(rim, Color(0.42, 0.36, 0.28), 2.0)
+	if p.toward and face > 0.55:
 		var acc := it.placeholder_accent
-		for s in [-1.0, 1.0]:
-			ci.draw_circle(c + Vector2(s * hw * 0.45, -6), 1.4, acc)
-		var mouth := PackedVector2Array()
-		for i in 7:
-			var x := lerpf(-hw * 0.8, hw * 0.8, i / 6.0)
-			mouth.append(c + Vector2(x, 3.0 if i % 2 == 0 else 7.0))
-		ci.draw_rect(Rect2(c + Vector2(-hw * 0.8, 1), Vector2(hw * 1.6, 8)), Color(0.12, 0.02, 0.02))
-		ci.draw_polyline(mouth, Color(0.85, 0.8, 0.65), 1.2)
+		for e in [Vector2(-0.45, -15), Vector2(0.45, -15), Vector2(-0.6, -6), Vector2(0.6, -6)]:
+			var ep: Vector2 = c + Vector2(e.x * hw, e.y)
+			ci.draw_circle(ep, 2.6, Color(acc, 0.3))
+			ci.draw_circle(ep, 1.3, acc)
+		ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-hw * 0.75, 0), c + Vector2(hw * 0.75, 0), c + Vector2(hw * 0.5, 16), c + Vector2(-hw * 0.5, 16)]), Color(0.1, 0.02, 0.02))
+		ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-3, 6), c + Vector2(3, 6), c + Vector2(2, 15), c + Vector2(-2, 15)]), Color(0.55, 0.22, 0.2))
+		for i in 6:
+			var x := lerpf(-hw * 0.65, hw * 0.65, i / 5.0)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(x - 1.6, 0), c + Vector2(x + 1.6, 0), c + Vector2(x, 5)]), Color(0.88, 0.82, 0.68))
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(x * 0.8 - 1.4, 16), c + Vector2(x * 0.8 + 1.4, 16), c + Vector2(x * 0.8, 11)]), Color(0.88, 0.82, 0.68))
+		for r in [Vector2(0, -21), Vector2(0, 21)]:
+			ci.draw_circle(c + r, 2.2, Color(0.5, 0.42, 0.3))
+	else:
+		for k in [-0.5, 0.0, 0.5]:
+			ci.draw_line(c + Vector2(k * hw, -hh + 4), c + Vector2(k * hw, hh - 4), Color(0.18, 0.1, 0.06), 1.0)
+
+
+static func fur_edge(ci: CanvasItem, a: Vector2, b: Vector2, depth: float, col: Color, n: int, sd: float) -> void:
+	for i in n:
+		var t := (i + 0.5) / n
+		var base := a.lerp(b, t)
+		var ln := depth * (0.6 + 0.4 * absf(sin(sd + i * 2.3)))
+		ci.draw_line(base, base + Vector2(sin(sd + i) * 1.5, ln), col, 1.6)
+
+
+static func draw_wolfcape_back(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
+	var col := it.placeholder_color
+	var bot := Vector2(0, -2)
+	var w: float = p.w
+	var bl: Vector2 = bot + lat(p, -w * 1.9) - fwd(p, 6)
+	var br: Vector2 = bot + lat(p, w * 1.9) - fwd(p, 6)
+	ci.draw_colored_polygon(PackedVector2Array([p.shL + Vector2(0, -3), p.shR + Vector2(0, -3), br, bl]), col)
+	for i in 9:
+		var t := i / 8.0
+		var top: Vector2 = p.shL.lerp(p.shR, t)
+		var low: Vector2 = bl.lerp(br, t)
+		ci.draw_line(top, low, Color(0.5, 0.06, 0.04, 0.55), 1.0)
+	fur_edge(ci, bl, br, 6.0, col, 12, 1.0)
+
+
+static func draw_wolfcape_front(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
+	var col := it.placeholder_color
+	var acc := it.placeholder_accent
+	var h: Vector2 = p.head
+	var w: float = p.w
+	# manto de pelo nos ombros
+	ci.draw_colored_polygon(PackedVector2Array([p.shL + lat(p, -4) + Vector2(0, 4), h + Vector2(0, 4) - fwd(p, 2), p.shR + lat(p, 4) + Vector2(0, 4), p.shR + Vector2(0, 10), p.shL + Vector2(0, 10)]), col)
+	if p.toward:
+		fur_edge(ci, p.shL + Vector2(0, 8), (p.shL + p.shR) * 0.5 + Vector2(0, 6), 7.0, col.lightened(0.05), 5, 2.0)
+		fur_edge(ci, (p.shL + p.shR) * 0.5 + Vector2(0, 6), p.shR + Vector2(0, 8), 7.0, col.lightened(0.05), 5, 4.0)
+		for s in [p.shL, p.shR]:
+			ci.draw_circle(s + Vector2(0, 2), 2.4, Color(0.55, 0.45, 0.32))
+	# capuz com cabeça de lobo
+	ci.draw_circle(h + Vector2(0, -1), 7.6, col)
+	var snout_base: Vector2 = h + Vector2(0, -5) + fwd(p, 3)
+	ci.draw_colored_polygon(PackedVector2Array([snout_base + lat(p, -3.5), snout_base + lat(p, 3.5), snout_base + fwd(p, 9) + Vector2(0, 1.5)]), col.darkened(0.2))
+	for s in [-1.0, 1.0]:
+		var e: Vector2 = h + lat(p, s * 4.2) + Vector2(0, -6) - fwd(p, 1)
+		ci.draw_colored_polygon(PackedVector2Array([e + lat(p, -2.0), e + lat(p, 2.0), e + Vector2(0, -7)]), col.darkened(0.1))
+		ci.draw_line(e, e + Vector2(0, -6), Color(0.6, 0.08, 0.04), 1.0)
+		if p.toward:
+			var we: Vector2 = h + lat(p, s * 2.6) + Vector2(0, -6) + fwd(p, 4)
+			ci.draw_circle(we, 1.0, acc)
+	if p.toward:
+		ci.draw_circle(h + fwd(p, 2.6) + Vector2(0, 1.4), 4.0, Color(0.02, 0.015, 0.015))
+		eyes(ci, p, Color(1, 0.62, 0.15), true)
+
+
+static func draw_wolfskirt(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
+	var col := it.placeholder_color
+	var w: float = p.w
+	ci.draw_line(p.hipL, p.footL + Vector2(0, -3), Color(0.08, 0.07, 0.075), 6.0)
+	ci.draw_line(p.hipR, p.footR + Vector2(0, -3), Color(0.08, 0.07, 0.075), 6.0)
+	var kl: Vector2 = Vector2(0, -12 + p.bob) + lat(p, -w * 1.2)
+	var kr: Vector2 = Vector2(0, -12 + p.bob) + lat(p, w * 1.2)
+	ci.draw_colored_polygon(PackedVector2Array([p.hipL + Vector2(0, -4), p.hipR + Vector2(0, -4), kr, kl]), col)
+	ci.draw_line(p.hipL + Vector2(0, -3), p.hipR + Vector2(0, -3), Color(0.35, 0.28, 0.2), 2.0)
+	fur_edge(ci, kl, kr, 7.0, col, 9, 3.0)
+	for i in 6:
+		var t := (i + 0.5) / 6.0
+		ci.draw_line(p.hipL.lerp(p.hipR, t), kl.lerp(kr, t), Color(0.55, 0.07, 0.04, 0.5), 1.0)
 
 
 ## Ponto onde o item emite luz (cajado, amuleto, olhos do escudo).

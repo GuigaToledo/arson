@@ -8,11 +8,12 @@ var _eq_key := ""
 
 func _init() -> void:
 	body_colors = {
-		"skin": Color(0.42, 0.33, 0.28),
-		"under": Color(0.13, 0.11, 0.1),
-		"hair": Color(0.05, 0.04, 0.04),
+		"skin": Color(0.09, 0.085, 0.09),
+		"under": Color(0.11, 0.1, 0.1),
+		"hair": Color(0.07, 0.065, 0.07),
 		"eyes": Color(1.0, 0.62, 0.15),
 		"glow_eyes": true,
+		"core": true,
 	}
 	body_path = "res://assets/personagens/mago/corpo.tres"
 

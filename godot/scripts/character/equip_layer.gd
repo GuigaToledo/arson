@@ -20,7 +20,7 @@ func set_item(it: EquipmentItem) -> void:
 	if _light:
 		_light.queue_free()
 		_light = null
-	if item and item.sprite_frames:
+	if item and item.sprite_frames and slot != CharacterVisual.CAPE_FRONT:
 		_sprite = AnimatedSprite2D.new()
 		_sprite.sprite_frames = item.sprite_frames
 		_sprite.centered = true
@@ -29,7 +29,7 @@ func set_item(it: EquipmentItem) -> void:
 		add_child(_sprite)
 	if slot == -1 and item and item.sprite_frames:
 		body_colors["sprite_body"] = true
-	if item and item.glow > 0.0:
+	if item and item.glow > 0.0 and slot != CharacterVisual.CAPE_FRONT:
 		_light = LightKit.make(item.placeholder_accent, item.glow, 0.35, false, 0.15)
 		add_child(_light)
 	visible = slot == -1 or item != null
@@ -64,4 +64,8 @@ func _draw() -> void:
 	if slot == -1:
 		PlaceholderPainter.draw_body(self, _pose, body_colors)
 	elif item and not body_colors.get("sprite_body", false):
-		PlaceholderPainter.draw_item(self, _pose, item)
+		if slot == CharacterVisual.CAPE_FRONT:
+			if item.placeholder_style == &"wolfcape":
+				PlaceholderPainter.draw_wolfcape_front(self, _pose, item)
+		else:
+			PlaceholderPainter.draw_item(self, _pose, item)

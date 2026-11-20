@@ -5,6 +5,8 @@ extends Node2D
 ## conforme a direção (capa atrás ou na frente, escudo do lado certo...).
 
 const FPS := 10.0
+## Camada extra desenhada na frente (capuz/manto da capa).
+const CAPE_FRONT := 100
 const S := EquipSlot.Slot
 const BASE_DEPTH := {
 	-1: 0.0,
@@ -30,22 +32,28 @@ var _frame := 0
 var _frame_acc := 0.0
 var _order_key := ""
 var _eye_light: PointLight2D
+var _core_light: PointLight2D
 
 
 func setup(eq: EquipmentComponent) -> void:
 	equipment = eq
-	for s in [-1] + EquipSlot.all():
+	for s in [-1] + EquipSlot.all() + [CAPE_FRONT]:
 		var l := EquipLayer.new()
 		l.slot = s
 		l.body_colors = body_colors
-		l.name = "Corpo" if s == -1 else EquipSlot.slot_name(s)
+		l.name = "Corpo" if s == -1 else ("CapaFrente" if s == CAPE_FRONT else EquipSlot.slot_name(s))
 		add_child(l)
 		layers[s] = l
-		if s != -1:
+		if s == CAPE_FRONT:
+			l.set_item(eq.get_item(S.CAPE))
+		elif s != -1:
 			l.set_item(eq.get_item(s))
 		else:
 			l.set_item(body_item)
 	eq.equipment_changed.connect(_on_equipment_changed)
+	if body_colors.get("core", false) and body_item == null:
+		_core_light = LightKit.make(Color(1, 0.45, 0.1), 0.6, 0.2, false, 0.2)
+		add_child(_core_light)
 	if body_colors.get("glow_eyes", false) and body_item == null:
 		_eye_light = LightKit.make(Color(1, 0.55, 0.15), 0.45, 0.08, false, 0.1)
 		add_child(_eye_light)
@@ -54,6 +62,8 @@ func setup(eq: EquipmentComponent) -> void:
 
 func _on_equipment_changed(slot: int, item: EquipmentItem) -> void:
 	layers[slot].set_item(item)
+	if slot == S.CAPE:
+		layers[CAPE_FRONT].set_item(item)
 
 
 func tick(delta: float, new_dir: String, new_anim: String, speed: float) -> void:
@@ -76,6 +86,9 @@ func tick(delta: float, new_dir: String, new_anim: String, speed: float) -> void
 	if _eye_light:
 		_eye_light.visible = pose.toward
 		_eye_light.position = pose.head + Vector2(0, 0.5)
+	if _core_light:
+		_core_light.visible = pose.toward
+		_core_light.position = Vector2(0, -51)
 	_reorder(false)
 
 
@@ -84,6 +97,8 @@ func _depth(slot: int, f: Vector2) -> float:
 	var r := Vector2(-f.y, f.x)
 	if slot == S.CAPE:
 		return -1.0 - f.y * 5.0
+	if slot == CAPE_FRONT:
+		return 0.6
 	if slot == S.MAIN_HAND:
 		return 1.0 if r.y >= -0.05 else -2.0
 	if slot == S.OFF_HAND:

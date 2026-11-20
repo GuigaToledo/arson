@@ -94,7 +94,7 @@ func _build() -> void:
 		buttons[slot] = b
 	var row := HBoxContainer.new()
 	vb.add_child(row)
-	for pair in [["Vestir tudo", _equip_all], ["Tirar tudo", _unequip_all]]:
+	for pair in [["Lendário", _equip_all], ["Tirar tudo", _unequip_all]]:
 		var b := Button.new()
 		b.text = pair[0]
 		b.focus_mode = Control.FOCUS_NONE
@@ -126,8 +126,7 @@ func _cycle(slot: int) -> void:
 
 
 func _equip_all() -> void:
-	for id in ["capuz_aprendiz", "tunica_aprendiz", "ombreiras_ferro", "luvas_couro", "calca_tecido",
-			"botas_couro", "capa_viagem", "cajado_brasa", "escudo_mimico", "amuleto_nucleo"]:
+	for id in ["capa_lobo_infernal", "saia_lobo_infernal", "luvas_couro", "botas_couro", "cajado_brasa", "escudo_mimico"]:
 		player.equipment.equip(ItemDB.get_item(id))
 
 

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"capa_lobo_infernal"
+display_name = "Capa de Lobo Infernal"
+item_type = "armadura"
+slot = 6
+stats = {"defesa": 4, "fogo": 3}
+placeholder_style = &"wolfcape"
+placeholder_color = Color(0.16, 0.03, 0.03, 1)
+placeholder_accent = Color(1, 0.25, 0.08, 1)
+glow = 0

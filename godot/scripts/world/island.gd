@@ -121,7 +121,6 @@ func _spawn_characters() -> void:
 	var walker := Npc.new().configure("Viajante",
 		{"skin": Color(0.5, 0.38, 0.3), "under": Color(0.2, 0.17, 0.14), "hair": Color(0.15, 0.1, 0.07), "eyes": Color(0.2, 0.15, 0.1)},
 		["gibao_verde", "calca_tecido", "botas_couro", "capa_viagem"], "S", pts)
-	walker.body_path = "res://assets/personagens/teste/corpo.tres"
 	walker.position = pts[0]
 	entities.add_child(walker)
 
