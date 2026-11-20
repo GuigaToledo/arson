@@ -17,15 +17,32 @@ S = meta['tamanho']
 os.makedirs(DST, exist_ok=True)
 res_dir = 'res://assets/personagens/%s/' % NOME
 
+# recorte comum a todos os quadros (tira o espaço vazio) e altura do corpo
+files = [os.path.join(TMP, 'frames', f) for f in os.listdir(os.path.join(TMP, 'frames')) if f.endswith('.png')]
+box, body_h = None, 0
+for fp in files:
+    a = Image.open(fp).getchannel('A')
+    b = a.point(lambda v: 255 if v > 8 else 0).getbbox()
+    if b:
+        box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]), max(box[2], b[2]), max(box[3], b[3]))
+    bb = a.point(lambda v: 255 if v > 200 else 0).getbbox()
+    if bb:
+        body_h = max(body_h, bb[3] - bb[1])
+box = box or (0, 0, S, S)
+box = (max(0, box[0] - 4), max(0, box[1] - 4), min(S, box[2] + 4), min(S, box[3] + 4))
+BW, BH = box[2] - box[0], box[3] - box[1]
+ALTURA_JOGO = 84.0
+escala = ALTURA_JOGO / max(1, body_h)
+
 ext, subs, anims = [], [], []
 sid = 0
 for ai, (anim, info) in enumerate(meta['animacoes'].items()):
     n = info['quadros']
-    sheet = Image.new('RGBA', (S * n, S * len(ROWS)))
+    sheet = Image.new('RGBA', (BW * n, BH * len(ROWS)))
     for row, d in enumerate(ROWS):
         for i in range(n):
             fr = Image.open(os.path.join(TMP, 'frames', '%s_%s_%02d.png' % (anim, d, i)))
-            sheet.paste(fr, (i * S, row * S))
+            sheet.paste(fr.crop(box), (i * BW, row * BH))
     sheet.save(os.path.join(DST, anim + '.png'), optimize=True)
     tid = 't%d' % ai
     ext.append('[ext_resource type="Texture2D" path="%s%s.png" id="%s"]' % (res_dir, anim, tid))
@@ -33,7 +50,7 @@ for ai, (anim, info) in enumerate(meta['animacoes'].items()):
         frames = []
         for i in range(n):
             sid += 1
-            subs.append('[sub_resource type="AtlasTexture" id="a%d"]\natlas = ExtResource("%s")\nregion = Rect2(%d, %d, %d, %d)\n' % (sid, tid, i * S, row * S, S, S))
+            subs.append('[sub_resource type="AtlasTexture" id="a%d"]\natlas = ExtResource("%s")\nregion = Rect2(%d, %d, %d, %d)\n' % (sid, tid, i * BW, row * BH, BW, BH))
             frames.append('{"duration": 1.0, "texture": SubResource("a%d")}' % sid)
         anims.append('{"frames": [%s], "loop": %s, "name": &"%s_%s", "speed": %.1f}' % (
             ', '.join(frames), 'true' if info['loop'] else 'false', anim, d, info['fps']))
@@ -60,5 +77,6 @@ item_type = "corpo"
 sprite_frames = ExtResource("2")
 animations = PackedStringArray(%s)
 anchor = Vector2(%.1f, %.1f)
-''' % (res_dir, NOME, NOME, ', '.join('"%s"' % a for a in meta['animacoes']), S / 2 - ax, S / 2 - ay))
+sprite_scale = %.4f
+''' % (res_dir, NOME, NOME, ', '.join('"%s"' % a for a in meta['animacoes']), BW / 2 - (ax - box[0]), BH / 2 - (ay - box[1]), escala))
 print('sprites prontos:', DST)

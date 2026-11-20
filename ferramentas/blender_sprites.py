@@ -96,7 +96,7 @@ def sun(name, energy, color, rot):
     sc.collection.objects.link(o)
 
 
-sun('Principal', 3.2, (1.0, 0.86, 0.7), (50, 0, -40))
+sun('Principal', 3.2, (1.0, 0.86, 0.7), (35, 0, -40))
 sun('Preenchimento', 0.7, (0.6, 0.7, 1.0), (60, 0, 140))
 sun('Contorno', 1.6, (1.0, 0.7, 0.45), (70, 0, 200))
 world = bpy.data.worlds.new('Mundo')
