@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/personagens/mago/quadros.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"corpo_mago"
+display_name = "mago"
+item_type = "corpo"
+sprite_frames = ExtResource("2")
+animations = PackedStringArray("idle", "walk", "run", "cast", "attack", "damage")
+anchor = Vector2(0.0, -62.1)
+sprite_scale = 0.3281
