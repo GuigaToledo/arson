@@ -25,7 +25,10 @@ func set_item(it: EquipmentItem) -> void:
 		_sprite.sprite_frames = item.sprite_frames
 		_sprite.centered = true
 		_sprite.offset = item.anchor
+		_sprite.scale = Vector2.ONE * item.sprite_scale
 		add_child(_sprite)
+	if slot == -1 and item and item.sprite_frames:
+		body_colors["sprite_body"] = true
 	if item and item.glow > 0.0:
 		_light = LightKit.make(item.placeholder_accent, item.glow, 0.35, false, 0.15)
 		add_child(_light)
@@ -60,5 +63,5 @@ func _draw() -> void:
 		return
 	if slot == -1:
 		PlaceholderPainter.draw_body(self, _pose, body_colors)
-	elif item:
+	elif item and not body_colors.get("sprite_body", false):
 		PlaceholderPainter.draw_item(self, _pose, item)

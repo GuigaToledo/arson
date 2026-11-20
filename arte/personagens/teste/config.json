@@ -1,0 +1,11 @@
+{
+  "modelo": "Mage.glb",
+  "animacoes": {
+    "idle": {"arquivo": "Rig_Medium_General.glb", "acao": "Idle_A"},
+    "walk": {"arquivo": "Rig_Medium_MovementBasic.glb", "acao": "Walking_A"},
+    "run": {"arquivo": "Rig_Medium_MovementBasic.glb", "acao": "Running_A"}
+  },
+  "quadros": 8,
+  "tamanho": 256,
+  "amostras": 16
+}

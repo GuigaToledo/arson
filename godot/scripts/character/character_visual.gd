@@ -18,6 +18,8 @@ const BASE_DEPTH := {
 }
 
 var body_colors: Dictionary = {}
+## Corpo renderizado (EquipmentItem com SpriteFrames). Nulo = arte provisória.
+var body_item: EquipmentItem
 var equipment: EquipmentComponent
 var layers: Dictionary = {}
 var dir := "S"
@@ -42,9 +44,9 @@ func setup(eq: EquipmentComponent) -> void:
 		if s != -1:
 			l.set_item(eq.get_item(s))
 		else:
-			l.set_item(null)
+			l.set_item(body_item)
 	eq.equipment_changed.connect(_on_equipment_changed)
-	if body_colors.get("glow_eyes", false):
+	if body_colors.get("glow_eyes", false) and body_item == null:
 		_eye_light = LightKit.make(Color(1, 0.55, 0.15), 0.45, 0.08, false, 0.1)
 		add_child(_eye_light)
 	_reorder(true)

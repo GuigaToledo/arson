@@ -5,7 +5,7 @@ name: Godot - build web
 on:
   push:
     branches: [main]
-    paths: ["godot/**", ".github/workflows/godot-web.yml"]
+    paths: ["godot/**", "arte/**", "ferramentas/**", ".github/workflows/godot-web.yml"]
   workflow_dispatch:
 
 permissions:
@@ -22,6 +22,38 @@ jobs:
       GODOT_VERSION: "4.4.1"
     steps:
       - uses: actions/checkout@v4
+
+      - name: Peças de cenário (remove fundo)
+        run: |
+          pip install --quiet pillow
+          python3 ferramentas/processar_objetos.py arte/objetos godot/assets/objetos
+
+      - name: Personagens que mudaram
+        id: chars
+        run: |
+          list=""
+          for d in arte/personagens/*/; do
+            [ -f "$d/config.json" ] || continue
+            n=$(basename "$d")
+            h=$( (cat ferramentas/blender_sprites.py ferramentas/montar_sprites.py; find "$d" -type f | sort | xargs cat) | sha1sum | cut -c1-16)
+            if [ "$(cat godot/assets/personagens/$n/hash.txt 2>/dev/null)" != "$h" ]; then list="$list $n:$h"; fi
+          done
+          echo "list=$list" >> $GITHUB_OUTPUT
+          echo "Para renderizar:$list"
+
+      - name: Renderizar personagens no Blender (8 direções)
+        if: steps.chars.outputs.list != ''
+        run: |
+          wget -q https://download.blender.org/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz
+          tar -xf blender-4.2.3-linux-x64.tar.xz
+          for item in ${{ steps.chars.outputs.list }}; do
+            n=${item%%:*}; h=${item##*:}
+            rm -rf /tmp/render_$n
+            ./blender-4.2.3-linux-x64/blender -b --factory-startup -P ferramentas/blender_sprites.py -- "arte/personagens/$n" "/tmp/render_$n" 2>&1 | grep -vE "^Fra:|Rendering|Sample|Denois|Path Tracing|Synchroniz|Updating|Loading|Finished|Saved:" | tail -40
+            rm -rf "godot/assets/personagens/$n"
+            python3 ferramentas/montar_sprites.py "/tmp/render_$n" "godot/assets/personagens/$n" "$n"
+            echo "$h" > "godot/assets/personagens/$n/hash.txt"
+          done
 
       - name: Baixar Godot e modelos de exportação
         run: |
@@ -56,7 +88,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add jogo
+          git add jogo godot/assets
           if git diff --cached --quiet; then echo "Nada mudou"; exit 0; fi
           git commit -m "build: jogo web (${GITHUB_SHA::7})"
           for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done

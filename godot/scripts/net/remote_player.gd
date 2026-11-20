@@ -14,6 +14,7 @@ func _init() -> void:
 		"eyes": Color(1.0, 0.62, 0.15),
 		"glow_eyes": true,
 	}
+	body_path = "res://assets/personagens/mago/corpo.tres"
 
 
 func _ready() -> void:

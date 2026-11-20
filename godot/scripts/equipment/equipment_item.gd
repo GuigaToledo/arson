@@ -20,6 +20,8 @@ const MIRROR := {"E": "W", "W": "E", "NE": "NW", "NW": "NE", "SE": "SW", "SW": "
 @export var animations: PackedStringArray = PackedStringArray(["idle", "walk", "run", "attack", "cast", "spell", "damage", "death"])
 ## Ordem extra de desenho dentro do slot (desempate).
 @export var render_layer: int = 0
+## Escala de exibição do sprite (renderizado em alta resolução).
+@export var sprite_scale: float = 0.5
 ## Ponto de ancoragem do sprite em relação aos pés do personagem.
 @export var anchor: Vector2 = Vector2.ZERO
 ## Ajuste fino por direção: {"SE": Vector2(2, -1)}.

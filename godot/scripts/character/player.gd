@@ -15,6 +15,7 @@ func _init() -> void:
 		"eyes": Color(1.0, 0.62, 0.15),
 		"glow_eyes": true,
 	}
+	body_path = "res://assets/personagens/mago/corpo.tres"
 	start_items = ["capuz_aprendiz", "tunica_aprendiz", "calca_tecido", "botas_couro", "cajado_brasa"]
 
 
@@ -61,3 +62,5 @@ func _physics_process(delta: float) -> void:
 			if get_slide_collision_count() > 0 and get_real_velocity().length() < 5.0:
 				target = null
 	move(d, run_toggle or Input.is_physical_key_pressed(KEY_SHIFT), delta)
+	if target != null and velocity == Vector2.ZERO:
+		target = null

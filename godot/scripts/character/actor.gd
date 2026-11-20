@@ -6,9 +6,14 @@ extends CharacterBody2D
 @export var walk_speed := 120.0
 @export var run_speed := 210.0
 
+## Se definido, diz se uma posição (tela) é caminhável. O mapa da ilha define isto.
+static var walkable: Callable = Callable()
+
 var display_name := ""
 var body_colors: Dictionary = {}
 var start_items: Array = []
+## Caminho de um corpo renderizado (assets/personagens/<nome>/corpo.tres), se existir.
+var body_path := ""
 var equipment: EquipmentComponent
 var visual: CharacterVisual
 var facing := "S"
@@ -34,6 +39,8 @@ func _ready() -> void:
 	visual = CharacterVisual.new()
 	visual.name = "Visual"
 	visual.body_colors = body_colors
+	if body_path != "" and ResourceLoader.exists(body_path):
+		visual.body_item = load(body_path)
 	add_child(visual)
 	visual.setup(equipment)
 
@@ -42,6 +49,13 @@ func _ready() -> void:
 func move(d: Vector2, running: bool, delta: float) -> void:
 	if d.length_squared() > 0.0001:
 		velocity = Iso.ground_velocity(d, run_speed if running else walk_speed)
+		if walkable.is_valid() and not walkable.call(global_position + velocity * delta * 3.0):
+			if walkable.call(global_position + Vector2(velocity.x, 0) * delta * 3.0):
+				velocity.y = 0.0
+			elif walkable.call(global_position + Vector2(0, velocity.y) * delta * 3.0):
+				velocity.x = 0.0
+			else:
+				velocity = Vector2.ZERO
 		facing = Iso.dir_from_vector(d)
 		if _action_time <= 0.0:
 			anim = "run" if running else "walk"

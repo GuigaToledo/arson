@@ -122,6 +122,20 @@ func _draw() -> void:
 			var mid := o0.lerp(o1, 0.5)
 			draw_line(mid + Vector2(-12, -3), mid + Vector2(10, -6), Color(0.2, 0.12, 0.06), 4.0)
 			draw_line(mid + Vector2(-8, -6), mid + Vector2(13, -2), Color(0.25, 0.14, 0.07), 4.0)
+		"house":
+			var wall := height * 0.55
+			box(A, B, C, D, 0, wall, color)
+			var roof := Color(0.2, 0.15, 0.12)
+			var r1 := up((A + D) * 0.5, height)
+			var r2 := up((B + C) * 0.5, height)
+			draw_colored_polygon(PackedVector2Array([up(A, wall), up(B, wall), r2, r1]), roof.darkened(0.3))
+			draw_colored_polygon(PackedVector2Array([up(C, wall), up(B, wall), r2]), color.darkened(0.45))
+			draw_colored_polygon(PackedVector2Array([up(D, wall), up(C, wall), r2, r1]), roof)
+			for k in [0.3, 0.7]:
+				var wp := D.lerp(C, k)
+				draw_rect(Rect2(up(wp, wall * 0.75) + Vector2(-6, 0), Vector2(12, wall * 0.3)), Color(1, 0.7, 0.35, 0.9))
+			var door := D.lerp(C, 0.5)
+			draw_colored_polygon(PackedVector2Array([door + Vector2(-9, -4), door + Vector2(9, 4), up(door + Vector2(9, 4), wall * 0.5), up(door + Vector2(-9, -4), wall * 0.5)]), Color(0.18, 0.11, 0.06))
 		_:
 			box(A, B, C, D, 0, height, color)
 			if kind == "crate":

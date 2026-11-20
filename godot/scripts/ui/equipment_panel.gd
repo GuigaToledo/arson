@@ -67,6 +67,12 @@ func _build() -> void:
 	title.text = "Mago das Chamas — equipamento"
 	title.add_theme_color_override("font_color", Color(1, 0.7, 0.35))
 	vb.add_child(title)
+	var portrait := TextureRect.new()
+	portrait.texture = load("res://assets/ui/retrato_mago.jpg")
+	portrait.custom_minimum_size = Vector2(0, 120)
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	vb.add_child(portrait)
 	var grid := GridContainer.new()
 	grid.columns = 3
 	vb.add_child(grid)
