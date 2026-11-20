@@ -40,14 +40,6 @@ for o in model_objs:
     if o.parent is None:
         o.parent = pivot
 
-# altura e pés
-bpy.context.view_layer.update()
-pts = [o.matrix_world @ Vector(c) for o in meshes for c in o.bound_box]
-zmin = min(p.z for p in pts)
-height = max(p.z for p in pts) - zmin
-pivot.location.z = -zmin
-print('altura do modelo:', height)
-
 # ações por arquivo
 cache = {cfg['modelo']: model_acts}
 
@@ -72,6 +64,31 @@ def pick(spec):
                 return a
     return acts[0] if acts else None
 
+
+# altura e pés medidos na geometria já deformada pela primeira animação
+def measure():
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    zs = []
+    for o in meshes:
+        if o.hide_render:
+            continue
+        ev = o.evaluated_get(dg)
+        me = ev.to_mesh()
+        zs += [(ev.matrix_world @ v.co).z for v in me.vertices]
+        ev.to_mesh_clear()
+    return min(zs), max(zs)
+
+
+first = next(iter((cfg.get('animacoes') or {'idle': {}}).values()))
+if arm is not None and pick(first):
+    arm.animation_data_create()
+    arm.animation_data.action = pick(first)
+    sc.frame_set(int(pick(first).frame_range[0]))
+zmin, zmax = measure()
+height = zmax - zmin
+pivot.location.z = -zmin
+print('altura do modelo:', height)
 
 # câmera isométrica (30° de elevação)
 cam_data = bpy.data.cameras.new('Cam')

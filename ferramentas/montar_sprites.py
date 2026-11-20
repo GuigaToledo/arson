@@ -22,7 +22,7 @@ files = [os.path.join(TMP, 'frames', f) for f in os.listdir(os.path.join(TMP, 'f
 box, body_h = None, 0
 for fp in files:
     a = Image.open(fp).getchannel('A')
-    b = a.point(lambda v: 255 if v > 8 else 0).getbbox()
+    b = a.point(lambda v: 255 if v > 40 else 0).getbbox()
     if b:
         box = b if box is None else (min(box[0], b[0]), min(box[1], b[1]), max(box[2], b[2]), max(box[3], b[3]))
     bb = a.point(lambda v: 255 if v > 200 else 0).getbbox()
