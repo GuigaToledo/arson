@@ -16,7 +16,6 @@ var player: Player
 var panel: PanelContainer
 var buttons: Dictionary = {}
 var stats_label: Label
-var info: Label
 
 
 func bind(p: Player) -> void:
@@ -43,13 +42,14 @@ func _build() -> void:
 	add_child(root)
 
 	var toggle := Button.new()
-	toggle.text = "Equipamento (I)"
+	toggle.text = "Equipamento"
+	toggle.add_theme_font_size_override("font_size", 15)
 	toggle.focus_mode = Control.FOCUS_NONE
 	toggle.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	toggle.offset_left = -160
 	toggle.offset_right = -10
 	toggle.offset_top = 10
-	toggle.offset_bottom = 44
+	toggle.offset_bottom = 50
 	toggle.pressed.connect(func(): panel.visible = not panel.visible)
 	root.add_child(toggle)
 
@@ -59,7 +59,7 @@ func _build() -> void:
 	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	panel.offset_left = -340
 	panel.offset_right = -10
-	panel.offset_top = 52
+	panel.offset_top = 58
 	root.add_child(panel)
 	var vb := VBoxContainer.new()
 	panel.add_child(vb)
@@ -73,13 +73,13 @@ func _build() -> void:
 	for slot in LAYOUT:
 		if slot == -1:
 			var sp := Control.new()
-			sp.custom_minimum_size = Vector2(100, 46)
+			sp.custom_minimum_size = Vector2(98, 50)
 			grid.add_child(sp)
 			continue
 		var b := Button.new()
 		b.focus_mode = Control.FOCUS_NONE
-		b.custom_minimum_size = Vector2(100, 46)
-		b.add_theme_font_size_override("font_size", 11)
+		b.custom_minimum_size = Vector2(98, 50)
+		b.add_theme_font_size_override("font_size", 13)
 		b.add_theme_stylebox_override("normal", _style(Color(0.13, 0.1, 0.08), Color(0.3, 0.22, 0.14)))
 		b.add_theme_stylebox_override("hover", _style(Color(0.2, 0.14, 0.1), Color(0.6, 0.4, 0.2)))
 		b.add_theme_stylebox_override("pressed", _style(Color(0.25, 0.12, 0.06), Color(1, 0.55, 0.2)))
@@ -95,27 +95,18 @@ func _build() -> void:
 		b.pressed.connect(pair[1])
 		row.add_child(b)
 	stats_label = Label.new()
-	stats_label.add_theme_font_size_override("font_size", 12)
+	stats_label.add_theme_font_size_override("font_size", 13)
+	stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	stats_label.custom_minimum_size = Vector2(300, 0)
 	vb.add_child(stats_label)
 
-	info = Label.new()
-	info.position = Vector2(12, 10)
-	info.add_theme_font_size_override("font_size", 13)
-	info.add_theme_color_override("font_color", Color(0.9, 0.8, 0.65))
-	info.add_theme_color_override("font_outline_color", Color.BLACK)
-	info.add_theme_constant_override("outline_size", 4)
-	root.add_child(info)
+	panel.visible = not DisplayServer.is_touchscreen_available()
 
 
 func _unhandled_input(ev: InputEvent) -> void:
 	var k := ev as InputEventKey
 	if k and k.pressed and not k.echo and k.physical_keycode == KEY_I:
 		panel.visible = not panel.visible
-
-
-func _process(_d: float) -> void:
-	if player and info:
-		info.text = "ARSON — demo da taverna (arte provisória)\nWASD/setas ou toque: andar · Shift: correr · 1: conjurar\nDireção: %s · Animação: %s" % [player.facing, player.anim]
 
 
 func _cycle(slot: int) -> void:

@@ -50,6 +50,7 @@ jobs:
           mkdir -p jogo
           $HOME/godot --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/jogo/index.html" 2>&1 | tee export.log
           test -f jogo/index.pck
+          cp godot/web/arson_net.js jogo/
 
       - name: Publicar em /jogo/
         run: |

@@ -9,7 +9,8 @@ var _wait := 0.0
 var _stuck := 0.0
 
 
-func configure(colors: Dictionary, items: Array, face: String, pts: Array = []) -> Npc:
+func configure(nm: String, colors: Dictionary, items: Array, face: String, pts: Array = []) -> Npc:
+	display_name = nm
 	body_colors = colors
 	start_items = items
 	idle_facing = face

@@ -34,6 +34,13 @@ func _ready() -> void:
 	_build_props()
 	_build_lights()
 	_spawn_characters()
+	var net := NetSync.new()
+	net.name = "Rede"
+	add_child(net)
+	net.setup(player, entities)
+	var hud := Hud.new()
+	add_child(hud)
+	hud.bind(player, net)
 	var ui := EquipmentPanel.new()
 	add_child(ui)
 	ui.bind(player)
@@ -195,7 +202,7 @@ func _spawn_characters() -> void:
 	player.position = s(6.5, 8.2)
 	entities.add_child(player)
 
-	var barkeep := Npc.new().configure(
+	var barkeep := Npc.new().configure("Taverneira",
 		{"skin": Color(0.62, 0.48, 0.38), "under": Color(0.35, 0.28, 0.22), "hair": Color(0.45, 0.3, 0.15), "eyes": Color(0.2, 0.15, 0.1)},
 		["avental_taverna", "calca_tecido", "botas_couro"], "SE")
 	barkeep.name = "Taverneira"
@@ -205,7 +212,7 @@ func _spawn_characters() -> void:
 	var pts := []
 	for g in [Vector2(5.5, 6.0), Vector2(6.5, 8.8), Vector2(10.6, 8.6), Vector2(10.8, 4.6), Vector2(10.2, 2.1), Vector2(7.0, 2.1)]:
 		pts.append(Iso.to_screen(g))
-	var patron := Npc.new().configure(
+	var patron := Npc.new().configure("Viajante",
 		{"skin": Color(0.5, 0.38, 0.3), "under": Color(0.2, 0.17, 0.14), "hair": Color(0.15, 0.1, 0.07), "eyes": Color(0.2, 0.15, 0.1)},
 		["gibao_verde", "calca_tecido", "botas_couro", "capa_viagem"], "S", pts)
 	patron.name = "Viajante"

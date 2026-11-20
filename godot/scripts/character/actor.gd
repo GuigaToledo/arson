@@ -6,6 +6,7 @@ extends CharacterBody2D
 @export var walk_speed := 120.0
 @export var run_speed := 210.0
 
+var display_name := ""
 var body_colors: Dictionary = {}
 var start_items: Array = []
 var equipment: EquipmentComponent
@@ -17,6 +18,7 @@ var _action_time := 0.0
 
 func _ready() -> void:
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
+	add_to_group("actors")
 	equipment = EquipmentComponent.new()
 	equipment.name = "Equipment"
 	add_child(equipment)
