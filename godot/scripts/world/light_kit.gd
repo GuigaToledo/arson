@@ -8,9 +8,10 @@ static var _tex: Texture2D
 static func radial() -> Texture2D:
 	if _tex == null:
 		var g := Gradient.new()
+		# borda preta e transparente: luz e partículas somem fora do círculo
 		g.set_color(0, Color(1, 1, 1, 1))
-		g.set_color(1, Color(1, 1, 1, 0))
-		g.add_point(0.35, Color(1, 1, 1, 0.55))
+		g.set_color(1, Color(0, 0, 0, 0))
+		g.add_point(0.35, Color(0.55, 0.55, 0.55, 0.55))
 		var t := GradientTexture2D.new()
 		t.gradient = g
 		t.fill = GradientTexture2D.FILL_RADIAL
