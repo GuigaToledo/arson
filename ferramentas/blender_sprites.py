@@ -75,7 +75,9 @@ def measure():
             continue
         ev = o.evaluated_get(dg)
         me = ev.to_mesh()
-        zs += [(ev.matrix_world @ v.co).z for v in me.vertices]
+        oz = [(ev.matrix_world @ v.co).z for v in me.vertices]
+        print('  malha', o.name, 'z', round(min(oz), 3), round(max(oz), 3), 'pai', o.parent.name if o.parent else '-')
+        zs += oz
         ev.to_mesh_clear()
     return min(zs), max(zs)
 
