@@ -84,7 +84,10 @@ def main():
     token = os.environ.get('HF_TOKEN') or None
     for space in SPACES:
         try:
-            client = Client(space, hf_token=token)
+            try:
+                client = Client(space, token=token)
+            except TypeError:
+                client = Client(space, hf_token=token)
             api = client.view_api(return_format='dict', print_info=False)
             print('Space:', space, 'endpoints:', list(api.get('named_endpoints', {}).keys()))
         except Exception:
