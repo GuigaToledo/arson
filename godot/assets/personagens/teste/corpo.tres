@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+[ext_resource type="SpriteFrames" path="res://assets/personagens/teste/quadros.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"corpo_teste"
+display_name = "teste"
+item_type = "corpo"
+sprite_frames = ExtResource("2")
+animations = PackedStringArray("idle", "walk", "run")
+anchor = Vector2(0.0, -62.1)
