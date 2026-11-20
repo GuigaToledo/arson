@@ -51,8 +51,10 @@ def sem_fundo(name, img):
     if bbox:
         im = im.crop(bbox)
     side = int(max(im.size) * 1.1)
-    sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
-    sq.paste(im, ((side - im.size[0]) // 2, (side - im.size[1]) // 2))
+    # fundo branco: o Hunyuan3D espera objeto sobre branco (fundo preto vira "chão")
+    sq = Image.new('RGBA', (side, side), (255, 255, 255, 255))
+    sq.alpha_composite(im, ((side - im.size[0]) // 2, (side - im.size[1]) // 2))
+    sq = sq.convert('RGB')
     path = os.path.join(out_dir, name + '.png')
     sq.save(path)
     print('sem fundo:', path, sq.size)

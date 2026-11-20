@@ -44,6 +44,20 @@ body.name = 'Corpo'
 body.rotation_euler.z += math.radians(ROT)
 bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
+# remove "chão" gerado por engano (placa fina embaixo com muitos vértices)
+import bmesh
+bm = bmesh.new()
+bm.from_mesh(body.data)
+zs = [v.co.z for v in bm.verts]
+z0, z1 = min(zs), max(zs)
+cut = z0 + 0.04 * (z1 - z0)
+low = [v for v in bm.verts if v.co.z < cut]
+if len(low) > 0.25 * len(bm.verts):
+    bmesh.ops.delete(bm, geom=low, context='VERTS')
+    print('chão removido:', len(low), 'vértices')
+bm.to_mesh(body.data)
+bm.free()
+
 faces = len(body.data.polygons)
 if faces > 40000:
     m = body.modifiers.new('Reduzir', 'DECIMATE')
