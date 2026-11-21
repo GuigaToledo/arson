@@ -133,7 +133,10 @@ func _process(delta: float) -> void:
 			for m in _monsters():
 				if not m.dead:
 					alive += 1
-			print("ARSONDBG host=%s pronto=%s jogadores=%d monstros_vivos=%d %s" % [is_host, net_ready, online_count, alive, JSON.stringify(_dbg)])
+			var rinfo := []
+			for rp in get_tree().get_nodes_in_group("remote_players"):
+				rinfo.append("%s:%s:hp%d:inv%d" % [rp.display_name, rp.classe, rp.hp_pct, rp._sm_puppets.size()])
+			print("ARSONDBG host=%s pronto=%s jogadores=%d monstros_vivos=%d %s outros=%s aliado=%d hot=%d" % [is_host, net_ready, online_count, alive, JSON.stringify(_dbg), rinfo, _dbg.get("aliado", 0), int(player.hot_t)])
 	var d = JSON.parse_string(str(_net.poll()))
 	if typeof(d) != TYPE_DICTIONARY:
 		return
@@ -206,4 +209,5 @@ func _process(delta: float) -> void:
 				_dbg.hit += 1
 				player.take_damage(int(e.get("n", 0)), str(e.get("src", "monstro")))
 			"ally":
+				_dbg["aliado"] = int(_dbg.get("aliado", 0)) + 1
 				player.receive_ally(e)

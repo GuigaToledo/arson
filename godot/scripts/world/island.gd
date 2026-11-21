@@ -76,6 +76,22 @@ func _ready() -> void:
 			Chars.use(r)
 			start_game(r)
 			return
+	# ?autoteste=classe (só para testes automáticos): pula a tela inicial na vaga 4
+	if OS.has_feature("web"):
+		var at := str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('autoteste') || ''", true))
+		if MageClass.valid(at):
+			var nm2 := str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('nome') || 'Teste'", true))
+			Chars.create(4, at, nm2)
+			Chars.use(4)
+			start_game(4)
+			for k in player.skills:
+				player.skills[k] = [6, 0.0]
+			get_tree().create_timer(12.0).timeout.connect(func():
+				player.mp = player.max_mp
+				player.cast_spell(player.elem_a() + ":5")
+				player.mp = player.max_mp
+				player.cast_spell("luz:2"))
+			return
 	var ts := TitleScreen.new()
 	add_child(ts)
 	ts.setup()
