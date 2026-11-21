@@ -52,7 +52,12 @@ var _tab := "pocoes"
 var _scroll: ScrollContainer
 
 
+## Há conversa aberta? (o HUD não usa os toques enquanto isso)
+static var is_open := false
+
+
 func open(n: Npc, p: Player) -> void:
+	is_open = true
 	npc = n
 	player = p
 	if _box:
@@ -80,6 +85,7 @@ func open(n: Npc, p: Player) -> void:
 
 
 func close() -> void:
+	is_open = false
 	if _box:
 		_box.queue_free()
 		_box = null

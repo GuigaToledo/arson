@@ -203,6 +203,10 @@ func _set_mobile(on: bool) -> void:
 func _input(ev: InputEvent) -> void:
 	if player == null:
 		return
+	# com o menu ou uma conversa aberta, os toques são dos botões deles (os botões de magia
+	# ficam por baixo e roubavam o toque, ex.: a casa 8 da barra no menu de magias)
+	if (game_menu and game_menu.visible) or NpcDialog.is_open:
+		return
 	var st := ev as InputEventScreenTouch
 	if st and not mobile:
 		_set_mobile(true)  # tocou na tela: é celular/tablet

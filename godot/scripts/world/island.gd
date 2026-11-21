@@ -752,7 +752,7 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 	var tr: SpellTree = gm._tree
 	var res := []
 	for j in 8:
-		tr._sel_id = "luz:1" if j % 2 else "%s:1" % player.elem_a()
+		tr._sel_id = "luz:1" if j % 2 == 0 else "%s:1" % player.elem_a()
 		var want := tr._sel_id
 		for f in 3:
 			await get_tree().process_frame
@@ -763,10 +763,10 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 		var ev := InputEventScreenTouch.new()
 		ev.pressed = true
 		ev.position = tr.get_global_transform_with_canvas() * r.get_center()
-		get_viewport().push_input(ev)
-		var ev2: InputEventScreenTouch = ev.duplicate()
-		ev2.pressed = false
-		get_viewport().push_input(ev2)
+		var evl := InputEventScreenTouch.new()
+		evl.pressed = true
+		evl.position = r.get_center()
+		tr._gui_input(evl)
 		await get_tree().process_frame
 		var okj: bool = j < player.bar.size() and player.bar[j] == want
 		if not okj:
