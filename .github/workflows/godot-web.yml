@@ -52,15 +52,24 @@ jobs:
 
       - name: Exportar para web
         run: |
+          # a versão anterior continua no ar (quem ainda tem a página antiga em cache precisa dela)
+          OLD=$(grep -o 'index-[0-9a-f]*.pck' index.html 2>/dev/null | head -1 || true)
           $HOME/godot --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/index.html" 2>&1 | tee export.log
           test -f index.pck
           cp godot/web/arson_net.js .
+          # nome único por versão: o navegador nunca mistura arquivo novo com antigo do cache
+          V=${GITHUB_SHA::7}
+          for p in index-*.pck; do [ -f "$p" ] && [ "$p" != "$OLD" ] && git rm -q -f "$p" || true; done
+          mv index.pck index-$V.pck
+          sed -i "s#\"executable\":\"index\"#\"executable\":\"index\",\"mainPack\":\"index-$V.pck\"#; s#\"index.pck\":#\"index-$V.pck\":#; s#src=\"arson_net.js\"#src=\"arson_net.js?v=$V\"#" index.html
+          grep -q "index-$V.pck" index.html
+          echo "{\"v\":\"$V\"}" > version.json
 
       - name: Publicar em /arson/
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add index.html index.js index.pck index.wasm index.png index.icon.png index.apple-touch-icon.png index.audio.worklet.js index.audio.position.worklet.js arson_net.js godot/assets arte
+          git add -A index.html index.js index-*.pck index.pck version.json index.wasm index.png index.icon.png index.apple-touch-icon.png index.audio.worklet.js index.audio.position.worklet.js arson_net.js godot/assets arte
           if git diff --cached --quiet; then echo "Nada mudou"; exit 0; fi
           git commit -m "build: jogo web (${GITHUB_SHA::7})"
           for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done

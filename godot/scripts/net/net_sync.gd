@@ -64,6 +64,21 @@ func setup(p: Player, w: Node2D) -> void:
 	_net.start(nm)
 
 
+var _upd_t := 5.0
+
+
+func _check_update(delta: float) -> void:
+	_upd_t -= delta
+	if _upd_t > 0.0 or _net == null:
+		return
+	_upd_t = 5.0
+	if _net.updateReady():
+		_upd_t = 1e9
+		player.save()
+		CombatText.add(player.global_position + Vector2(0, -140), "Nova versão do jogo — atualizando…", Color(1, 0.85, 0.4), true)
+		get_tree().create_timer(2.0).timeout.connect(func(): _net.reloadForUpdate())
+
+
 func say(text: String) -> void:
 	if enabled:
 		_net.say(text)
@@ -91,6 +106,7 @@ func _monsters() -> Array:
 func _process(delta: float) -> void:
 	if not enabled:
 		return
+	_check_update(delta)
 	_acc += delta
 	if _acc >= 0.1:
 		_acc = 0.0

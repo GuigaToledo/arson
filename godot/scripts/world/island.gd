@@ -67,7 +67,12 @@ func _ready() -> void:
 		return
 	var nome := ""
 	if OS.has_feature("web") and JavaScriptBridge.eval("typeof window.ArsonNet !== 'undefined'", true):
-		nome = str(JavaScriptBridge.get_interface("ArsonNet").savedName())
+		var an = JavaScriptBridge.get_interface("ArsonNet")
+		nome = str(an.savedName())
+		# voltou de uma atualização automática: entra direto no personagem
+		if an.takeResume() and saved != "":
+			start_game(saved, "")
+			return
 	var ts := TitleScreen.new()
 	add_child(ts)
 	ts.setup(saved, nome)
