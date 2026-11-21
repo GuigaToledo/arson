@@ -1,5 +1,15 @@
 [
  {
+  "versao": "0.9.1",
+  "data": "2026-11-21",
+  "titulo": "Melhorias das magias pelo nível",
+  "itens": [
+   "Cada magia tem 5 melhorias: nasce na 1ª e ganha +1 a cada nível do elemento (cada uma deixa a magia 12% mais forte)",
+   "Depois das 5 melhorias, o próximo nível libera a magia seguinte (por isso elas vêm nos níveis 1, 6, 11, 16, 21 e 26)",
+   "Aviso na tela de cada melhoria, de cada magia nova e das magias supremas"
+  ]
+ },
+ {
   "versao": "0.9.0",
   "data": "2026-11-21",
   "titulo": "Nova progressão das magias",
