@@ -205,7 +205,7 @@ func _input(ev: InputEvent) -> void:
 		return
 	# com o menu ou uma conversa aberta, os toques são dos botões deles (os botões de magia
 	# ficam por baixo e roubavam o toque, ex.: a casa 8 da barra no menu de magias)
-	if (game_menu and game_menu.visible) or NpcDialog.is_open:
+	if (game_menu and game_menu.visible) or NpcDialog.talking:
 		return
 	var st := ev as InputEventScreenTouch
 	if st and not mobile:
