@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.9.5",
+  "data": "2026-11-21",
+  "titulo": "Projéteis com cara de elemento",
+  "itens": [
+   "Projéteis sem rastro de bolinhas: corpo alongado com cauda que afina",
+   "Pelo caminho soltam pedaços do elemento: gotas d'água, folhas, brasas, lascas de gelo, pedrinhas, fiapos de vento e pingos de lava"
+  ]
+ },
+ {
   "versao": "0.9.4",
   "data": "2026-11-21",
   "titulo": "Vida e mana em pontos",
