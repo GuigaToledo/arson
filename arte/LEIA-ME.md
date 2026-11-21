@@ -37,3 +37,11 @@ Primeiro uma folha com o personagem nas 5 direções (as outras 3 são espelhada
 
 Depois disso eu peço as partes separadas (cabeça, tronco, braços, pernas, capa, escudo) para
 animar com ossos 2D, sempre igual ao personagem da folha.
+
+## Referências (`arte/referencias/`)
+
+- `vila_principal.jpg` — padrão do cenário externo (vila, estradas de pedra, ponte, rio, fogueira, lampiões).
+- `ferraria_interior.jpg`, `taverna_1.jpg`, `taverna_2.jpg` — padrão dos interiores (luz de fogo e velas).
+- `mago_lendario.jpg` — o Mago das Chamas com o equipamento final (capa e saia de lobo infernal, escudo mímico).
+- `mago_sem_equipamento.jpg`, `golem_de_pedra.jpg` — o corpo do Mago sem equipamento (armadura negra, núcleo de fogo, olhos âmbar).
+- `casa_isometrica.jpg`, `ilha_flutuante.jpg` — só como referência de composição isométrica; o estilo cartoon delas não vale.
