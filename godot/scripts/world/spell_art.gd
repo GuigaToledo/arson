@@ -102,6 +102,25 @@ static func parts(parent: Node, pos: Vector2, amount: int, speed: float, life: f
 	return p
 
 
+## Convexo? (teste barato: o sinal da curva não muda) — aí não precisa triangular para conferir.
+static func _convex(pts: PackedVector2Array) -> bool:
+	var sgn := 0
+	var n := pts.size()
+	for i in n:
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[(i + 1) % n]
+		var c: Vector2 = pts[(i + 2) % n]
+		var cr := (b - a).cross(c - b)
+		if absf(cr) < 0.0001:
+			continue
+		var sg := 1 if cr > 0.0 else -1
+		if sgn == 0:
+			sgn = sg
+		elif sg != sgn:
+			return false
+	return true
+
+
 ## Polígono seguro: pula os sem área (ex.: espinho com altura 0) e conserta os torcidos (capa de lado).
 static func poly(n: CanvasItem, pts: PackedVector2Array, col: Color) -> void:
 	if pts.size() < 3:
@@ -113,7 +132,7 @@ static func poly(n: CanvasItem, pts: PackedVector2Array, col: Color) -> void:
 		area += a.x * b.y - b.x * a.y
 	if absf(area) < 1.0:
 		return
-	if pts.size() > 3 and Geometry2D.triangulate_polygon(pts).is_empty():
+	if pts.size() > 3 and not _convex(pts) and Geometry2D.triangulate_polygon(pts).is_empty():
 		pts = Geometry2D.convex_hull(pts)
 		if pts.size() < 4:
 			return
@@ -133,7 +152,7 @@ static func spoly(n: CanvasItem, pts: PackedVector2Array, col: Color, k := 0.32)
 		cen += a
 	if absf(area) < 1.0:
 		return
-	if pts.size() > 3 and Geometry2D.triangulate_polygon(pts).is_empty():
+	if pts.size() > 3 and not _convex(pts) and Geometry2D.triangulate_polygon(pts).is_empty():
 		pts = Geometry2D.convex_hull(pts)
 		if pts.size() < 4:
 			return
