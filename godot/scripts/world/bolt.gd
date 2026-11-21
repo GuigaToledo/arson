@@ -8,6 +8,8 @@ const HEIGHT := 46.0
 var target: Node2D
 var speed := 520.0
 var color := Color(1.0, 0.55, 0.15)
+## Tamanho da bola (fusões são maiores).
+var size := 1.0
 var on_hit: Callable = Callable()
 var _light: PointLight2D
 var _trail: CPUParticles2D
@@ -66,6 +68,6 @@ func _draw() -> void:
 	if not is_processing():
 		return
 	var c := Vector2(0, -HEIGHT)
-	draw_circle(c, 6.0, Color(color, 0.35))
-	draw_circle(c, 3.5, color.lightened(0.3))
-	draw_circle(c, 1.8, Color(1, 0.97, 0.85))
+	draw_circle(c, 6.0 * size, Color(color, 0.35))
+	draw_circle(c, 3.5 * size, color.lightened(0.3))
+	draw_circle(c, 1.8 * size, Color(1, 0.97, 0.85))

@@ -132,8 +132,8 @@ func _build() -> void:
 	spellbar = SpellBar.new()
 	spellbar.player = player
 	spellbar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	spellbar.offset_left = -211
-	spellbar.offset_right = 211
+	spellbar.offset_left = -266
+	spellbar.offset_right = 266
 	spellbar.offset_top = -58
 	spellbar.offset_bottom = -10
 	root.add_child(spellbar)
@@ -215,9 +215,9 @@ func _over_controls(pos: Vector2) -> bool:
 func _start(pos: Vector2, idx: int) -> bool:
 	var si := spellbar.slot_at(pos)
 	if si >= 0:
-		if si < Player.SPELLS.size():
+		if si < SpellBar.N:
 			player.cast_slot(si)
-		elif si == Player.SPELLS.size():
+		elif si == SpellBar.N:
 			player.use_pot("hp")
 		else:
 			player.use_pot("mp")
@@ -266,7 +266,11 @@ func _process(_d: float) -> void:
 	spellbar.queue_redraw()
 	skill_panel.queue_redraw()
 	bars.queue_redraw()
-	fire_btn.enabled = player.mp >= Player.CAST_COST
+	var s0 := player.bar_spell(0)
+	if not s0.is_empty():
+		fire_btn.text = str(s0.curto)
+		fire_btn.color = (s0.color as Color).darkened(0.35)
+		fire_btn.enabled = player.mp >= float(s0.mana) and player.spell_unlocked(str(player.bar[0]))
 	fire_btn.queue_redraw()
 	var vs := get_viewport().get_visible_rect().size
 	rotate_msg.visible = vs.y > vs.x * 1.1
@@ -392,20 +396,22 @@ class SpellBar:
 	extends Control
 	const SZ := 46.0
 	const GAP := 6.0
+	## Casas de magia (as 2 últimas são as poções).
+	const N := 8
 	var player: Player
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	func _rect(i: int) -> Rect2:
-		var x := i * (SZ + GAP) + (12.0 if i >= Player.SPELLS.size() else 0.0)
+		var x := i * (SZ + GAP) + (12.0 if i >= N else 0.0)
 		return Rect2(Vector2(x, 0), Vector2(SZ, SZ))
 
 	func slot_at(pos: Vector2) -> int:
 		if not visible:
 			return -1
 		var lp := pos - get_global_rect().position
-		for i in Player.SPELLS.size() + 2:
+		for i in N + 2:
 			if _rect(i).has_point(lp):
 				return i
 		return -1
@@ -414,7 +420,7 @@ class SpellBar:
 		if player == null:
 			return
 		var font := ThemeDB.fallback_font
-		var n := Player.SPELLS.size()
+		var n := N
 		for i in n + 2:
 			var r := _rect(i)
 			draw_rect(r, Color(0.06, 0.05, 0.04, 0.88))
@@ -422,17 +428,23 @@ class SpellBar:
 			var key := ""
 			var label := ""
 			if i < n:
-				var s: Dictionary = Player.SPELLS[i]
-				var col: Color = {"fireball": Color(1, 0.5, 0.15), "cone": Color(1, 0.32, 0.08), "chain": Color(0.55, 0.72, 1), "area": Color(1, 0.62, 0.15), "heal": Color(0.4, 1, 0.5)}[s.type]
-				draw_circle(c, 13, Color(col, 0.3))
-				draw_circle(c, 7, col)
-				draw_circle(c, 3, Color(1, 1, 0.9))
+				var s: Dictionary = player.bar_spell(i)
 				key = str(i + 1)
-				label = s.curto
-				var cd := float(player.cds.get(s.k, 0.0))
-				if player.level < int(s.lvl):
+				if s.is_empty():
+					label = "vazio"
+				else:
+					var col: Color = s.color
+					draw_circle(c, 13, Color(col, 0.3))
+					draw_circle(c, 7, col)
+					draw_circle(c, 3, Color(1, 1, 0.9))
+					var tw2 := font.get_string_size(str(s.tier), HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
+					draw_string(font, r.position + Vector2(r.size.x - tw2 - 3, 10), str(s.tier), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, col.lightened(0.3))
+					label = s.curto
+				var cd := float(player.cds.get(str(player.bar[i]) if i < player.bar.size() else "", 0.0))
+				if s.is_empty():
+					pass
+				elif not player.spell_unlocked(str(player.bar[i])):
 					draw_rect(r, Color(0, 0, 0, 0.72))
-					label = "nv %d" % s.lvl
 				elif cd > 0.0:
 					var f := cd / float(s.cd)
 					draw_rect(Rect2(r.position + Vector2(0, r.size.y * (1.0 - f)), Vector2(r.size.x, r.size.y * f)), Color(0, 0, 0, 0.65))

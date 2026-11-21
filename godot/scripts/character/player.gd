@@ -62,6 +62,8 @@ func _ready() -> void:
 	aura.position = Vector2(0, -30)
 	aura.height = 60.0
 	add_child(aura)
+	_aura = StatusAura.new()
+	add_child(_aura)
 	marker = TapMarker.new()
 	marker.top_level = true
 	marker.z_index = -5
@@ -82,6 +84,9 @@ func _load() -> void:
 		gold = int(c.get_value("jogador", "ouro", 0))
 		hp_pot = int(c.get_value("jogador", "pocao_vida", 5))
 		mp_pot = int(c.get_value("jogador", "pocao_mana", 5))
+		var bb = c.get_value("jogador", "barra", [])
+		if bb is Array and bb.size() == 8:
+			bar = bb.map(func(x): return str(x))
 		var sk = c.get_value("jogador", "habilidades", {})
 		if sk is Dictionary:
 			# saves antigos: a habilidade "magia" vira o elemento principal da classe
@@ -112,6 +117,7 @@ func save() -> void:
 	c.set_value("jogador", "pocao_vida", hp_pot)
 	c.set_value("jogador", "pocao_mana", mp_pot)
 	c.set_value("jogador", "habilidades", skills)
+	c.set_value("jogador", "barra", bar)
 	c.save(Chars.path())
 
 
@@ -135,7 +141,17 @@ func gain_xp(n: int, g: int, _src: String) -> void:
 func take_damage(n: int, src: String) -> void:
 	if dead or Rules.is_safe(global_position):
 		return
-	n = maxi(1, int(round(n / (1.0 + 0.04 * int(skills.defesa[0])))))
+	if immortal_t > 0.0:
+		CombatText.add(global_position + Vector2(0, -88), "imune", Color(1, 0.95, 0.6))
+		return
+	n = maxi(1, int(round(n / (1.0 + 0.04 * int(skills.defesa[0])) * (0.8 if buff_t > 0.0 else 1.0))))
+	if shield_hp > 0.0:
+		var ab := minf(shield_hp, n)
+		shield_hp -= ab
+		n -= int(ab)
+		CombatText.add(global_position + Vector2(0, -78), "escudo -%d" % int(ab), shield_col)
+		if n <= 0:
+			return
 	hp -= n
 	skill_gain("defesa", 1.0)
 	CombatText.add(global_position + Vector2(0, -88), str(n), Color(1, 0.15, 0.1))
@@ -205,18 +221,22 @@ func monster_at(p: Vector2) -> Node2D:
 	return best
 
 
-## Magias do mago (como na versão 3D). range/radius em tiles; poder = base + perL × nível.
-const SPELLS := [
-	{"k": "ignis", "nome": "Bola de Fogo", "curto": "Fogo", "lvl": 1, "mana": 12, "cd": 0.8, "type": "fireball", "base": 28.0, "perL": 4.0},
-	{"k": "sopro", "nome": "Sopro de Chamas", "curto": "Sopro", "lvl": 2, "mana": 30, "cd": 3.0, "type": "cone", "range": 4.5, "ang": 0.6, "base": 30.0, "perL": 4.5},
-	{"k": "corrente", "nome": "Corrente Elétrica", "curto": "Raio", "lvl": 4, "mana": 40, "cd": 3.5, "type": "chain", "range": 7.0, "jumps": 6, "jumpR": 3.6, "decay": 0.85, "base": 34.0, "perL": 5.0},
-	{"k": "meteoro", "nome": "Meteoro", "curto": "Meteoro", "lvl": 6, "mana": 65, "cd": 5.0, "type": "area", "at": "aim", "range": 8.0, "radius": 2.3, "delay": 0.7, "base": 48.0, "perL": 6.0},
-	{"k": "nova", "nome": "Nova Flamejante", "curto": "Nova", "lvl": 10, "mana": 90, "cd": 7.0, "type": "area", "at": "self", "radius": 3.4, "delay": 0.0, "base": 52.0, "perL": 6.0},
-	{"k": "cura", "nome": "Cura", "curto": "Cura", "lvl": 1, "mana": 25, "cd": 1.0, "type": "heal", "base": 30.0, "perL": 4.0},
-]
+## Barra de magias: 8 casas com ids do catálogo (Spells). Personalizável no menu → Magias.
+var bar: Array = []
 var cds := {}
 ## Habilidades: nome -> [nível, pontos]. Sobem com o uso e sem limite.
 var skills := {}
+## Escudo mágico (absorve dano), bênçãos e estados da Luz.
+var shield_hp := 0.0
+var shield_t := 0.0
+var shield_col := Color.WHITE
+var hot_t := 0.0
+var spirit_t := 0.0
+var _spirit_acc := 0.0
+var buff_t := 0.0
+var invis := false
+var immortal_t := 0.0
+var _aura: StatusAura
 
 
 ## Os 3 elementos da classe (A, B e Luz) e a Defesa, todos no nível 1.
@@ -226,6 +246,7 @@ func _reset_skills() -> void:
 		skills[e] = [1, 0.0]
 	skills["luz"] = [1, 0.0]
 	skills["defesa"] = [1, 0.0]
+	bar = Spells.default_bar(classe)
 
 
 func elem_a() -> String:
@@ -241,9 +262,48 @@ func elem_level(el: String) -> int:
 	return int(skills[el][0]) if skills.has(el) else 0
 
 
-## Elemento de uma magia da barra (cura = Luz; as outras, por enquanto, o elemento principal).
-func spell_element(s: Dictionary) -> String:
-	return "luz" if s.type == "heal" else elem_a()
+## A magia (id) está liberada para este personagem?
+func spell_unlocked(id: String) -> bool:
+	var s := Spells.get_spell(id, classe)
+	if s.is_empty():
+		return false
+	var t := int(s.tier)
+	if id.begins_with("fus:"):
+		var la := elem_level(elem_a())
+		var lb := elem_level(elem_b())
+		return (la == lb and la >= 3) if t == 3 else mini(la, lb) >= t
+	var el: String = s.els[0]
+	return skills.has(el) and elem_level(el) >= t
+
+
+## Texto de requisito de uma magia bloqueada.
+func spell_req(id: String) -> String:
+	var s := Spells.get_spell(id, classe)
+	if id.begins_with("fus:"):
+		var both := "%s e %s" % [Spellbook.ELEMENTS[elem_a()].nome, Spellbook.ELEMENTS[elem_b()].nome]
+		return ("%s no mesmo nível (3+)" % both) if int(s.tier) == 3 else ("%s no nível %d" % [both, s.tier])
+	return "%s nível %d" % [Spellbook.ELEMENTS[s.els[0]].nome, s.tier]
+
+
+func bar_spell(i: int) -> Dictionary:
+	if i < 0 or i >= bar.size():
+		return {}
+	return Spells.get_spell(str(bar[i]), classe)
+
+
+func set_bar(i: int, id: String) -> void:
+	if i < 0 or i >= 8:
+		return
+	while bar.size() < 8:
+		bar.append("")
+	# a mesma magia não fica em duas casas: troca de lugar
+	var j := bar.find(id)
+	if j >= 0 and j != i:
+		bar[j] = bar[i]
+	bar[i] = id
+	save()
+
+
 var hp_pot := 5
 var mp_pot := 5
 var _pot_cd := 0.0
@@ -254,16 +314,24 @@ func _msg(t: String, c := Color(1, 0.8, 0.5)) -> void:
 	CombatText.add(global_position + Vector2(0, -100), t, c)
 
 
-## Bola de fogo (botão do celular, botão direito, tecla 1).
+## Primeira casa da barra (botão grande do celular, botão direito).
 func cast_at(world_pos = null) -> void:
 	cast_slot(0, world_pos)
 
 
+## Poder: base + por nível do personagem, × nível do(s) elemento(s) e bênção de ataque.
 func spell_power(s: Dictionary) -> float:
-	return (float(s.base) + float(s.perL) * level) * (1.0 + 0.06 * elem_level(spell_element(s)))
+	var el_lv := 0.0
+	for e in s.els:
+		el_lv += elem_level(e)
+	el_lv /= maxf(1, s.els.size())
+	var p := (float(s.get("base", 0.0)) + float(s.get("perL", 0.0)) * level) * (1.0 + 0.06 * el_lv)
+	return p * (1.25 if buff_t > 0.0 else 1.0)
 
 
 func skill_gain(k: String, amt: float) -> void:
+	if not skills.has(k):
+		return
 	var sk: Array = skills[k]
 	sk[1] = float(sk[1]) + amt
 	var up := false
@@ -278,20 +346,37 @@ func skill_gain(k: String, amt: float) -> void:
 		SpellFx.level_up(get_parent(), global_position, col)
 
 
-## Lança a magia `i`. Mira: no alvo se houver; senão na posição indicada; senão à frente.
 func cast_slot(i: int, world_pos = null) -> void:
-	if dead or i < 0 or i >= SPELLS.size() or _action_time > 0.0:
+	if i >= 0 and i < bar.size():
+		cast_spell(str(bar[i]), world_pos)
+
+
+func _heal(v: float, col := Color(0.4, 1, 0.5)) -> void:
+	var n := int(round(v))
+	hp = minf(max_hp, hp + n)
+	CombatText.add(global_position + Vector2(0, -92), "+%d" % n, col)
+
+
+## Lança uma magia pelo id. Mira: no alvo se houver; senão na posição indicada; senão à frente.
+func cast_spell(id: String, world_pos = null) -> void:
+	if dead or id == "":
 		return
-	var s: Dictionary = SPELLS[i]
-	if level < int(s.lvl):
-		_msg("%s: nível %d" % [s.nome, s.lvl])
+	var s := Spells.get_spell(id, classe)
+	if s.is_empty():
 		return
-	if float(cds.get(s.k, 0.0)) > 0.0:
+	if not spell_unlocked(id):
+		_msg("%s: requer %s" % [s.nome, spell_req(id)])
+		return
+	if s.type == "summon":
+		_msg("Invocações chegam numa próxima atualização", s.color)
+		return
+	if float(cds.get(id, 0.0)) > 0.0:
 		return
 	if mp < float(s.mana):
 		_msg("Mana insuficiente", Color(0.5, 0.7, 1))
 		return
-	if s.type != "heal" and Rules.is_safe(global_position):
+	var attack := Spells.is_attack(s)
+	if attack and Rules.is_safe(global_position):
 		_msg("Não dá para atacar na vila")
 		return
 	var aim: Vector2 = global_position + Iso.dir_vector(facing) * 120.0
@@ -299,80 +384,167 @@ func cast_slot(i: int, world_pos = null) -> void:
 		aim = foe.global_position
 	elif world_pos != null:
 		aim = world_pos
+	var col: Color = s.color
+	var els: Array = s.els
+	var pw := spell_power(s)
+	var hard := int(s.tier) >= 2
 	var ok := true
 	match s.type:
-		"fireball":
-			var d := (aim - global_position).normalized() if (aim - global_position).length() > 4.0 else Iso.dir_vector(facing)
-			var fb := Fireball.new()
-			fb.dir = d
-			fb.power = spell_power(s)
-			fb.caster = self
-			fb.global_position = global_position + Iso.ground_velocity(d, 1.0) * 18.0
-			get_parent().add_child(fb)
-		"cone":
+		"single":
+			var tgt: Node2D = foe if _alive_foe() and Rules.gdist(global_position, foe.global_position) <= float(s.range) + 0.5 else _nearest_to(aim, 3.0, {})
+			if tgt == null or Rules.gdist(global_position, tgt.global_position) > float(s.range) + 0.5:
+				tgt = _nearest_to(global_position, float(s.range), {})
+			if tgt == null:
+				_msg("Nenhum alvo ao alcance")
+				ok = false
+			else:
+				if not _alive_foe():
+					foe = tgt
+				aim = tgt.global_position
+				var b := Bolt.new()
+				b.color = col
+				b.speed = 600.0
+				b.size = 1.8 if s.get("big", false) else 1.0
+				b.target = tgt
+				b.global_position = global_position + Vector2(0, -2)
+				b.on_hit = func():
+					if is_instance_valid(tgt) and not tgt.dead:
+						tgt.take_damage(Rules.roll(pw, float(tgt.info.def)), self)
+						for e in els:
+							tgt.apply_effect(e, pw, self, s.get("big", false))
+						SpellFx.burst(tgt.get_parent(), tgt.global_position + Vector2(0, -40), 26, 90.0, 0.5, 0.06, col.lightened(0.4), col)
+				get_parent().add_child(b)
+		"cc":
+			var c2 := Iso.to_grid(aim)
+			var gp := Iso.to_grid(global_position)
+			if c2.distance_to(gp) > float(s.range):
+				c2 = gp + (c2 - gp).normalized() * float(s.range)
+			var center := Iso.to_screen(c2)
+			SpellFx.blast(get_parent(), center, float(s.radius), col)
+			for m in _monsters():
+				if Iso.to_grid(m.global_position).distance_to(c2) <= float(s.radius) + 0.3:
+					m.take_damage(Rules.roll(pw, float(m.info.def)), self)
+					for e in els:
+						m.apply_effect(e, pw, self, true)
+		"cone", "line":
 			var gd := Iso.to_grid(aim) - Iso.to_grid(global_position)
 			if gd.length() < 0.01:
 				gd = Iso.to_grid(global_position + Iso.dir_vector(facing)) - Iso.to_grid(global_position)
 			gd = gd.normalized()
 			var screen_dir := (Iso.to_screen(Iso.to_grid(global_position) + gd) - global_position).normalized()
-			SpellFx.cone(get_parent(), global_position, screen_dir, float(s.range) * 64.0, float(s.ang))
+			if s.type == "cone":
+				SpellFx.cone(get_parent(), global_position, screen_dir, float(s.range) * 64.0, float(s.ang), col.lightened(0.4), col)
+			else:
+				var end := Iso.to_screen(Iso.to_grid(global_position) + gd * float(s.range))
+				SpellFx.line(get_parent(), global_position, end, col, els[0] == "raio")
 			for m in _monsters():
 				var v := Iso.to_grid(m.global_position) - Iso.to_grid(global_position)
-				if v.length() <= float(s.range) + 0.3 and (v.length() < 0.7 or absf(v.angle_to(gd)) <= float(s.ang) + 0.15):
-					m.take_damage(Rules.roll(spell_power(s), float(m.info.def)), self)
-		"chain":
-			var first: Node2D = foe if _alive_foe() and Rules.gdist(global_position, foe.global_position) <= float(s.range) + 1.0 else _nearest_to(aim, 2.5, {})
-			if first == null or Rules.gdist(global_position, first.global_position) > float(s.range) + 1.0:
-				first = _nearest_to(global_position, float(s.range), {})
-			if first == null:
-				_msg("Nenhum alvo ao alcance")
-				ok = false
-			else:
-				var hit := {}
-				var pts := [global_position]
-				var pw := spell_power(s)
-				var m: Node2D = first
-				for j in int(s.jumps):
-					if m == null:
-						break
-					hit[m] = true
-					pts.append(m.global_position)
+				var hit := false
+				if s.type == "cone":
+					hit = v.length() <= float(s.range) + 0.3 and (v.length() < 0.7 or absf(v.angle_to(gd)) <= float(s.ang) + 0.15)
+				else:
+					var along := v.dot(gd)
+					hit = along >= -0.3 and along <= float(s.range) + 0.3 and absf(v.cross(gd)) <= 0.9
+				if hit:
 					m.take_damage(Rules.roll(pw, float(m.info.def)), self)
-					pw *= float(s.decay)
-					m = _nearest_to(m.global_position, float(s.jumpR), hit)
-				SpellFx.lightning(get_parent(), pts)
+					for e in els:
+						m.apply_effect(e, pw, self, hard)
 		"area":
 			var cg := Iso.to_grid(global_position)
-			if s.at == "aim":
-				var tg := Iso.to_grid(aim) - cg
-				if tg.length() > float(s.range):
-					tg = tg.normalized() * float(s.range)
-				cg += tg
-			var center := Iso.to_screen(cg)
-			var pw2 := spell_power(s)
+			var tg := Iso.to_grid(aim) - cg
+			if tg.length() > float(s.range):
+				tg = tg.normalized() * float(s.range)
+			cg += tg
+			var center2 := Iso.to_screen(cg)
 			var rad := float(s.radius)
 			var boom := func():
+				SpellFx.blast(get_parent(), center2, rad, col, true)
 				for m2 in _monsters():
 					if Iso.to_grid(m2.global_position).distance_to(cg) <= rad + 0.3:
-						m2.take_damage(Rules.roll(pw2, float(m2.info.def)), self)
-			if float(s.delay) > 0.0:
-				SpellFx.meteor(get_parent(), center, float(s.delay), rad, boom)
+						m2.take_damage(Rules.roll(pw, float(m2.info.def)), self)
+						for e in els:
+							m2.apply_effect(e, pw, self, true)
+			if float(s.get("delay", 0.0)) > 0.0:
+				SpellFx.meteor(get_parent(), center2, float(s.delay), rad, boom, col)
 			else:
-				SpellFx.explosion(get_parent(), center, rad)
 				boom.call()
+		"shield":
+			shield_hp = pw * 1.5
+			shield_t = float(s.dur)
+			shield_col = col
+			SpellFx.ring(get_parent(), global_position, 0.9, col, 0.6)
+			_msg("%s (%d)" % [s.nome, int(shield_hp)], col)
 		"heal":
-			var v2 := Rules.roll(spell_power(s))
-			hp = minf(max_hp, hp + v2)
-			CombatText.add(global_position + Vector2(0, -92), "+%d" % v2, Color(0.4, 1, 0.5))
+			_heal(Rules.roll(pw))
 			SpellFx.heal(get_parent(), global_position)
+			if s.has("ring"):
+				SpellFx.ring(get_parent(), global_position, float(s.ring), Color(1, 0.95, 0.6), 0.8)
+		"chainheal":
+			var pts := [global_position + Vector2(0, -40)]
+			_heal(Rules.roll(pw))
+			for rp in get_tree().get_nodes_in_group("remote_players"):
+				if Rules.gdist(global_position, rp.global_position) < 8.0:
+					pts.append(rp.global_position + Vector2(0, -40))
+			pts.append(global_position + Vector2(0, -40))
+			SpellFx.lightning(get_parent(), pts, Color(1, 0.95, 0.6))
+			get_tree().create_timer(0.5).timeout.connect(func(): if not dead: _heal(Rules.roll(pw * 0.8)))
+		"hot":
+			hot_t = float(s.dur)
+			_msg("Bênção: cura contínua por 1 minuto", col)
+		"spirit":
+			spirit_t = float(s.dur)
+			_msg("Espírito de Luz por 5 minutos", col)
+		"buff":
+			buff_t = float(s.dur)
+			_msg("Aura de Bravura: +25% ataque e defesa", col)
+		"invis":
+			invis = true
+			_msg("Invisível até atacar", col)
+		"immortal":
+			immortal_t = float(s.dur)
+			_msg("ASCENSÃO! Imortal por 30 s", col)
+			SpellFx.level_up(get_parent(), global_position, col)
 	if not ok:
 		return
+	if attack and invis:
+		invis = false
 	mp -= float(s.mana)
-	cds[s.k] = float(s.cd)
-	skill_gain(spell_element(s), float(s.mana))
-	if s.type != "heal":
+	cds[id] = float(s.cd)
+	# só sobe o elemento usado (as fusões sobem os dois, metade cada)
+	for e in els:
+		skill_gain(e, float(s.mana) / els.size())
+	if attack:
 		facing = Iso.dir_from_vector(aim - global_position) if (aim - global_position).length() > 4.0 else facing
 	play_action("cast", 0.45)
+
+
+## Estados da Luz e do escudo (contagem e efeitos por segundo).
+func _tick_states(delta: float) -> void:
+	if shield_t > 0.0:
+		shield_t -= delta
+		if shield_t <= 0.0:
+			shield_hp = 0.0
+	if hot_t > 0.0:
+		hot_t -= delta
+		hp = minf(max_hp, hp + max_hp * 0.05 * delta)
+	if spirit_t > 0.0:
+		spirit_t -= delta
+		_spirit_acc += delta
+		if _spirit_acc >= 2.0:
+			_spirit_acc = 0.0
+			if hp < max_hp:
+				_heal(max_hp * 0.04 + 4, Color(1, 0.95, 0.6))
+	if buff_t > 0.0:
+		buff_t -= delta
+	if immortal_t > 0.0:
+		immortal_t -= delta
+	if _aura:
+		_aura.shield = shield_hp > 0.0
+		_aura.shield_col = shield_col
+		_aura.spirit = spirit_t > 0.0
+		_aura.immortal = immortal_t > 0.0
+		_aura.hot = hot_t > 0.0
+	visual.modulate.a = 0.35 if invis else 1.0
 
 
 func _monsters() -> Array:
@@ -437,8 +609,7 @@ func _auto_attack(delta: float) -> void:
 	b.global_position = global_position + Vector2(0, -2)
 	b.on_hit = func():
 		if is_instance_valid(tgt) and not tgt.dead:
-			tgt.take_damage(Rules.roll((9.0 + 1.3 * level) * (1.0 + 0.06 * elem_level(elem_a())), float(tgt.info.def)), self)
-	skill_gain(elem_a(), 3.0)
+			tgt.take_damage(Rules.roll((9.0 + 1.3 * level) * (1.0 + 0.06 * elem_level(elem_a())) * (1.25 if buff_t > 0.0 else 1.0), float(tgt.info.def)), self)
 	get_parent().add_child(b)
 
 
@@ -457,17 +628,21 @@ func _auto_play(delta: float) -> void:
 	_auto_t = 0.15
 	var A := Settings.auto
 	var hp_pct := hp * 100.0 / max_hp
-	var heal_i := -1
-	for i in SPELLS.size():
-		if SPELLS[i].type == "heal":
-			heal_i = i
+	# cura: a magia de cura (Luz 1 ou 4) que estiver na barra
+	var heal_id := ""
+	for id in bar:
+		var hs := Spells.get_spell(str(id), classe)
+		if not hs.is_empty() and hs.type == "heal" and spell_unlocked(str(id)):
+			heal_id = str(id)
+			break
 	if A.pocao_vida and hp_pct <= float(A.pocao_vida_pct) and _pot_cd <= 0.0:
 		use_pot("hp")
-	if A.cura and heal_i >= 0 and hp_pct <= float(A.cura_pct) and float(cds.get(SPELLS[heal_i].k, 0.0)) <= 0.0 and _action_time <= 0.0:
-		if mp < float(SPELLS[heal_i].mana) and A.pocao_mana and _pot_cd <= 0.0:
+	if A.cura and heal_id != "" and hp_pct <= float(A.cura_pct) and float(cds.get(heal_id, 0.0)) <= 0.0 and _action_time <= 0.0:
+		var hm := float(Spells.get_spell(heal_id, classe).mana)
+		if mp < hm and A.pocao_mana and _pot_cd <= 0.0:
 			use_pot("mp")
-		if mp >= float(SPELLS[heal_i].mana):
-			cast_slot(heal_i)
+		if mp >= hm:
+			cast_spell(heal_id)
 			return
 	if A.pocao_mana and mp * 100.0 / max_mp <= float(A.pocao_mana_pct) and _pot_cd <= 0.0:
 		use_pot("mp")
@@ -481,25 +656,20 @@ func _auto_play(delta: float) -> void:
 				foe = near
 	if not A.ataque or not _alive_foe() or _action_time > 0.0:
 		return
-	var d := Rules.gdist(global_position, foe.global_position)
-	# da magia mais forte para a mais fraca, a primeira que estiver pronta e alcançar
-	for i in range(SPELLS.size() - 1, -1, -1):
-		var sp: Dictionary = SPELLS[i]
-		if sp.type == "heal" or level < int(sp.lvl) or float(cds.get(sp.k, 0.0)) > 0.0:
+	var dd := Rules.gdist(global_position, foe.global_position)
+	# da última casa da barra para a primeira: a primeira magia de ataque pronta que alcançar
+	for i in range(bar.size() - 1, -1, -1):
+		var sp := Spells.get_spell(str(bar[i]), classe)
+		if sp.is_empty() or not Spells.is_attack(sp) or not spell_unlocked(str(bar[i])) or float(cds.get(str(bar[i]), 0.0)) > 0.0:
 			continue
-		var reach := 7.0
-		if sp.has("range"):
-			reach = float(sp.range)
-		if sp.type == "area" and sp.at == "self":
-			reach = float(sp.radius)
-		if d > reach + 0.3:
+		if dd > float(sp.get("range", 7.0)) + 0.3:
 			continue
 		if mp < float(sp.mana):
 			if A.pocao_mana and _pot_cd <= 0.0:
 				use_pot("mp")
 			if mp < float(sp.mana):
 				continue
-		cast_slot(i)
+		cast_spell(str(bar[i]))
 		return
 
 
@@ -513,6 +683,7 @@ func _process(delta: float) -> void:
 	_pot_cd -= delta
 	_auto_attack(delta)
 	_auto_play(delta)
+	_tick_states(delta)
 	_save_t -= delta
 	if _save_t <= 0.0:
 		_save_t = 10.0
@@ -542,9 +713,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 	var k := ev as InputEventKey
 	if get_viewport().gui_get_focus_owner() == null and k and k.pressed and not k.echo:
 		var kc := k.physical_keycode
-		if kc >= KEY_1 and kc <= KEY_6:
+		if kc >= KEY_1 and kc <= KEY_8:
 			cast_slot(kc - KEY_1, get_global_mouse_position())
-		elif kc >= KEY_KP_1 and kc <= KEY_KP_6:
+		elif kc >= KEY_KP_1 and kc <= KEY_KP_8:
 			cast_slot(kc - KEY_KP_1, get_global_mouse_position())
 		elif kc == KEY_EQUAL or kc == KEY_KP_ADD or kc == KEY_MINUS or kc == KEY_KP_SUBTRACT:
 			set_zoom(Settings.zoom * (1.1 if kc == KEY_EQUAL or kc == KEY_KP_ADD else 1.0 / 1.1))
@@ -610,3 +781,44 @@ class TapMarker:
 		draw_arc(Vector2.ZERO, r, 0, TAU, 24, Color(1, 0.75, 0.35, a), 2.0)
 		draw_arc(Vector2.ZERO, r * 0.5, 0, TAU, 16, Color(1, 0.75, 0.35, a * 0.6), 1.5)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## Brilhos dos estados: escudo (elipse na cor do elemento), espírito de luz no ombro,
+## bênção (cura contínua) e asas de luz na imortalidade.
+class StatusAura:
+	extends Node2D
+	var shield := false
+	var shield_col := Color.WHITE
+	var spirit := false
+	var immortal := false
+	var hot := false
+	var _t := 0.0
+
+	func _ready() -> void:
+		material = SpellFx._add_mat()
+		z_index = 3
+
+	func _process(d: float) -> void:
+		_t += d
+		queue_redraw()
+
+	func _draw() -> void:
+		if shield:
+			var a := 0.35 + 0.15 * sin(_t * 3.0)
+			draw_set_transform(Vector2(0, -36), 0.0, Vector2(1.0, 1.25))
+			draw_arc(Vector2.ZERO, 30, 0, TAU, 40, Color(shield_col, a), 3.0)
+			draw_circle(Vector2.ZERO, 30, Color(shield_col, 0.08))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		if hot:
+			for i in 3:
+				var k := fmod(_t * 0.6 + i / 3.0, 1.0)
+				draw_circle(Vector2(sin(_t * 2 + i * 2.1) * 14, -10 - k * 60), 2.0, Color(1, 0.95, 0.6, 1.0 - k))
+		if spirit:
+			var p := Vector2(16 + sin(_t * 2.0) * 4, -78 + cos(_t * 3.0) * 4)
+			draw_circle(p, 9, Color(1, 0.95, 0.65, 0.25))
+			draw_circle(p, 4, Color(1, 0.98, 0.85))
+		if immortal:
+			var fl := 0.8 + 0.2 * sin(_t * 4.0)
+			for sgn in [-1, 1]:
+				var pts := PackedVector2Array([Vector2(0, -52), Vector2(sgn * 38 * fl, -88), Vector2(sgn * 52 * fl, -64), Vector2(sgn * 30 * fl, -48)])
+				draw_colored_polygon(pts, Color(1, 0.95, 0.7, 0.45))

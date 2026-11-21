@@ -83,17 +83,36 @@ static func level_up(parent: Node, pos: Vector2, color: Color) -> void:
 
 
 ## Raio que pula de um ponto a outro (corrente elétrica).
-static func lightning(parent: Node, pts: Array) -> void:
+static func lightning(parent: Node, pts: Array, col := Color(0.55, 0.7, 1.0)) -> void:
 	var z := Lightning.new()
 	z.pts = pts
+	z.col = col
 	parent.add_child(z)
 	for p in pts:
-		flash(parent, p, Color(0.55, 0.7, 1.0), 1.6, 0.8, 0.4)
-		burst(parent, p, 14, 90.0, 0.35, 0.08, Color(0.9, 0.95, 1), Color(0.3, 0.45, 1))
+		flash(parent, p, col, 1.6, 0.8, 0.4)
+		burst(parent, p, 14, 90.0, 0.35, 0.08, col.lightened(0.6), col)
+
+
+## Explosão/área na cor do elemento (controle de grupo, dano em área).
+static func blast(parent: Node, pos: Vector2, radius_tiles: float, col: Color, big := false) -> void:
+	ring(parent, pos, radius_tiles, col, 0.6)
+	burst(parent, pos + Vector2(0, -12), int(40 + radius_tiles * 25), 90.0 + radius_tiles * 60.0, 0.7, 0.16 if big else 0.1, col.lightened(0.5), col, 50.0)
+	flash(parent, pos + Vector2(0, -20), col, 2.4 if big else 1.6, 1.0 + radius_tiles * 0.7, 0.6)
+
+
+## Ataque em linha (lava, raio, terra): rastro de partículas do lançador até o fim.
+static func line(parent: Node, a: Vector2, b: Vector2, col: Color, electric := false) -> void:
+	if electric:
+		lightning(parent, [a, b], col)
+		return
+	for i in 7:
+		var p := a.lerp(b, (i + 1) / 7.0)
+		burst(parent, p + Vector2(0, -10), 16, 70.0, 0.55, 0.09, col.lightened(0.4), col, 40.0)
+	flash(parent, a.lerp(b, 0.5), col, 2.0, 1.8, 0.6)
 
 
 ## Jato de fogo em cone.
-static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, half_ang: float) -> void:
+static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, half_ang: float, ca := Color(1, 0.85, 0.5), cb := Color(0.8, 0.12, 0.02)) -> void:
 	var p := CPUParticles2D.new()
 	p.amount = 90
 	p.lifetime = 0.55
@@ -109,18 +128,21 @@ static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, hal
 	p.damping_max = length_px * 2.5
 	p.scale_amount_min = 0.12
 	p.scale_amount_max = 0.3
-	p.color_ramp = _ramp(Color(1, 0.85, 0.5), Color(0.8, 0.12, 0.02))
+	p.color_ramp = _ramp(ca, cb)
 	p.position = pos + Vector2(0, -40)
 	p.z_index = 5
 	parent.add_child(p)
 	p.emitting = true
 	p.get_tree().create_timer(1.0).timeout.connect(p.queue_free)
-	flash(parent, pos + dir * length_px * 0.5, Color(1, 0.5, 0.15), 2.2, 1.6, 0.6)
+	flash(parent, pos + dir * length_px * 0.5, cb, 2.2, 1.6, 0.6)
 
 
 ## Meteoro: cai do céu em `delay` segundos e chama `on_impact`.
-static func meteor(parent: Node, at: Vector2, delay: float, radius_tiles: float, on_impact: Callable) -> void:
+static func meteor(parent: Node, at: Vector2, delay: float, radius_tiles: float, on_impact: Callable, col := Color(-1, 0, 0)) -> void:
 	var m := Meteor.new()
+	if col.r >= 0.0:
+		m.col = col
+		m.colored = true
 	m.target = at
 	m.delay = delay
 	m.radius_tiles = radius_tiles
@@ -165,6 +187,7 @@ class Ring:
 class Lightning:
 	extends Node2D
 	var pts: Array = []
+	var col := Color(0.55, 0.7, 1.0)
 	var _t := 0.0
 
 	func _ready() -> void:
@@ -188,8 +211,8 @@ class Lightning:
 				var q := p0.lerp(p1, k / 8.0) + Vector2(randf_range(-9, 9), randf_range(-9, 9))
 				line.append(q)
 			line.append(p1)
-			draw_polyline(line, Color(0.35, 0.5, 1.0, 0.35 * a), 9.0)
-			draw_polyline(line, Color(0.7, 0.82, 1.0, 0.85 * a), 3.5)
+			draw_polyline(line, Color(col.darkened(0.3), 0.35 * a), 9.0)
+			draw_polyline(line, Color(col.lightened(0.3), 0.85 * a), 3.5)
 			draw_polyline(line, Color(1, 1, 1, a), 1.4)
 
 
@@ -199,6 +222,8 @@ class Meteor:
 	var delay := 0.7
 	var radius_tiles := 2.0
 	var on_impact: Callable
+	var col := Color(1, 0.45, 0.1)
+	var colored := false
 	var _t := 0.0
 	var _ring: Node2D
 	var _light: PointLight2D
@@ -206,8 +231,8 @@ class Meteor:
 	func _ready() -> void:
 		material = SpellFx._add_mat()
 		z_index = 6
-		_ring = SpellFx.ring(get_parent(), target, radius_tiles, Color(1, 0.3, 0.1), delay, false)
-		_light = LightKit.make(Color(1, 0.55, 0.2), 2.0, 1.2, false, 0.2)
+		_ring = SpellFx.ring(get_parent(), target, radius_tiles, col, delay, false)
+		_light = LightKit.make(col, 2.0, 1.2, false, 0.2)
 		add_child(_light)
 
 	func _process(delta: float) -> void:
@@ -216,15 +241,16 @@ class Meteor:
 		position = target + Vector2(220, -520) * (1.0 - k)
 		queue_redraw()
 		if k >= 1.0:
-			SpellFx.explosion(get_parent(), target, radius_tiles)
+			if not colored:
+				SpellFx.explosion(get_parent(), target, radius_tiles)
 			if on_impact.is_valid():
 				on_impact.call()
 			queue_free()
 
 	func _draw() -> void:
-		draw_circle(Vector2.ZERO, 26, Color(1, 0.45, 0.1, 0.35))
-		draw_circle(Vector2.ZERO, 15, Color(1, 0.6, 0.2))
+		draw_circle(Vector2.ZERO, 26, Color(col, 0.35))
+		draw_circle(Vector2.ZERO, 15, col.lightened(0.15))
 		draw_circle(Vector2.ZERO, 8, Color(1, 0.95, 0.75))
 		for i in 6:
 			var d := Vector2(220, -520).normalized() * (20 + i * 14)
-			draw_circle(d, 12 - i * 1.6, Color(1, 0.4, 0.08, 0.5 - i * 0.07))
+			draw_circle(d, 12 - i * 1.6, Color(col, 0.5 - i * 0.07))

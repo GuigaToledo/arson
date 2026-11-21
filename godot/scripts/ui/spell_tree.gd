@@ -7,11 +7,14 @@ extends Control
 var player: Player
 var _nodes: Array = []  # [pos, info]
 var _hover := -1
+## Magia escolhida (toque/clique) para colocar na barra.
+var _sel_id := ""
+var _slots: Array = []  # Rect2 das 8 casas da barra
 var _t := 0.0
 
 const R := 16.0
 const TOP := 62.0
-const STEP := 41.0
+const STEP := 38.0
 
 
 func _ready() -> void:
@@ -32,10 +35,18 @@ func _gui_input(e: InputEvent) -> void:
 		p = e.position
 	if p.x < 0:
 		return
+	var click: bool = (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT) or e is InputEventScreenTouch
 	_hover = -1
 	for i in _nodes.size():
 		if p.distance_to(_nodes[i][0]) <= R + 6:
 			_hover = i
+			if click:
+				_sel_id = str(_nodes[i][1].id)
+	if click:
+		for j in _slots.size():
+			if (_slots[j] as Rect2).has_point(p) and _sel_id != "":
+				player.set_bar(j, _sel_id)
+				_sel_id = ""
 
 
 func _row(t: int) -> float:
@@ -89,29 +100,34 @@ func _draw() -> void:
 	# nós
 	for t in range(1, 7):
 		_node(font, Vector2(xa, _row(t)), t, Spellbook.ELEMENTS[ea].magias[t - 1], ca, la >= t,
-			{"el": ea, "t": t, "req": "%s nível %d" % [Spellbook.ELEMENTS[ea].nome, t]})
+			{"id": "%s:%d" % [ea, t], "el": ea, "t": t, "req": "%s nível %d" % [Spellbook.ELEMENTS[ea].nome, t]})
 		_node(font, Vector2(xb, _row(t)), t, Spellbook.ELEMENTS[eb].magias[t - 1], cb, lb >= t,
-			{"el": eb, "t": t, "req": "%s nível %d" % [Spellbook.ELEMENTS[eb].nome, t]})
+			{"id": "%s:%d" % [eb, t], "el": eb, "t": t, "req": "%s nível %d" % [Spellbook.ELEMENTS[eb].nome, t]})
 	for t in range(1, 9):
 		_node(font, Vector2(xl, _row(t)), t, Spellbook.ELEMENTS.luz.magias[t - 1], cl, ll >= t,
-			{"el": "luz", "t": t, "req": "Luz nível %d" % t})
+			{"id": "luz:%d" % t, "el": "luz", "t": t, "req": "Luz nível %d" % t})
 	var both := "%s e %s" % [Spellbook.ELEMENTS[ea].nome, Spellbook.ELEMENTS[eb].nome]
 	_node(font, Vector2(xf, _row(3)), 3, fus[0], cf, same,
-		{"fus": 3, "nome": fus[0], "req": "%s no MESMO nível (3 ou mais)" % both,
+		{"id": "fus:3", "fus": 3, "nome": fus[0], "req": "%s no MESMO nível (3 ou mais)" % both,
 		"desc": "Os dois escudos se fundem num só, mais forte."})
 	_node(font, Vector2(xf, _row(7)), 7, fus[1], cf, mini(la, lb) >= 7,
-		{"fus": 7, "nome": fus[1], "req": "%s, os dois no nível 7" % both,
+		{"id": "fus:7", "fus": 7, "nome": fus[1], "req": "%s, os dois no nível 7" % both,
 		"desc": "Mistura dos dois elementos num ataque de alvo único, com os dois efeitos."})
 	_node(font, Vector2(xf, _row(8)), 8, fus[2], cf, mini(la, lb) >= 8,
-		{"fus": 8, "nome": fus[2], "req": "%s, os dois no nível 8" % both,
+		{"id": "fus:8", "fus": 8, "nome": fus[2], "req": "%s, os dois no nível 8" % both,
 		"desc": "Mistura dos dois elementos em área, com os dois efeitos."})
 
 	# descrição do círculo escolhido
-	var box := Rect2(0, size.y - 54, size.x, 54)
+	_draw_bar(font)
+	var box := Rect2(0, size.y - 104, size.x, 54)
+	if _hover < 0 and _sel_id != "":
+		for k in _nodes.size():
+			if str(_nodes[k][1].id) == _sel_id:
+				_hover = k
 	draw_rect(box, Color(0.04, 0.03, 0.02, 0.85))
 	draw_rect(box, Color(0.4, 0.3, 0.18, 0.7), false, 1.0)
 	if _hover < 0 or _hover >= _nodes.size():
-		draw_string(font, box.position + Vector2(10, 22), "Toque ou passe o mouse numa magia para ver o que ela faz.", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.72, 0.66, 0.58))
+		draw_string(font, box.position + Vector2(10, 22), "Toque numa magia para ver o que ela faz; depois toque numa casa da barra para colocá-la.", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.72, 0.66, 0.58))
 		draw_string(font, box.position + Vector2(10, 42), "Cada elemento sobe de nível sozinho, quando você usa as magias dele.", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.6, 0.55, 0.48))
 		return
 	var n: Dictionary = _nodes[_hover][1]
@@ -130,6 +146,28 @@ func _draw() -> void:
 	draw_string(font, box.position + Vector2(10, 21), title, HORIZONTAL_ALIGNMENT_LEFT, size.x * 0.62, 15, Color(1, 0.88, 0.6))
 	draw_string(font, box.position + Vector2(size.x * 0.64, 21), ("Liberada" if n.ok else "Requer: " + n.req), HORIZONTAL_ALIGNMENT_LEFT, size.x * 0.36 - 8, 13, col)
 	draw_string(font, box.position + Vector2(10, 43), desc, HORIZONTAL_ALIGNMENT_LEFT, size.x - 20, 13, Color(0.85, 0.8, 0.72))
+
+
+## Barra de magias (8 casas) embaixo da árvore.
+func _draw_bar(font: Font) -> void:
+	_slots.clear()
+	var y := size.y - 42
+	var lab := "Escolha a casa da barra:" if _sel_id != "" else "Sua barra:"
+	draw_string(font, Vector2(0, y + 26), lab, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 0.85, 0.5) if _sel_id != "" else Color(0.72, 0.66, 0.58))
+	var x0 := 190.0 if _sel_id != "" else 90.0
+	var w := (size.x - x0) / 8.0
+	for i in 8:
+		var r := Rect2(x0 + i * w + 2, y, w - 4, 40)
+		_slots.append(r)
+		var s := player.bar_spell(i)
+		var col: Color = s.color if not s.is_empty() else Color(0.4, 0.35, 0.3)
+		draw_rect(r, Color(0.05, 0.04, 0.03, 0.9))
+		var bc := Color(1, 0.8, 0.4) if _sel_id != "" else Color(col, 0.7)
+		draw_rect(r, bc, false, 2.0 if _sel_id != "" else 1.5)
+		draw_string(font, r.position + Vector2(4, 13), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1, 0.9, 0.6))
+		draw_circle(r.position + Vector2(r.size.x - 10, 11), 5, col)
+		var nm: String = s.curto if not s.is_empty() else "vazio"
+		draw_string(font, r.position + Vector2(4, 33), nm, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 6, 12, Color(0.95, 0.9, 0.8) if not s.is_empty() and player.spell_unlocked(str(player.bar[i])) else Color(0.55, 0.5, 0.45))
 
 
 func _header(font: Font, p: Vector2, name: String, lv: int, sk: Array, c: Color, k: String) -> void:
@@ -161,8 +199,10 @@ func _node(font: Font, p: Vector2, t: int, name: String, c: Color, ok: bool, inf
 	else:
 		draw_circle(p, R, Color(0.1, 0.09, 0.08))
 		draw_arc(p, R, 0, TAU, 32, Color(0.35, 0.3, 0.26), 2.0)
-	if hov:
+	if hov or str(info.id) == _sel_id:
 		draw_arc(p, R + 4, 0, TAU, 32, Color(1, 0.9, 0.6), 2.0)
+	if player.bar.has(str(info.id)):
+		draw_circle(p + Vector2(R - 2, -R + 2), 5, Color(1, 0.8, 0.3))
 	var num := str(t)
 	var tw := font.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
 	draw_string(font, p + Vector2(-tw / 2, 5), num, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 1, 1) if ok else Color(0.5, 0.46, 0.42))

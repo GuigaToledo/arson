@@ -185,6 +185,12 @@ func _process(delta: float) -> void:
 				if m.idx == int(e.get("i", -1)):
 					m.take_damage(clampi(int(e.get("n", 0)), 0, 99999), who, true)
 					break
+		elif str(e.get("t", "")) == "fx":
+			var who2: Node2D = player if from == uid else remotes.get(from)
+			for m in _monsters():
+				if m.idx == int(e.get("i", -1)):
+					m.apply_effect(str(e.get("el", "")), clampf(float(e.get("p", 0)), 0, 9999), who2, bool(e.get("h", false)), true)
+					break
 	# eventos para mim (experiência, dano dos monstros)
 	for e in d.get("events", []):
 		if not e is Dictionary:

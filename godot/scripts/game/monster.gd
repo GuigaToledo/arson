@@ -25,7 +25,7 @@ const TYPES := {
 	},
 	"cultista": {
 		"name": "Cultista das Chamas", "hp": 80, "atk": 11.0, "def": 1.0, "xp": 40, "gold": [8, 25], "speed": 80.0,
-		"range": 5.0, "aspd": 1.9, "aggro": 7.0, "scale": 1.0, "proj": Color(1.0, 0.4, 0.1),
+		"range": 5.0, "aspd": 1.9, "aggro": 7.0, "scale": 1.0, "proj": Color(1.0, 0.4, 0.1), "el": "fogo",
 		"colors": {"skin": Color(0.5, 0.38, 0.3), "under": Color(0.25, 0.05, 0.04), "hair": Color(0.05, 0.04, 0.04), "eyes": Color(1, 0.4, 0.1), "glow_eyes": true},
 		"items": ["tunica_aprendiz", "capuz_aprendiz", "botas_couro"],
 	},
@@ -37,7 +37,7 @@ const TYPES := {
 	},
 	"golem": {
 		"name": "Golem de Pedra", "hp": 320, "atk": 24.0, "def": 6.0, "xp": 160, "gold": [30, 70], "speed": 52.0,
-		"range": 1.2, "aspd": 2.2, "aggro": 6.0, "scale": 1.55,
+		"range": 1.2, "aspd": 2.2, "aggro": 6.0, "scale": 1.55, "el": "terra",
 		"colors": {"skin": Color(0.2, 0.19, 0.19), "under": Color(0.16, 0.15, 0.15), "hair": Color(0.18, 0.17, 0.17), "eyes": Color(1, 0.6, 0.15), "glow_eyes": true, "core": true},
 		"items": [],
 	},
@@ -102,7 +102,7 @@ func _player() -> Node2D:
 
 
 func _valid_foe(p) -> bool:
-	return p != null and is_instance_valid(p) and not p.dead and not Rules.is_safe(p.global_position)
+	return p != null and is_instance_valid(p) and not p.dead and not Rules.is_safe(p.global_position) and not p.get("invis")
 
 
 func _physics_process(delta: float) -> void:
@@ -119,6 +119,9 @@ func _physics_process(delta: float) -> void:
 	if hurt_t > 0.0:
 		hurt_t -= delta
 		visual.modulate = Color(1, 0.45, 0.4).lerp(Color.WHITE, 1.0 - hurt_t / 0.25)
+	_tint(delta)
+	if _tick_status(delta):
+		return
 	if foe != null and (not _valid_foe(foe) or Rules.gdist(global_position, foe.global_position) > 12.0):
 		foe = null
 	if foe == null and _scan <= 0.0:
@@ -135,7 +138,9 @@ func _physics_process(delta: float) -> void:
 			reach = 8.0
 			if dist > 9.0:
 				foe = null
-		if dist <= reach:
+		if _root_t > 0.0 and dist > reach:
+			pass  # preso nas raízes: não anda, só ataca se alcançar
+		elif dist <= reach:
 			facing = Iso.dir_from_vector(foe.global_position - global_position)
 			if _atk_cd <= 0.0:
 				_atk_cd = float(info.aspd)
@@ -159,6 +164,8 @@ func _physics_process(delta: float) -> void:
 					_wander = Vector2.ZERO
 				else:
 					d = to
+	if _root_t > 0.0:
+		d = Vector2.ZERO
 	move(d, running, delta)
 	if foe != null and d == Vector2.ZERO:
 		facing = Iso.dir_from_vector(foe.global_position - global_position)
@@ -230,8 +237,114 @@ func _puppet(delta: float) -> void:
 	if hurt_t > 0.0:
 		hurt_t -= delta
 		visual.modulate = Color(1, 0.45, 0.4).lerp(Color.WHITE, 1.0 - hurt_t / 0.25)
+	_tint(delta)
 	var spd := walk_speed * 1.5 if anim == "run" else (walk_speed if anim == "walk" else 0.0)
 	visual.tick(delta, facing, anim, spd)
+
+
+# ------------------------------------------------------------ efeitos das magias
+var _dot_t := 0.0
+var _dot_dps := 0.0
+var _dot_acc := 0.0
+var _dot_by: Node2D = null
+var _stun_t := 0.0
+var _slow_t := 0.0
+var _root_t := 0.0
+var _knock_v := Vector2.ZERO
+var _knock_t := 0.0
+var _st_col := Color.WHITE
+var _st_t := 0.0
+
+
+func _clear_status() -> void:
+	_dot_t = 0.0
+	_stun_t = 0.0
+	_slow_t = 0.0
+	_root_t = 0.0
+	_knock_t = 0.0
+	_st_t = 0.0
+
+
+## Efeito do elemento (docs/magias.md). hard = controle de grupo (atordoar, congelar, raízes).
+## Criaturas do mesmo elemento: só atordoar, raízes (sem dano) e afastar funcionam.
+func apply_effect(el: String, power: float, by: Node2D, hard: bool, from_net := false) -> void:
+	if dead or not Spellbook.ELEMENTS.has(el) or el == "luz":
+		return
+	_st_col = Spellbook.ELEMENTS[el].cor
+	_st_t = 3.0
+	if NetSync.is_puppet() and not from_net:
+		NetSync.inst.send({"t": "fx", "i": idx, "el": el, "p": power, "h": hard})
+		return
+	var same := str(info.get("el", "")) == el
+	var tag := ""
+	match el:
+		"fogo":
+			if not same: _dot(power * 0.12, 3.0, by); tag = "Queimando"
+		"lava":
+			if not same: _dot(power * 0.12, 3.0, by); tag = "Queimando"
+			if hard and not same: _stun_t = maxf(_stun_t, 1.2); tag = "Atordoado"
+		"agua":
+			if not same: tag = "Sem cura"
+		"gelo":
+			if not same: _slow_t = maxf(_slow_t, 5.0); tag = "Lento"
+			if hard and not same: _stun_t = maxf(_stun_t, 1.5); tag = "Congelado"
+		"vento":
+			var away := global_position - (by.global_position if by != null and is_instance_valid(by) else global_position + Vector2(0, -1))
+			_knock_v = away.normalized() * 260.0
+			_knock_t = 0.3
+			tag = "Afastado"
+		"raio":
+			if not same: _dot(power * 0.1, 3.0, by); tag = "Eletrizado"
+			if hard and not same: _stun_t = maxf(_stun_t, 1.0); tag = "Paralisado"
+		"terra":
+			if hard: _stun_t = maxf(_stun_t, 1.5); tag = "Atordoado"
+		"natureza":
+			if not same: _dot(power * 0.08, 3.0, by)
+			if hard: _root_t = maxf(_root_t, 3.0); tag = "Preso"
+	if tag != "" and (hard or el == "vento"):
+		CombatText.add(global_position + Vector2(0, -100 * float(info.scale)), tag, _st_col)
+
+
+func _dot(dps: float, dur: float, by: Node2D) -> void:
+	_dot_dps = maxf(_dot_dps if _dot_t > 0.0 else 0.0, dps)
+	_dot_t = dur
+	_dot_by = by
+
+
+## Cor do elemento enquanto o efeito dura.
+func _tint(delta: float) -> void:
+	if _st_t <= 0.0:
+		return
+	_st_t -= delta
+	if hurt_t <= 0.0:
+		visual.modulate = Color.WHITE.lerp(_st_col, 0.5 if _st_t > 0.0 else 0.0)
+
+
+## Conta os efeitos. Devolve true se o monstro não pode agir neste quadro (atordoado/afastado).
+func _tick_status(delta: float) -> bool:
+	if _dot_t > 0.0:
+		_dot_t -= delta
+		_dot_acc += delta
+		if _dot_acc >= 0.5:
+			_dot_acc = 0.0
+			take_damage(maxi(1, int(round(_dot_dps * 0.5))), _dot_by if is_instance_valid(_dot_by) else null)
+			if dead:
+				return true
+	_slow_t -= delta
+	_root_t -= delta
+	walk_speed = float(info.speed) * (0.5 if _slow_t > 0.0 else 1.0)
+	run_speed = walk_speed * 1.5
+	if _knock_t > 0.0:
+		_knock_t -= delta
+		var np := global_position + _knock_v * delta
+		if not Actor.walkable.is_valid() or Actor.walkable.call(np):
+			global_position = np
+		return true
+	if _stun_t > 0.0:
+		_stun_t -= delta
+		move(Vector2.ZERO, false, delta)
+		return true
+	return false
 
 
 func take_damage(n: int, by: Node2D, from_net := false) -> void:
@@ -281,6 +394,7 @@ func _revive_visual() -> void:
 
 
 func _revive() -> void:
+	_clear_status()
 	dead = false
 	hp = max_hp
 	global_position = home

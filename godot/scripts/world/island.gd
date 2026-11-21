@@ -106,6 +106,8 @@ func start_game(slot: int) -> void:
 		_teste_combate()
 	if "--teste-menu" in OS.get_cmdline_user_args():
 		_teste_menu.call_deferred()
+	if "--teste-magias" in OS.get_cmdline_user_args():
+		_teste_magias.call_deferred()
 	if "--teste-boneco" in OS.get_cmdline_user_args():
 		_teste_boneco()
 	var net := NetSync.new()
@@ -130,6 +132,23 @@ func start_game(slot: int) -> void:
 	gm.on_equip = hud._toggle_panel
 	gm.on_full = hud._fullscreen
 	for arg in OS.get_cmdline_user_args():
+		if str(arg).begins_with("--teste-vermagia="):
+			for k in player.skills:
+				player.skills[k] = [8, 0.0]
+			player.level = 15
+			player._recalc()
+			var mm: Monster = null
+			for c in get_tree().get_nodes_in_group("monsters"):
+				if c.mtype != "boneco":
+					mm = c
+					break
+			player.global_position = mm.global_position + Vector2(150, 50)
+			player.foe = mm
+			var sid := str(arg).split("=")[1]
+			get_tree().create_timer(0.2).timeout.connect(func():
+				var mp0 := player.mp
+				player.cast_spell(sid)
+				print("TESTE vermagia ", sid, " gastou=", mp0 - player.mp, " seguro=", Rules.is_safe(player.global_position), " acao=", player._action_time, " liberada=", player.spell_unlocked(sid), " textos=", CombatText.items.map(func(x): return x.get("text", x.get("t", "")))))
 		if str(arg) == "--teste-levelup":
 			player.skill_gain(player.elem_a(), Rules.skill_need(player.elem_a(), player.elem_level(player.elem_a())))
 		if str(arg).begins_with("--teste-vermenu="):
@@ -360,7 +379,7 @@ func _teste_combate() -> void:
 			player.target_nearest()
 		if i % 4 == 0:
 			player.mp = player.max_mp
-			player.cast_slot((i / 4) % Player.SPELLS.size())
+			player.cast_slot((i / 4) % 8)
 	print("TESTE nivel=", player.level, " xp=", player.xp, " ouro=", player.gold, " vida=", int(player.hp), " alvo_vivo=", player._alive_foe())
 
 
@@ -463,3 +482,43 @@ func _teste_menu() -> void:
 		Settings.auto[k] = false
 	player.set_zoom(2.5)
 	print("TESTE zoom=", player.camera.zoom)
+
+
+func _teste_magias() -> void:
+	await get_tree().create_timer(0.3).timeout
+	var m: Monster = null
+	for c in get_tree().get_nodes_in_group("monsters"):
+		if c.mtype != "boneco":
+			m = c
+			break
+	for cl in MageClass.ORDER:
+		player.classe = cl
+		player._reset_skills()
+		for k in player.skills:
+			player.skills[k] = [8, 0.0]
+		player.level = 20
+		player._recalc()
+		var ids: Array = []
+		for e in Spellbook.elements_of(cl):
+			for t in range(1, 7):
+				ids.append("%s:%d" % [e, t])
+		for t in range(1, 9):
+			ids.append("luz:%d" % t)
+		ids += ["fus:3", "fus:7", "fus:8"]
+		var feitos := 0
+		for id in ids:
+			m.hp = m.max_hp
+			m.dead = false
+			player.global_position = m.global_position + Vector2(140, 40)
+			player.foe = m
+			player.mp = player.max_mp
+			player.cds.clear()
+			player._action_time = 0.0
+			var mp0 := player.mp
+			player.cast_spell(id)
+			await get_tree().create_timer(0.7).timeout
+			if player.mp < mp0:
+				feitos += 1
+		print("TESTE magias classe=", cl, " lancadas=", feitos, "/", ids.size(), " escudo=", int(player.shield_hp), " golem_vida=", int(m.hp), " barra=", player.bar)
+	player.invis = false
+	player.immortal_t = 0.0
