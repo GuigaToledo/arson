@@ -374,12 +374,12 @@ func _spawn_monsters() -> void:
 			m.idx = n
 			entities.add_child(m)
 			n += 1
-	# bonecos de treino logo fora da vila (fora do calçamento, chão livre)
+	# boneco de treino logo fora da vila (um só, fixo no lugar para treinar parado) (fora do calçamento, chão livre)
 	var placed: Array = []
 	for rr in range(8, 13):
 		for y in map.h:
 			for x in map.w:
-				if placed.size() >= 4:
+				if placed.size() >= 1:
 					break
 				var gp2 := Vector2(x + 0.5, y + 0.5)
 				var dd := gp2.distance_to(map.spawn)

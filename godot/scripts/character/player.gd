@@ -410,6 +410,16 @@ func cast_spell(id: String, world_pos = null) -> void:
 	if not spell_unlocked(id):
 		_msg("%s: requer %s" % [s.nome, spell_req(id)])
 		return
+	# invocação já viva: o mesmo botão a desfaz
+	if s.type == "summon":
+		var key := "fus" if id.begins_with("fus:") else str(s.els[0])
+		var cur = summons.get(key)
+		if cur != null and is_instance_valid(cur) and not cur.dead:
+			SpellFx.burst(get_parent(), cur.global_position + Vector2(0, -40), 30, 90.0, 0.6, 0.08, (s.color as Color).lightened(0.4), s.color)
+			cur.queue_free()
+			summons.erase(key)
+			_msg("%s dispensado" % cur.display_name, s.color)
+			return
 	if float(cds.get(id, 0.0)) > 0.0:
 		return
 	if mp < float(s.mana):
@@ -579,10 +589,6 @@ func cast_spell(id: String, world_pos = null) -> void:
 ## Invoca (ou cura, se já estiver viva). A fundida desfaz as separadas e vice-versa.
 func _summon(id: String, s: Dictionary) -> bool:
 	var key := "fus" if id.begins_with("fus:") else str(s.els[0])
-	var cur = summons.get(key)
-	if cur != null and is_instance_valid(cur) and not cur.dead:
-		cur.heal(cur.max_hp * 0.4)
-		return true
 	for k in summons.keys():
 		var other = summons[k]
 		if (key == "fus") != (k == "fus") and is_instance_valid(other):

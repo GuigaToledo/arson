@@ -120,6 +120,8 @@ func _physics_process(delta: float) -> void:
 		hurt_t -= delta
 		visual.modulate = Color(1, 0.45, 0.4).lerp(Color.WHITE, 1.0 - hurt_t / 0.25)
 	_tint(delta)
+	if info.get("dummy", false):
+		global_position = home  # nada empurra o boneco
 	if _tick_status(delta):
 		return
 	if foe != null and (not _valid_foe(foe) or Rules.gdist(global_position, foe.global_position) > 12.0):
@@ -289,6 +291,8 @@ func apply_effect(el: String, power: float, by: Node2D, hard: bool, from_net := 
 			if not same: _slow_t = maxf(_slow_t, 5.0); tag = "Lento"
 			if hard and not same: _stun_t = maxf(_stun_t, 1.5); tag = "Congelado"
 		"vento":
+			if info.get("dummy", false):
+				return  # o boneco de treino nunca sai do lugar
 			var away := global_position - (by.global_position if by != null and is_instance_valid(by) else global_position + Vector2(0, -1))
 			_knock_v = away.normalized() * 260.0
 			_knock_t = 0.3
