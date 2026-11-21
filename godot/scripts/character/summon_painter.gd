@@ -130,11 +130,12 @@ static func _flame(ci: CanvasItem, base: Vector2, h: float, w: float, t: float, 
 
 static func _fire(ci: CanvasItem, p: Dictionary) -> void:
 	var t: float = p.t
-	# cauda de fogo no lugar das pernas
-	for i in 5:
-		var k := i / 4.0
-		var q: Vector2 = p.hipC.lerp(Vector2(sin(t * 3.0) * 4, -4), k)
-		_flame(ci, q + Vector2(0, 8), 14 - i * 1.5, 7 - i, t, i)
+	# pernas de chama (forma humanoide para os chutes)
+	for b in [[p.hipL, p.kneeL], [p.kneeL, p.footL], [p.hipR, p.kneeR], [p.kneeR, p.footR]]:
+		ci.draw_line(b[0], b[1], Color(1, 0.35, 0.05, 0.65), 6.5, true)
+		ci.draw_line(b[0], b[1], Color(1, 0.8, 0.3, 0.95), 2.8, true)
+	for q in [p.footL, p.footR]:
+		_flame(ci, q + Vector2(0, 2), 9, 4, t, q.x)
 	# tronco de chamas
 	for i in 4:
 		var q2: Vector2 = p.hipC.lerp(p.shC, i / 3.0)
@@ -158,11 +159,15 @@ static func _fire(ci: CanvasItem, p: Dictionary) -> void:
 static func _wind(ci: CanvasItem, p: Dictionary) -> void:
 	var t: float = p.t
 	var col := Color(0.8, 1, 0.92, 0.55)
-	# redemoinho no lugar das pernas
-	for i in 6:
-		var y: float = lerpf(p.hipC.y, -2.0, i / 5.0)
-		var r := lerpf(10.0, 3.0, i / 5.0)
-		ci.draw_arc(Vector2(sin(t * 4.0 + i) * 2, y), r, t * 10 + i, t * 10 + i + 4.0, 16, col, 2.0, true)
+	# pernas de vento (fitas girando ao longo dos ossos) e um redemoinho leve nos pés
+	for b in [[p.hipL, p.kneeL], [p.kneeL, p.footL], [p.hipR, p.kneeR], [p.kneeR, p.footR]]:
+		var pts0 := PackedVector2Array()
+		for k0 in 6:
+			var q0: Vector2 = (b[0] as Vector2).lerp(b[1], k0 / 5.0)
+			pts0.append(q0 + Vector2(sin(t * 9 + k0) * 2.0, 0))
+		ci.draw_polyline(pts0, Color(0.9, 1, 0.95, 0.75), 2.4, true)
+	for q in [p.footL, p.footR]:
+		ci.draw_arc(q + Vector2(0, -2), 5.0, t * 10, t * 10 + 4.0, 12, col, 1.6, true)
 	# tronco: fitas girando
 	for i in 5:
 		var y2: float = lerpf(p.shC.y, p.hipC.y, i / 4.0)

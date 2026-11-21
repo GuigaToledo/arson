@@ -80,7 +80,7 @@ func _draw() -> void:
 
 	# cabeçalhos
 	_header(font, Vector2(xa - R, 20), Spellbook.ELEMENTS[ea].nome, la, player.skills[ea], ca, ea)
-	_header(font, Vector2(xb - R, 20), Spellbook.ELEMENTS[eb].nome, lb, player.skills[eb], cb, eb)
+	_header(font, Vector2(xb - R, 20), Spellbook.ELEMENTS[eb].nome + ("" if lb > 0 else " (base 31)"), lb, player.skills[eb], cb, eb)
 	_header(font, Vector2(xl - R, 20), "Luz", ll, player.skills.luz, cl, "luz")
 	draw_string(font, Vector2(xf - 30, 20), "Fusões", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, cf.lightened(0.2))
 
@@ -147,6 +147,8 @@ func _draw() -> void:
 		if n.el != "luz":
 			title += " · " + Spellbook.TIER_KIND[n.t]
 		desc = Spellbook.spell_desc(n.el, n.t)
+		var sid2 := "%s:%d" % [n.el, n.t]
+		desc += "   ·   Nível da magia %d  ·  melhorias %d/5" % [player.spell_lvl(sid2), player.spell_up(sid2)]
 	var col := Color(0.5, 1, 0.55) if n.ok else Color(1, 0.55, 0.4)
 	draw_string(font, box.position + Vector2(10, 21), title, HORIZONTAL_ALIGNMENT_LEFT, size.x * 0.62, 15, Color(1, 0.88, 0.6))
 	draw_string(font, box.position + Vector2(size.x * 0.64, 21), ("Liberada" if n.ok else "Requer: " + n.req), HORIZONTAL_ALIGNMENT_LEFT, size.x * 0.36 - 8, 13, col)

@@ -243,6 +243,16 @@ func start_game(slot: int) -> void:
 				player.give_item(id)
 				player.try_equip(ItemDB.get_item(id))
 			print("TESTE itens recusou_sem_nivel=", not neg, " atributos=", player.gear(), " mana_max=", int(mp0), "->", int(player.max_mp), " bolsa=", player.bag.size())
+		if str(arg) == "--teste-progressao":
+			player._reset_skills()
+			var b0 := player.elem_b()
+			var trava := player.spell_unlocked(b0 + ":1")
+			player.skills[player.elem_a()] = [30, 0.0]
+			player.skill_gain(player.elem_a(), Rules.skill_need(player.elem_a(), 30) + 1)
+			print("TESTE progressao barra=", player.bar, " segundo_liberado_antes=", trava, " depois=", player.skills, " magia_b1=", player.spell_unlocked(b0 + ":1"))
+			for i in 30:
+				player.spell_pts["luz:1"] = i * i
+			print("TESTE melhorias luz1 nivel=", player.spell_lvl("luz:1"), " melhorias=", player.spell_up("luz:1"))
 		if str(arg) == "--teste-levelup":
 			player.skill_gain(player.elem_a(), Rules.skill_need(player.elem_a(), player.elem_level(player.elem_a())))
 		if str(arg).begins_with("--teste-vermenu="):

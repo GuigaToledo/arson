@@ -5,6 +5,28 @@ extends RefCounted
 ## Tudo desenhado por código (sem imagens), com gravidade nas partículas.
 
 const RX := 90.5  # raio de 1 tile na tela (semieixo x da elipse isométrica)
+## Melhorias da magia sendo lançada (0 a 5): mais partículas e efeitos extras.
+static var boost := 0
+
+
+## Efeito extra das melhorias: 1 anel de brilho, 2 dois anéis, 3 faíscas subindo, 4 runa no chão, 5 onda de choque e clarão.
+static func upgrade_fx(parent: Node, pos: Vector2, col: Color, up: int) -> void:
+	if up >= 1:
+		SpellFx.ring(parent, pos, 0.6, col.lightened(0.3), 0.5)
+	if up >= 2:
+		SpellFx.ring(parent, pos, 1.0, col, 0.7)
+	if up >= 3:
+		parts(parent, pos + Vector2(0, -20), 24, 90.0, 0.9, 0.05, col.lightened(0.5), col, -160.0)
+	if up >= 4:
+		fxg(parent, pos, 1.0, func(n: DrawFx, k: float):
+			var a := 1.0 - k
+			ellipse(n, Vector2.ZERO, RX * 1.2, Color(col, 0.6 * a), false, 2.0)
+			for i in 6:
+				var t := TAU * i / 6.0 + k * 2.0
+				n.draw_line(Vector2(cos(t), sin(t) * 0.5) * RX * 1.2, Vector2(cos(t + 2.1), sin(t + 2.1) * 0.5) * RX * 1.2, Color(col.lightened(0.3), a * 0.8), 1.5, true))
+	if up >= 5:
+		fx(parent, pos, 0.6, func(n: DrawFx, k: float): ellipse(n, Vector2.ZERO, RX * (0.5 + k * 2.5), Color(1, 1, 1, (1.0 - k) * 0.7), false, 4.0 * (1.0 - k)))
+		SpellFx.flash(parent, pos + Vector2(0, -30), col, 3.0, 2.0, 0.5)
 
 
 # ------------------------------------------------------------ peças
@@ -55,7 +77,7 @@ static func fxg(parent: Node, pos: Vector2, life: float, f: Callable) -> DrawFx:
 ## Partículas com gravidade (g > 0 cai).
 static func parts(parent: Node, pos: Vector2, amount: int, speed: float, life: float, size: float, a: Color, b: Color, g := 0.0, spread := 180.0, dir := Vector2.UP, add := true) -> CPUParticles2D:
 	var p := CPUParticles2D.new()
-	p.amount = maxi(1, amount)
+	p.amount = maxi(1, int(amount * (1.0 + 0.25 * boost)))
 	p.lifetime = life
 	p.one_shot = true
 	p.explosiveness = 0.9

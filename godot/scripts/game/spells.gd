@@ -76,4 +76,5 @@ static func is_attack(s: Dictionary) -> bool:
 ## Barra inicial de cada classe.
 static func default_bar(classe: String) -> Array:
 	var e := Spellbook.elements_of(classe)
-	return ["%s:1" % e[0], "%s:1" % e[1], "luz:1", "%s:2" % e[0], "%s:2" % e[1], "%s:3" % e[0], "%s:4" % e[0], "%s:6" % e[0]]
+	# começa só com o elemento base e a Luz (o segundo elemento vem no nível 31 do base)
+	return ["%s:1" % e[0], "luz:1", "%s:2" % e[0], "%s:3" % e[0], "%s:4" % e[0], "%s:6" % e[0], "luz:2", "%s:5" % e[0]]

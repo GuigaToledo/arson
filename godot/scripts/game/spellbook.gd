@@ -53,7 +53,7 @@ const SUMMON_FUSION := {
 
 ## Elementos de cada classe: [elemento A, elemento B].
 const CLASS_ELEMENTS := {
-	"fogo": ["fogo", "lava"], "agua": ["agua", "gelo"], "vento": ["vento", "raio"], "terra": ["terra", "natureza"],
+	"fogo": ["fogo", "lava"], "agua": ["agua", "gelo"], "vento": ["vento", "raio"], "terra": ["natureza", "terra"],
 }
 
 

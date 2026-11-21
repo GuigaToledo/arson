@@ -143,6 +143,9 @@ func _load() -> void:
 		mp_pot = int(c.get_value("jogador", "pocao_mana", 5))
 		saved_pos = c.get_value("jogador", "posicao", Vector2(-1, -1))
 		saved_map = int(c.get_value("jogador", "mapa", 0))
+		var spn = c.get_value("jogador", "magias_nivel", {})
+		if spn is Dictionary:
+			spell_pts = spn
 		var bg = c.get_value("jogador", "bolsa", [])
 		if bg is Array and not bg.is_empty():
 			bag = bg.map(func(x): return str(x))
@@ -186,6 +189,7 @@ func save() -> void:
 	c.set_value("jogador", "habilidades", skills)
 	c.set_value("jogador", "barra", bar)
 	c.set_value("jogador", "tarefa", task)
+	c.set_value("jogador", "magias_nivel", spell_pts)
 	c.set_value("jogador", "bolsa", bag)
 	c.set_value("jogador", "equip", equipment.to_ids())
 	if not dead:
@@ -341,6 +345,23 @@ func monster_at(p: Vector2) -> Node2D:
 ## Barra de magias: 8 casas com ids do catálogo (Spells). Personalizável no menu → Magias.
 var bar: Array = []
 var cds := {}
+## Uso de cada magia (id -> vezes usada). O nível da magia sobe sem parar; 5 melhorias.
+var spell_pts := {}
+const UPGRADES := [3, 6, 10, 16, 25]
+
+
+func spell_lvl(id: String) -> int:
+	return 1 + int(sqrt(float(spell_pts.get(id, 0))))
+
+
+## Quantas das 5 melhorias a magia já tem.
+func spell_up(id: String) -> int:
+	var lv := spell_lvl(id)
+	var n := 0
+	for t in UPGRADES:
+		if lv >= t:
+			n += 1
+	return n
 ## Habilidades: nome -> [nível, pontos]. Sobem com o uso e sem limite.
 var skills := {}
 ## Escudo mágico (absorve dano), bênçãos e estados da Luz.
@@ -363,8 +384,10 @@ var summons := {}
 ## Os 3 elementos da classe (A, B e Luz) e a Defesa, todos no nível 1.
 func _reset_skills() -> void:
 	skills = {}
-	for e in Spellbook.elements_of(classe):
-		skills[e] = [1, 0.0]
+	var els0 := Spellbook.elements_of(classe)
+	skills[els0[0]] = [1, 0.0]
+	# o segundo elemento fica bloqueado (nível 0) até o elemento base chegar ao nível 31
+	skills[els0[1]] = [0, 0.0]
 	skills["luz"] = [1, 0.0]
 	skills["defesa"] = [1, 0.0]
 	bar = Spells.default_bar(classe)
@@ -403,6 +426,8 @@ func spell_req(id: String) -> String:
 	if id.begins_with("fus:"):
 		var both := "%s e %s" % [Spellbook.ELEMENTS[elem_a()].nome, Spellbook.ELEMENTS[elem_b()].nome]
 		return ("%s no mesmo nível (3+)" % both) if int(s.tier) == 3 else ("%s no nível %d" % [both, s.tier])
+	if elem_level(str(s.els[0])) <= 0 and str(s.els[0]) == elem_b():
+		return "%s nível %d (o %s libera no nível 31 de %s)" % [Spellbook.ELEMENTS[s.els[0]].nome, s.tier, Spellbook.ELEMENTS[s.els[0]].nome, Spellbook.ELEMENTS[elem_a()].nome]
 	return "%s nível %d" % [Spellbook.ELEMENTS[s.els[0]].nome, s.tier]
 
 
@@ -447,6 +472,9 @@ func spell_power(s: Dictionary) -> float:
 		el_lv += elem_level(e)
 	el_lv /= maxf(1, s.els.size())
 	var p := (float(s.get("base", 0.0)) + float(s.get("perL", 0.0)) * level) * (1.0 + 0.06 * el_lv)
+	# nível da própria magia (+2% por nível) e melhorias (+8% cada)
+	var sid := str(s.get("id", ""))
+	p *= (1.0 + 0.02 * (spell_lvl(sid) - 1)) * (1.0 + 0.08 * spell_up(sid))
 	var g := gear()
 	var bonus := float(g.get("magia", 0))
 	for e in s.els:
@@ -456,7 +484,7 @@ func spell_power(s: Dictionary) -> float:
 
 
 func skill_gain(k: String, amt: float) -> void:
-	if not skills.has(k):
+	if not skills.has(k) or int(skills[k][0]) <= 0:
 		return
 	var sk: Array = skills[k]
 	sk[1] = float(sk[1]) + amt
@@ -470,6 +498,12 @@ func skill_gain(k: String, amt: float) -> void:
 		var col: Color = Spellbook.ELEMENTS[k].cor if Spellbook.ELEMENTS.has(k) else Color(1, 0.78, 0.25)
 		CombatText.add(global_position + Vector2(0, -118), "%s %d!" % [Rules.skill_name(k), sk[0]], col.lightened(0.2), true)
 		SpellFx.level_up(get_parent(), global_position, col)
+		# elemento base no 31: ganha o primeiro nível do segundo elemento
+		if k == elem_a() and int(sk[0]) >= 31 and elem_level(elem_b()) <= 0:
+			skills[elem_b()] = [1, 0.0]
+			var c2: Color = Spellbook.ELEMENTS[elem_b()].cor
+			CombatText.add(global_position + Vector2(0, -150), "NOVO ELEMENTO: %s!" % Spellbook.ELEMENTS[elem_b()].nome, c2, true)
+			SpellFx.level_up(get_parent(), global_position, c2)
 
 
 func cast_slot(i: int, world_pos = null) -> void:
@@ -520,6 +554,7 @@ func cast_spell(id: String, world_pos = null) -> void:
 	var col: Color = s.color
 	var els: Array = s.els
 	var pw := spell_power(s)
+	SpellArt.boost = spell_up(id)
 	var hard := int(s.tier) >= 2
 	var ok := true
 	match s.type:
@@ -658,8 +693,17 @@ func cast_spell(id: String, world_pos = null) -> void:
 			immortal_t = float(s.dur)
 			_msg("ASCENSÃO! Imortal por 30 s", col)
 			SpellFx.level_up(get_parent(), global_position, col)
+	var up := spell_up(id)
+	SpellArt.boost = 0
 	if not ok:
 		return
+	if up > 0:
+		SpellArt.upgrade_fx(get_parent(), aim if attack else global_position, col, up)
+	var old_up := up
+	spell_pts[id] = int(spell_pts.get(id, 0)) + 1
+	if spell_up(id) > old_up:
+		CombatText.add(global_position + Vector2(0, -150), "%s: melhoria %d/5!" % [s.nome, spell_up(id)], col.lightened(0.3), true)
+		SpellFx.level_up(get_parent(), global_position, col)
 	if attack and invis:
 		invis = false
 	mp -= float(s.mana)

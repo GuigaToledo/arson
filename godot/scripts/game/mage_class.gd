@@ -37,7 +37,7 @@ const DATA := {
 		"summon": "Elemental de vento flutuante · Elemental de raio super rápido",
 	},
 	"terra": {
-		"nome": "Mago da Terra", "elementos": ["Terra", "Natureza"],
+		"nome": "Mago da Terra", "elementos": ["Natureza", "Terra"],
 		"cor": Color(0.75, 0.55, 0.3), "cor2": Color(0.4, 0.85, 0.3),
 		"cajado": "cajado_raiz",
 		"itens": ["ombreiras_pedra", "manto_raiz", "capa_musgo", "cajado_raiz"],
