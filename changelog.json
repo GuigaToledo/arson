@@ -1,5 +1,18 @@
 [
  {
+  "versao": "0.9.3",
+  "data": "2026-11-21",
+  "titulo": "Perseguição, magias limpas e barra que cresce",
+  "itens": [
+   "Monstros andam/correm até você em vez de quase se teletransportar; os de 4 patas são mais rápidos, mas correndo dá para fugir de todos",
+   "O salto dos monstros agora é um pulo visível (agacha, sobe e cai) e mais curto",
+   "As magias mostram só o elemento (espinhos, fogo, vento, jato d'água...): sem bolas de luz nem marcas no chão",
+   "O ataque básico tem a cara do seu elemento",
+   "A árvore de magias só acende uma magia quando ela realmente libera",
+   "Os botões de magia da tela só aparecem quando têm uma magia liberada"
+  ]
+ },
+ {
   "versao": "0.9.2",
   "data": "2026-11-21",
   "titulo": "Ajustes de magias e alvos",
