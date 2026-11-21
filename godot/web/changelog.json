@@ -1,5 +1,17 @@
 [
  {
+  "versao": "0.9.8",
+  "data": "2026-11-21",
+  "titulo": "Fogo novo, bonecos e botões",
+  "itens": [
+   "Fogo refeito: chamas de formatos e ritmos diferentes (altas e finas, médias, baixas e largas), corpo que ondula, ponta que dança, miolo quase branco, fiapos que se soltam e faíscas em zigue-zague; o fogo pega aos poucos",
+   "Três bonecos de treino lado a lado, para testar magia em área",
+   "O boneco de treino tira sempre 5% da sua vida máxima por golpe",
+   "Segurar um botão de magia (ou a tecla 1-8) relança a magia sempre que a recarga zera",
+   "Poções agora ficam em cima dos botões de magia, e o botão Correr em cima do joystick"
+  ]
+ },
+ {
   "versao": "0.9.7",
   "data": "2026-11-21",
   "titulo": "Treino de magia e efeitos no corpo",

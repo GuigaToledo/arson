@@ -237,41 +237,97 @@ static func shake(node: Node, amount: float, dur: float) -> void:
 
 
 # ------------------------------------------------------------ fogo e lava animados
-## Língua de fogo tremulando: base no chão, ponta para cima. Camadas vermelha, laranja e amarela.
+## Uma chama: língua com base arredondada, corpo que ondula e ponta que dança, em 4 camadas
+## (vermelho escuro por fora, laranja, amarelo e um miolo quase branco perto da base).
+## Cada chama tem o próprio ritmo (sd): altura pulsa irregular, inclina com o "vento" e
+## às vezes solta um fiapo de fogo que sobe e some. Desenhada em triângulos (nunca falha).
 static func flame(n: CanvasItem, base: Vector2, h: float, w: float, t: float, sd: float, a := 1.0) -> void:
 	if h < 2.0 or a <= 0.01:
 		return
-	var sway := sin(t * 7.0 + sd * 3.1) * w * 0.35 + sin(t * 13.0 + sd) * w * 0.15
-	for layer in 3:
-		var k: float = [1.0, 0.68, 0.38][layer]
-		var col: Color = [Color(0.9, 0.18, 0.02, 0.55 * a), Color(1, 0.5, 0.08, 0.75 * a), Color(1, 0.88, 0.45, 0.9 * a)][layer]
-		var hh := h * k * (0.9 + 0.1 * sin(t * 17.0 + sd * 5.0 + layer))
-		var ww := w * k
-		var tip := base + Vector2(sway * k, -hh)
+	var f1 := 4.7 + fmod(absf(sd) * 1.37, 3.0)
+	var hh := h * (0.8 + 0.14 * sin(t * f1 + sd) + 0.08 * sin(t * 13.3 + sd * 2.1) + 0.05 * sin(t * 23.0 + sd * 4.0))
+	var lean := sin(t * 1.9 + sd) * 0.22 + sin(t * 6.1 + sd * 3.0) * 0.1
+	var cols := [Color(0.7, 0.08, 0.02, 0.42 * a), Color(1.0, 0.36, 0.05, 0.62 * a), Color(1.0, 0.7, 0.18, 0.8 * a), Color(1.0, 0.95, 0.72, 0.9 * a)]
+	var ks := [1.0, 0.8, 0.56, 0.32]
+	for layer in 4:
+		var k: float = ks[layer]
+		var lh := hh * (k if layer < 3 else 0.4)
+		var lw := w * (k * 0.9 + 0.1)
+		var col: Color = cols[layer]
+		var L := PackedVector2Array()
+		var R := PackedVector2Array()
+		for i in 10:
+			var f := i / 9.0
+			var wig := sin(f * 4.2 - t * 9.0 + sd) * lw * 0.28 * f
+			var cx := lean * lh * f * f + wig
+			var hw := lw * pow(sin(pow(f, 0.62) * PI), 0.85) * (1.0 - 0.3 * f)
+			if f < 0.12:
+				hw = lerpf(lw * 0.55, hw, f / 0.12)
+			var y := -lh * f
+			L.append(base + Vector2(cx - hw, y))
+			R.append(base + Vector2(cx + hw, y))
+		# base arredondada (leque) + corpo (faixa), tudo numa chamada só de triângulos
 		var pts := PackedVector2Array()
-		for i in 7:
-			var f := i / 6.0
-			var bulge := sin(f * PI) * ww * (1.0 - f * 0.55)
-			pts.append(base.lerp(tip, f) + Vector2(-bulge + sway * f * f * 0.5, 0) + Vector2(0, -sin(f * PI) * 0.0))
-		for i in range(6, -1, -1):
-			var f := i / 6.0
-			var bulge := sin(f * PI) * ww * (1.0 - f * 0.55)
-			pts.append(base.lerp(tip, f) + Vector2(bulge + sway * f * f * 0.5, 0))
-		n.draw_colored_polygon(pts, col)
+		var idx := PackedInt32Array()
+		for i in 10:
+			pts.append(L[i])
+			pts.append(R[i])
+		for i in 9:
+			var o := i * 2
+			idx.append_array(PackedInt32Array([o, o + 2, o + 3, o, o + 3, o + 1]))
+		var c0 := pts.size()
+		pts.append(base)
+		var bc := base + Vector2(0, lw * 0.12)
+		for j in 5:
+			var an := PI * j / 4.0
+			pts.append(bc + Vector2(cos(an) * lw * 0.55, sin(an) * lw * 0.22))
+		for j in 4:
+			idx.append_array(PackedInt32Array([c0, c0 + 1 + j, c0 + 2 + j]))
+		var cols_v := PackedColorArray()
+		cols_v.resize(pts.size())
+		cols_v.fill(col)
+		RenderingServer.canvas_item_add_triangle_array(n.get_canvas_item(), idx, pts, cols_v)
+	# fiapo que se solta da ponta e sobe
+	var ph := fmod(t * (1.3 + fmod(absf(sd), 0.7)) + absf(sd) * 0.31, 1.0)
+	if ph > 0.35:
+		var q := (ph - 0.35) / 0.65
+		var wp := base + Vector2(lean * hh + sin(t * 5.0 + sd) * w * 0.3, -hh * (0.85 + q * 0.8))
+		var ws := w * 0.45 * (1.0 - q)
+		var wc := Color(1, 0.5 + 0.3 * (1.0 - q), 0.1, 0.7 * a * (1.0 - q))
+		var wcs := PackedColorArray([wc, wc, wc])
+		n.draw_primitive(PackedVector2Array([wp + Vector2(-ws, 0), wp + Vector2(0, -ws * 2.4), wp + Vector2(ws, 0)]), wcs, PackedVector2Array())
+		n.draw_primitive(PackedVector2Array([wp + Vector2(-ws, 0), wp + Vector2(ws, 0), wp + Vector2(0, ws * 0.8)]), wcs, PackedVector2Array())
 
 
-## Várias chamas espalhadas numa elipse (chão em chamas). g = altura 0..1.
+## Fogo de verdade num pedaço de chão: mistura chamas altas e finas, médias, baixas e largas,
+## fiapos e faíscas, cada uma com seu ritmo, de trás para a frente (as da frente por cima).
+## g = quanto já cresceu (0..1), rx = raio em px.
 static func flames_in(n: CanvasItem, rx: float, count: int, h: float, t: float, g: float, a: float, sd: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sd
 	var arr := []
-	for i in count:
+	var tot := count + int(count * 0.6) + 2
+	for i in tot:
 		var ang := rng.randf() * TAU
 		var r := sqrt(rng.randf()) * rx
-		arr.append([Vector2(cos(ang) * r, sin(ang) * r * 0.5), rng.randf_range(0.6, 1.2), rng.randf() * 10.0])
+		var kind := rng.randi() % 3
+		var hk: float = [rng.randf_range(1.1, 1.5), rng.randf_range(0.7, 0.95), rng.randf_range(0.35, 0.55)][kind]
+		var wk: float = [rng.randf_range(4.5, 6.5), rng.randf_range(7.0, 10.0), rng.randf_range(11.0, 16.0)][kind]
+		# mais altas no meio, mais baixas na borda
+		hk *= 1.0 - 0.45 * (r / maxf(1.0, rx))
+		arr.append([Vector2(cos(ang) * r, sin(ang) * r * 0.5), hk, wk, rng.randf() * 20.0, rng.randf_range(0.0, 0.6)])
 	arr.sort_custom(func(p, q): return p[0].y < q[0].y)
 	for e in arr:
-		flame(n, e[0], h * e[1] * g, 7.0 + 5.0 * e[1], t, e[2], a)
+		# cada chama nasce num tempo diferente (o fogo "pega" aos poucos)
+		var gg := clampf((g - float(e[4]) * 0.5) / 0.5, 0.0, 1.0) if g < 1.0 else 1.0
+		flame(n, e[0], h * float(e[1]) * gg, float(e[2]) * (0.6 + 0.4 * gg), t, float(e[3]), a)
+	# faíscas subindo em zigue-zague
+	for i in int(count * 0.8) + 2:
+		var f := fmod(t * rng.randf_range(0.6, 1.1) + rng.randf(), 1.0)
+		var p0 := Vector2(rng.randf_range(-1, 1) * rx * 0.8, rng.randf_range(-0.4, 0.4) * rx)
+		var p := p0 + Vector2(sin(t * 7.0 + i) * 5.0, -h * (0.6 + f * 1.4))
+		var sc := Color(1, 0.8, 0.35, a * (1.0 - f))
+		n.draw_line(p, p + Vector2(sin(t * 9.0 + i) * 2.0, 3.5), sc, 1.4)
 
 
 ## Lava: crosta escura rachada por cima de magma que se mexe, veios brilhando e bolhas estourando.

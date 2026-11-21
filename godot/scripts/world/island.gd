@@ -610,7 +610,7 @@ func _spawn_monsters() -> void:
 			bm.idx = n
 			entities.add_child(bm)
 			n += 1
-	# boneco de treino logo fora da vila (um só, fixo no lugar para treinar parado) (fora do calçamento, chão livre)
+	# bonecos de treino logo fora da vila (três lado a lado, fixos no lugar) (fora do calçamento, chão livre)
 	var placed: Array = []
 	for rr in range(8, 13):
 		for y in map.h:
@@ -623,12 +623,22 @@ func _spawn_monsters() -> void:
 					continue
 				if placed.any(func(q): return q.distance_to(gp2) < 2.5):
 					continue
+				# três bonecos lado a lado (para testar magia em área)
+				var row := [gp2]
+				for dirv in [Vector2(1, 0), Vector2(0, 1), Vector2(-1, 0), Vector2(0, -1)]:
+					var cand := [gp2 + dirv * 1.4, gp2 + dirv * 2.8]
+					if cand.all(func(q): return map.walkable_grid(q) and ".:".contains(map.at(int(q.x), int(q.y)))):
+						row += cand
+						break
+				if row.size() < 3:
+					continue
 				placed.append(gp2)
-				var dm := Monster.new().configure("boneco", Iso.to_screen(gp2))
-				dm.name = "Boneco_%d" % n
-				dm.idx = n
-				entities.add_child(dm)
-				n += 1
+				for q in row:
+					var dm := Monster.new().configure("boneco", Iso.to_screen(q))
+					dm.name = "Boneco_%d" % n
+					dm.idx = n
+					entities.add_child(dm)
+					n += 1
 
 
 ## Só para testes automáticos (godot ... -- --teste-combate): leva o jogador até

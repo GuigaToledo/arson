@@ -124,10 +124,11 @@ func _build() -> void:
 	run_btn.text = "Correr"
 	run_btn.color = Color(0.35, 0.3, 0.22)
 	run_btn.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	run_btn.offset_left = 196
-	run_btn.offset_top = -80
-	run_btn.offset_right = 258
-	run_btn.offset_bottom = -18
+	# em cima do joystick
+	run_btn.offset_left = 69
+	run_btn.offset_top = -262
+	run_btn.offset_right = 131
+	run_btn.offset_bottom = -200
 	root.add_child(run_btn)
 
 	clock_lbl = _label(13, Color(0.95, 0.88, 0.7))
@@ -214,6 +215,9 @@ func _input(ev: InputEvent) -> void:
 		if st.pressed:
 			if _start(st.position, st.index):
 				get_viewport().set_input_as_handled()
+		elif _hold.has(st.index):
+			_hold.erase(st.index)
+			get_viewport().set_input_as_handled()
 		elif st.index == _joy_idx:
 			_release_joy()
 			get_viewport().set_input_as_handled()
@@ -232,6 +236,8 @@ func _input(ev: InputEvent) -> void:
 			return
 		if mb.pressed and _start(mb.position, MOUSE_JOY):
 			get_viewport().set_input_as_handled()
+		elif not mb.pressed and _hold.has(MOUSE_JOY):
+			_hold.erase(MOUSE_JOY)
 		elif not mb.pressed and _joy_idx == MOUSE_JOY:
 			_release_joy()
 			get_viewport().set_input_as_handled()
@@ -256,6 +262,10 @@ func _over_controls(pos: Vector2) -> bool:
 	return joystick.hit(pos) or run_btn.hit(pos) or wheel.slot_at(pos) >= 0
 
 
+## Botões de magia segurados (toque/mouse -> casa): relança sempre que a recarga zera.
+var _hold := {}
+
+
 func _start(pos: Vector2, idx: int) -> bool:
 	var si := wheel.slot_at(pos) if mobile else spellbar.slot_at(pos)
 	if si >= 0:
@@ -263,6 +273,7 @@ func _start(pos: Vector2, idx: int) -> bool:
 			wheel.flash(si)
 		if si < SpellBar.N:
 			player.cast_slot(si)
+			_hold[idx] = si
 		elif si == SpellBar.N:
 			player.use_pot("hp")
 		else:
@@ -296,6 +307,20 @@ func _release_joy() -> void:
 func _process(_d: float) -> void:
 	if player == null:
 		return
+	# magias seguradas (dedo/mouse em cima do botão, ou teclas 1-8)
+	if (game_menu and game_menu.visible) or NpcDialog.talking:
+		_hold.clear()
+	var held := _hold.values()
+	if not mobile:
+		for k in 8:
+			if Input.is_physical_key_pressed(KEY_1 + k) and not (game_menu and game_menu.visible):
+				held.append(k)
+	for si in held:
+		var sid: String = str(player.bar[si]) if si < player.bar.size() else ""
+		if sid != "" and float(player.cds.get(sid, 0.0)) <= 0.0 and player._action_time <= 0.0 and player.spell_unlocked(sid) and player.mp >= float(Spells.get_spell(sid, player.classe).get("mana", 0)):
+			player.cast_slot(si)
+			if mobile:
+				wheel.flash(si)
 	var online := ("%d online%s" % [net.online_count, " · anfitrião" if net.is_host else ""]) if net.enabled else ""
 	if Engine.get_process_frames() % 30 == 0:
 		clock_lbl.text = ("Noite  " if DayNight.is_night_now() else "Dia  ") + DayNight.clock_text()
@@ -326,8 +351,9 @@ func _process(_d: float) -> void:
 	skill_panel.queue_redraw()
 	bars.queue_redraw()
 	if mobile:
-		var jr := joystick.get_global_rect()
-		wheel.pot_pos = [Vector2(jr.position.x + 40, jr.position.y - 36), Vector2(jr.position.x + 104, jr.position.y - 36)]
+		# poções em cima dos botões de magia
+		var wr := wheel.get_global_rect()
+		wheel.pot_pos = [wr.position + Vector2(150, -22), wr.position + Vector2(222, -22)]
 		wheel.queue_redraw()
 	var vs := get_viewport().get_visible_rect().size
 	rotate_msg.visible = vs.y > vs.x * 1.1

@@ -316,7 +316,12 @@ func _hit(tgt, mult := 1.0, sk: Dictionary = {}) -> void:
 		CombatText.add(tgt.global_position + Vector2(0, -80), "errou", Color(0.75, 0.75, 0.75))
 		return
 	var bonus := 1.25 if _buff_t > 0.0 else 1.0
-	var dg := Rules.danger(level, level_of(tgt)) if not info.get("dummy", false) else 0
+	if info.get("dummy", false):
+		# boneco de treino: sempre 5% da vida máxima de quem ele acerta
+		var mh = tgt.get("max_hp")
+		tgt.take_damage(maxi(1, int(round(float(mh if mh != null else 100.0) * 0.05))), display_name)
+		return
+	var dg := Rules.danger(level, level_of(tgt))
 	tgt.take_damage(Rules.roll(float(info.atk) * mult * bonus * Rules.danger_dmg(dg)), display_name)
 	var ef: Dictionary = sk.get("efeito", {}) if not sk.is_empty() else info.get("efeito_ataque", {})
 	if not ef.is_empty() and tgt.has_method("apply_debuff") and randf() < float(ef.get("chance", 1.0)):
