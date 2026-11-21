@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"chefe_olho_polifemo"
+display_name = "Olho de Polifemo"
+item_type = "livro"
+slot = 8
+level_req = 26
+stats = {"magia": 12, "defesa": 4, "mana": 100}
+placeholder_style = &"book"
+placeholder_color = Color(0.4, 0.32, 0.22, 1)
+placeholder_accent = Color(0.3, 0.75, 1, 1)
+glow = 0.7

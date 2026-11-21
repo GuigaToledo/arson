@@ -54,8 +54,10 @@ function render() {
         h += '<div class="card"><h3><span class="dot" style="background:' + m.cor + '"></span>' + esc(m.nome) + '</h3>';
         h += '<div class="muted">' + esc(m.desc || '') + '</div>';
         h += '<div><span class="stat">Vida <b>' + m.hp + '</b></span><span class="stat">Ataque <b>' + m.atk + '</b></span><span class="stat">Defesa <b>' + m.def + '</b></span><span class="stat">XP <b>' + m.xp + '</b></span><span class="stat">Ouro <b>' + m.gold + '</b></span></div>';
-        h += '<div>' + (m.distancia ? '<span class="pill">ataca de longe</span>' : '<span class="pill">corpo a corpo</span>') + (m.elemento ? '<span class="pill">' + esc(m.elemento) + '</span>' : '') + '</div>';
+        h += '<div>' + (m.chefe ? '<span class="pill" style="background:#5a1a10;color:#ffb08a">CHEFE</span>' : '') + (m.distancia ? '<span class="pill">ataca de longe</span>' : '<span class="pill">corpo a corpo</span>') + (m.elemento ? '<span class="pill">' + esc(m.elemento) + '</span>' : '') + '</div>';
         if (m.habilidades && m.habilidades.length) { h += '<ul>' + m.habilidades.map(s => '<li><b>' + esc(s.nome) + ':</b> ' + esc(s.desc) + '</li>').join('') + '</ul>'; }
+        if (m.saque && m.saque.length) { h += '<div class="muted" style="margin-top:4px">Saque: ' + m.saque.map(esc).join(' · ') + '</div>'; }
+        if (m.drop) { h += '<div style="margin-top:4px;color:#ff8a5a"><b>Equipamento de chefe:</b> ' + esc(m.drop) + '</div>'; }
         h += '</div>';
       }
       h += '</div>';

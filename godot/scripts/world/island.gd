@@ -178,6 +178,8 @@ func start_game(slot: int) -> void:
 	gm.on_chat = hud._open_chat
 	gm.on_equip = hud._toggle_panel
 	gm.on_full = hud._fullscreen
+	if "--teste-ui" in OS.get_cmdline_user_args():
+		_teste_ui(ui, dlg, gm)
 	for arg in _test_args():
 		if str(arg).begins_with("--teste-vermagia="):
 			for k in player.skills:
@@ -554,7 +556,7 @@ func _spawn_monsters() -> void:
 				t = "cultista"
 			if t == "":
 				continue
-			var m := Monster.new().configure(t, Iso.to_screen(gp))
+			var m := Monster.new().configure(t, Iso.to_screen(gp), map.tile_rand(x, y, 31) < Monster.ELITE_CHANCE)
 			m.name = "Monstro_%d" % n
 			m.idx = n
 			entities.add_child(m)
@@ -685,6 +687,30 @@ func _spawn_characters(classe: String) -> void:
 
 
 ## Casa de chão livre mais perto de um ponto da grade (procura em volta).
+## Teste automático do inventário, da loja (venda do saque) e do saque dos chefes.
+func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
+	for id in ["gosma_verde", "osso", "pele_lobo", "coroa_goblin"]:
+		player.add_loot(id, 3)
+	ui.toggle()
+	ui._pick_loot(0)
+	ui._cycle(EquipSlot.Slot.HEAD)
+	player._roll_drop("Slime Rei")
+	player._roll_drop("Goblin Elite")
+	for n in get_tree().get_nodes_in_group("actors"):
+		if n is Npc and n.role == "mercador":
+			dlg.open(n, player)
+			for t in ["itens", "vender"]:
+				dlg._tab = t
+				dlg._render("")
+			dlg._sell_all()
+			dlg.close()
+			break
+	ui.toggle()
+	gm.toggle()
+	gm.toggle()
+	print("TESTE UI ok: ouro=%d saque=%s" % [player.gold, player.loot])
+
+
 func _free_tile(near: Vector2) -> Vector2:
 	for r in range(0, 8):
 		for dy in range(-r, r + 1):

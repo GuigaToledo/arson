@@ -23,6 +23,15 @@ var _char_box: VBoxContainer
 var _tree: SpellTree
 var _q_info: Label
 var _zoom_slider: HSlider
+var _box: PanelContainer
+
+
+## Cabe em qualquer tela: no máximo o tamanho de desenho, sempre com margem.
+func _fit() -> void:
+	if _box == null:
+		return
+	var vp := get_viewport().get_visible_rect().size
+	_box.custom_minimum_size = Vector2(minf(PANEL.x, vp.x - 16.0), minf(PANEL.y, vp.y - 16.0))
 
 
 func bind(p: Player, pf: Perf) -> void:
@@ -39,6 +48,7 @@ func toggle() -> void:
 	if perf:
 		perf.apply()
 	if visible:
+		_fit()
 		_show(_cur)
 		_zoom_slider.set_value_no_signal(Settings.zoom)
 
@@ -104,8 +114,10 @@ func _build() -> void:
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
 	var box := PanelContainer.new()
-	box.add_theme_stylebox_override("panel", _style(Color(0.06, 0.045, 0.035, 0.98), Color(0.6, 0.44, 0.24), 12, 10))
-	box.custom_minimum_size = PANEL
+	box.add_theme_stylebox_override("panel", UiKit.box(Color(0.06, 0.045, 0.035, 0.98), Color(0.66, 0.48, 0.26), 12, 10))
+	_box = box
+	_fit()
+	get_viewport().size_changed.connect(_fit)
 	center.add_child(box)
 
 	var row := HBoxContainer.new()
@@ -120,7 +132,7 @@ func _build() -> void:
 	var t := _lbl("ARSON", 24, Color(1, 0.62, 0.22))
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	side.add_child(t)
-	var names := ["Personagem", "Magias", "Equipamento", "Automação", "Gráficos", "Progresso"]
+	var names := ["Personagem", "Magias", "Inventário", "Automação", "Gráficos", "Progresso"]
 	for i in names.size():
 		var b := _btn(names[i], func(): _tab(i), 16)
 		_tab_btns.append(b)

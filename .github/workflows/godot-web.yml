@@ -49,6 +49,9 @@ jobs:
           timeout 120 $HOME/godot --headless --path godot --quit-after 300 2>&1 | tee run.log || true
           # continente: leva o jogador aos campos, à caverna e ao acampamento goblin (monstros usam magias)
           timeout 120 $HOME/godot --headless --path godot --quit-after 900 -- --teste-continente 2>&1 | tee -a run.log || true
+          # inventário, loja e saque
+          timeout 120 $HOME/godot --headless --path godot --quit-after 120 -- --teste-ui 2>&1 | tee -a run.log || true
+          grep -q "TESTE UI ok" run.log || { echo "teste do inventário não terminou"; exit 1; }
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Invalid call|Invalid access" import.log run.log; then
             echo "::error::Erros de script encontrados"
             exit 1

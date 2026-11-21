@@ -28,38 +28,28 @@ func _exit_tree() -> void:
 
 
 func _style(bg: Color, border: Color) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = bg
-	sb.border_color = border
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(10)
-	sb.set_content_margin_all(14)
-	return sb
+	return UiKit.inner(bg, border, 8, 10)
 
 
 func _lbl(t: String, size := 16, col := GOLD) -> Label:
-	var l := Label.new()
-	l.text = t
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", col)
+	var l := UiKit.label(t, size, col)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.custom_minimum_size = Vector2(480, 0)
+	l.custom_minimum_size = Vector2(minf(480.0, _w() - 40.0), 0)
 	return l
 
 
 func _btn(t: String, cb: Callable) -> Button:
-	var b := Button.new()
-	b.text = t
-	b.focus_mode = Control.FOCUS_NONE
-	b.custom_minimum_size = Vector2(0, 44)
+	var b := UiKit.button(t, cb, 14)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.add_theme_font_size_override("font_size", 15)
-	b.add_theme_color_override("font_color", GOLD)
-	b.add_theme_stylebox_override("normal", _style(Color(0.14, 0.09, 0.05), Color(0.55, 0.4, 0.22)))
-	b.add_theme_stylebox_override("hover", _style(Color(0.24, 0.14, 0.06), Color(0.8, 0.58, 0.3)))
-	b.add_theme_stylebox_override("pressed", _style(Color(0.38, 0.15, 0.05), Color(0.95, 0.62, 0.3)))
-	b.pressed.connect(cb)
 	return b
+
+
+func _w() -> float:
+	return UiKit.center_rect(get_viewport().get_visible_rect().size, Vector2(600, 440)).size.x
+
+
+var _tab := "pocoes"
+var _scroll: ScrollContainer
 
 
 func open(n: Npc, p: Player) -> void:
@@ -72,12 +62,20 @@ func open(n: Npc, p: Player) -> void:
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
 	_box = PanelContainer.new()
-	_box.add_theme_stylebox_override("panel", _style(Color(0.06, 0.045, 0.035, 0.96), Color(0.62, 0.45, 0.24)))
+	_box.add_theme_stylebox_override("panel", UiKit.box())
 	center.add_child(_box)
 	_box.tree_exited.connect(center.queue_free)
+	var r := UiKit.center_rect(get_viewport().get_visible_rect().size, Vector2(600, 440))
+	_box.custom_minimum_size = Vector2(r.size.x, 0)
+	_scroll = ScrollContainer.new()
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.custom_minimum_size = Vector2(r.size.x - 28, minf(r.size.y, get_viewport().get_visible_rect().size.y - 40.0))
+	_box.add_child(_scroll)
 	_col = VBoxContainer.new()
-	_col.add_theme_constant_override("separation", 10)
-	_box.add_child(_col)
+	_col.add_theme_constant_override("separation", 8)
+	_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_scroll.add_child(_col)
+	_tab = "pocoes"
 	_render("")
 
 
@@ -103,27 +101,45 @@ func _row(btns: Array) -> HBoxContainer:
 func _render(say: String) -> void:
 	for c in _col.get_children():
 		c.queue_free()
-	_col.add_child(_lbl(npc.display_name, 22, Color(1, 0.75, 0.35)))
+	_col.add_child(UiKit.title(npc.display_name, 22))
 	var nm := player.display_name if player.display_name != "" else Chars.nome
 	if npc.role == "mercador":
-		_col.add_child(_lbl("Olá, %s! Poções fresquinhas, %d de ouro cada. Você tem %d de ouro." % [nm, POTION_PRICE, player.gold]))
-		_col.add_child(_lbl("Poções: %d de vida · %d de mana" % [player.hp_pot, player.mp_pot], 14, DIM))
-		_col.add_child(_row([_btn("Vida ×1", func(): _buy("hp", 1)), _btn("Vida ×5", func(): _buy("hp", 5)), _btn("Vida ×20", func(): _buy("hp", 20))]))
-		_col.add_child(_row([_btn("Mana ×1", func(): _buy("mp", 1)), _btn("Mana ×5", func(): _buy("mp", 5)), _btn("Mana ×20", func(): _buy("mp", 20))]))
-		_col.add_child(_lbl("Itens de mago:", 14, DIM))
-		var row := []
-		for it2 in SHOP:
-			var item := ItemDB.get_item(it2[0])
-			if item == null or player.owns(String(it2[0])):
-				continue
-			var id2: String = it2[0]
-			var pr: int = it2[1]
-			row.append(_btn("%s\n%d ouro (nv %d)" % [item.display_name, pr, item.level_req], func(): _buy_item(id2, pr)))
-			if row.size() == 3:
-				_col.add_child(_row(row))
-				row = []
-		if not row.is_empty():
-			_col.add_child(_row(row))
+		_col.add_child(_lbl("Olá, %s! Compro o saque das criaturas e vendo poções e itens de mago." % nm, 15))
+		var tabs := []
+		for tb in [["pocoes", "Poções"], ["itens", "Equipamentos"], ["vender", "Vender saque"]]:
+			var key: String = tb[0]
+			var bt := UiKit.button(tb[1], func():
+				_tab = key
+				_render(""), 14, _tab == key)
+			bt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			tabs.append(bt)
+		_col.add_child(_row(tabs))
+		_col.add_child(_lbl("Seu ouro: %d" % player.gold, 14, Color(1, 0.85, 0.35)))
+		match _tab:
+			"pocoes":
+				_col.add_child(_lbl("%d de ouro cada  ·  você tem %d de vida e %d de mana" % [POTION_PRICE, player.hp_pot, player.mp_pot], 13, DIM))
+				_col.add_child(_row([_btn("Vida ×1", func(): _buy("hp", 1)), _btn("Vida ×5", func(): _buy("hp", 5)), _btn("Vida ×20", func(): _buy("hp", 20))]))
+				_col.add_child(_row([_btn("Mana ×1", func(): _buy("mp", 1)), _btn("Mana ×5", func(): _buy("mp", 5)), _btn("Mana ×20", func(): _buy("mp", 20))]))
+			"itens":
+				var row := []
+				var any := false
+				for it2 in SHOP:
+					var item := ItemDB.get_item(it2[0])
+					if item == null or player.owns(String(it2[0])):
+						continue
+					any = true
+					var id2: String = it2[0]
+					var pr: int = it2[1]
+					row.append(_btn("%s\n%d ouro · nv %d" % [item.display_name, pr, item.level_req], func(): _buy_item(id2, pr)))
+					if row.size() == 2:
+						_col.add_child(_row(row))
+						row = []
+				if not row.is_empty():
+					_col.add_child(_row(row))
+				if not any:
+					_col.add_child(_lbl("Você já tem tudo o que eu vendo!", 14, DIM))
+			"vender":
+				_sell_page()
 	else:
 		var t := ""
 		var tk: Dictionary = player.task
@@ -137,7 +153,63 @@ func _render(say: String) -> void:
 		_col.add_child(_row([_btn("Curar", _cure), _btn(tlabel, _task)]))
 	if say != "":
 		_col.add_child(_lbl("“%s”" % say, 15, Color(1, 0.92, 0.75)))
-	_col.add_child(_btn("Fechar", close))
+	_col.add_child(UiKit.sep())
+	_col.add_child(UiKit.button("Fechar", close, 15, true))
+
+
+func _sell_page() -> void:
+	var keys := player.loot.keys()
+	if keys.is_empty():
+		_col.add_child(_lbl("Sua bolsa de saque está vazia. Cace criaturas: elas deixam peles, ossos, gosmas e mais.", 14, DIM))
+		return
+	keys.sort_custom(func(a, b): return Loot.preco(str(a)) > Loot.preco(str(b)))
+	var total := 0
+	for k in keys:
+		total += int(player.loot[k]) * Loot.preco(str(k))
+	_col.add_child(UiKit.button("Vender todo o saque  (+%d ouro)" % total, _sell_all, 15, true))
+	for k in keys:
+		var id := str(k)
+		var q := int(player.loot[k])
+		var h := HBoxContainer.new()
+		h.add_theme_constant_override("separation", 8)
+		var ic := ItemSlot.new()
+		ic.custom_minimum_size = Vector2(40, 40)
+		ic.set_loot(id, q)
+		ic.disabled = true
+		h.add_child(ic)
+		var l := UiKit.label("%s ×%d\n%d ouro cada" % [Loot.nome(id), q, Loot.preco(id)], 13)
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		h.add_child(l)
+		var b1 := UiKit.button("Vender 1", func(): _sell(id, 1), 13)
+		b1.custom_minimum_size = Vector2(86, 36)
+		h.add_child(b1)
+		var b2 := UiKit.button("Todos", func(): _sell(id, int(player.loot.get(id, 0))), 13)
+		b2.custom_minimum_size = Vector2(70, 36)
+		h.add_child(b2)
+		_col.add_child(h)
+
+
+func _sell(id: String, q: int) -> void:
+	q = mini(q, int(player.loot.get(id, 0)))
+	if q <= 0:
+		return
+	var g := q * Loot.preco(id)
+	player.loot[id] = int(player.loot[id]) - q
+	if int(player.loot[id]) <= 0:
+		player.loot.erase(id)
+	player.gold += g
+	player.save()
+	_render("Negócio fechado: %d %s por %d de ouro." % [q, Loot.nome(id), g])
+
+
+func _sell_all() -> void:
+	var g := 0
+	for k in player.loot:
+		g += int(player.loot[k]) * Loot.preco(str(k))
+	player.loot.clear()
+	player.gold += g
+	player.save()
+	_render("Levo tudo! Aqui estão %d de ouro." % g)
 
 
 func _buy(kind: String, q: int) -> void:

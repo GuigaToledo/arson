@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"chefe_manto_matriarca"
+display_name = "Manto da Matriarca Uivante"
+item_type = "capa"
+slot = 6
+level_req = 16
+stats = {"defesa": 5, "vida": 50, "velocidade": 8}
+placeholder_style = &"cape"
+placeholder_color = Color(0.35, 0.36, 0.4, 1)
+placeholder_accent = Color(0.75, 0.8, 0.9, 1)
+glow = 0

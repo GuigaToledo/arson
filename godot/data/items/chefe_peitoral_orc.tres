@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"chefe_peitoral_orc"
+display_name = "Couraça do Chefe Orc"
+item_type = "armadura"
+slot = 1
+level_req = 22
+stats = {"defesa": 10, "vida": 80}
+placeholder_style = &"robe"
+placeholder_color = Color(0.3, 0.22, 0.14, 1)
+placeholder_accent = Color(0.75, 0.2, 0.1, 1)
+glow = 0

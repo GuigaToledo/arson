@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"chefe_botas_rei_goblin"
+display_name = "Botas do Rei Goblin"
+item_type = "botas"
+slot = 5
+level_req = 10
+stats = {"defesa": 3, "velocidade": 10}
+placeholder_style = &"boots"
+placeholder_color = Color(0.35, 0.4, 0.15, 1)
+placeholder_accent = Color(1, 0.82, 0.3, 1)
+glow = 0

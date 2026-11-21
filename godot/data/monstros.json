@@ -26,7 +26,17 @@
    "elmo_ferro"
   ],
   "regiao": "Campos de Brumavale",
-  "desc": "Ossos animados por magia antiga. Lentos e frágeis, mas aparecem em bando."
+  "desc": "Ossos animados por magia antiga. Lentos e frágeis, mas aparecem em bando.",
+  "saque": [
+   [
+    "osso",
+    0.55
+   ],
+   [
+    "cranio",
+    0.08
+   ]
+  ]
  },
  "carnical": {
   "name": "Carniçal",
@@ -54,7 +64,17 @@
    "calca_tecido"
   ],
   "regiao": "Cemitério Esquecido",
-  "desc": "Morto-vivo faminto que ronda as covas abertas."
+  "desc": "Morto-vivo faminto que ronda as covas abertas.",
+  "saque": [
+   [
+    "carne_podre",
+    0.5
+   ],
+   [
+    "osso",
+    0.25
+   ]
+  ]
  },
  "bandido": {
   "name": "Bandido",
@@ -85,7 +105,17 @@
    "luvas_couro"
   ],
   "regiao": "Ilha inicial",
-  "desc": "Ladrões que vivem nas estradas, longe da vila."
+  "desc": "Ladrões que vivem nas estradas, longe da vila.",
+  "saque": [
+   [
+    "pano_rasgado",
+    0.4
+   ],
+   [
+    "bolsa_moedas",
+    0.12
+   ]
+  ]
  },
  "cultista": {
   "name": "Cultista das Chamas",
@@ -117,7 +147,17 @@
    "botas_couro"
   ],
   "regiao": "Ilha inicial",
-  "desc": "Seguidores de um culto das chamas. Atiram fogo de longe."
+  "desc": "Seguidores de um culto das chamas. Atiram fogo de longe.",
+  "saque": [
+   [
+    "pano_sombrio",
+    0.4
+   ],
+   [
+    "bolsa_moedas",
+    0.05
+   ]
+  ]
  },
  "boneco": {
   "name": "Boneco de Treino",
@@ -175,7 +215,17 @@
   },
   "items": [],
   "regiao": "Morros de Pedra",
-  "desc": "Pedra viva com um núcleo de fogo. Muito forte para iniciantes."
+  "desc": "Pedra viva com um núcleo de fogo. Muito forte para iniciantes.",
+  "saque": [
+   [
+    "lasca_pedra",
+    0.6
+   ],
+   [
+    "nucleo_magma",
+    0.12
+   ]
+  ]
  },
  "slime_verde": {
   "name": "Slime Verde",
@@ -212,6 +262,12 @@
     "poder": 1.4,
     "cor": "#9fe08a"
    }
+  ],
+  "saque": [
+   [
+    "gosma_verde",
+    0.6
+   ]
   ]
  },
  "slime_agua": {
@@ -255,7 +311,13 @@
    }
   ],
   "proj": "#7fb8ff",
-  "el": "agua"
+  "el": "agua",
+  "saque": [
+   [
+    "gosma_azul",
+    0.6
+   ]
+  ]
  },
  "slime_magma": {
   "name": "Slime de Magma",
@@ -300,7 +362,17 @@
     }
    }
   ],
-  "el": "fogo"
+  "el": "fogo",
+  "saque": [
+   [
+    "gosma_magma",
+    0.55
+   ],
+   [
+    "nucleo_magma",
+    0.06
+   ]
+  ]
  },
  "goblin": {
   "name": "Goblin",
@@ -341,6 +413,12 @@
     "poder": 1.3,
     "cor": "#cfe07a"
    }
+  ],
+  "saque": [
+   [
+    "orelha_goblin",
+    0.5
+   ]
   ]
  },
  "goblin_xama": {
@@ -397,7 +475,17 @@
     }
    }
   ],
-  "proj": "#9cff5a"
+  "proj": "#9cff5a",
+  "saque": [
+   [
+    "orelha_goblin",
+    0.5
+   ],
+   [
+    "penas_xama",
+    0.25
+   ]
+  ]
  },
  "troll_jovem": {
   "name": "Troll Jovem",
@@ -442,7 +530,17 @@
     }
    }
   ],
-  "regen": 0.012
+  "regen": 0.012,
+  "saque": [
+   [
+    "couro_troll",
+    0.4
+   ],
+   [
+    "dente_troll",
+    0.2
+   ]
+  ]
  },
  "esqueleto_arqueiro": {
   "name": "Esqueleto Arqueiro",
@@ -483,7 +581,17 @@
    }
   ],
   "sangue": "osso",
-  "proj": "#e8dcc0"
+  "proj": "#e8dcc0",
+  "saque": [
+   [
+    "osso",
+    0.55
+   ],
+   [
+    "cranio",
+    0.1
+   ]
+  ]
  },
  "zumbi": {
   "name": "Zumbi",
@@ -519,7 +627,17 @@
    "dur": 4,
    "poder": 2,
    "chance": 0.4
-  }
+  },
+  "saque": [
+   [
+    "carne_podre",
+    0.55
+   ],
+   [
+    "pano_rasgado",
+    0.25
+   ]
+  ]
  },
  "esqueleto_guerreiro": {
   "name": "Esqueleto Guerreiro",
@@ -562,7 +680,17 @@
     "cor": "#e8e2d0"
    }
   ],
-  "sangue": "osso"
+  "sangue": "osso",
+  "saque": [
+   [
+    "osso",
+    0.6
+   ],
+   [
+    "cranio",
+    0.15
+   ]
+  ]
  },
  "fantasma": {
   "name": "Fantasma",
@@ -613,7 +741,13 @@
     }
    }
   ],
-  "proj": "#9fe0ff"
+  "proj": "#9fe0ff",
+  "saque": [
+   [
+    "ectoplasma",
+    0.45
+   ]
+  ]
  },
  "necromante": {
   "name": "Necromante",
@@ -675,7 +809,17 @@
     "cor": "#8a4aff"
    }
   ],
-  "proj": "#a86aff"
+  "proj": "#a86aff",
+  "saque": [
+   [
+    "pano_sombrio",
+    0.45
+   ],
+   [
+    "cranio",
+    0.25
+   ]
+  ]
  },
  "morcego": {
   "name": "Morcego",
@@ -712,6 +856,12 @@
     "poder": 1.3,
     "cor": "#a07a80"
    }
+  ],
+  "saque": [
+   [
+    "asa_morcego",
+    0.5
+   ]
   ]
  },
  "morcego_vampiro": {
@@ -749,6 +899,16 @@
     "poder": 1.2,
     "cor": "#ff3040"
    }
+  ],
+  "saque": [
+   [
+    "asa_morcego",
+    0.5
+   ],
+   [
+    "presa_vampiro",
+    0.2
+   ]
   ]
  },
  "lobo": {
@@ -795,7 +955,17 @@
     "cor": "#d8c8a0"
    }
   ],
-  "variant": "lobo"
+  "variant": "lobo",
+  "saque": [
+   [
+    "pele_lobo",
+    0.4
+   ],
+   [
+    "presa_lobo",
+    0.25
+   ]
+  ]
  },
  "lobo_caverna": {
   "name": "Lobo das Cavernas",
@@ -845,7 +1015,17 @@
     }
    }
   ],
-  "variant": "lobo"
+  "variant": "lobo",
+  "saque": [
+   [
+    "pele_lobo",
+    0.5
+   ],
+   [
+    "presa_lobo",
+    0.35
+   ]
+  ]
  },
  "troll_caverna": {
   "name": "Troll das Cavernas",
@@ -903,7 +1083,17 @@
     "cor": "#8a7a66"
    }
   ],
-  "regen": 0.01
+  "regen": 0.01,
+  "saque": [
+   [
+    "couro_troll",
+    0.5
+   ],
+   [
+    "dente_troll",
+    0.35
+   ]
+  ]
  },
  "urso": {
   "name": "Urso Pardo",
@@ -954,7 +1144,17 @@
     "cor": "#c8a070"
    }
   ],
-  "variant": "urso"
+  "variant": "urso",
+  "saque": [
+   [
+    "pele_urso",
+    0.45
+   ],
+   [
+    "garra_urso",
+    0.25
+   ]
+  ]
  },
  "pantera": {
   "name": "Pantera",
@@ -992,7 +1192,17 @@
     "cor": "#8aff5a"
    }
   ],
-  "variant": "felino"
+  "variant": "felino",
+  "saque": [
+   [
+    "pele_pantera",
+    0.45
+   ],
+   [
+    "garra_felina",
+    0.25
+   ]
+  ]
  },
  "onca": {
   "name": "Onça-pintada",
@@ -1036,7 +1246,17 @@
    "dur": 3,
    "poder": 3,
    "chance": 0.35
-  }
+  },
+  "saque": [
+   [
+    "pele_onca",
+    0.45
+   ],
+   [
+    "garra_felina",
+    0.25
+   ]
+  ]
  },
  "aranha": {
   "name": "Aranha da Selva",
@@ -1084,7 +1304,17 @@
    "dur": 4,
    "poder": 3,
    "chance": 0.5
-  }
+  },
+  "saque": [
+   [
+    "seda_aranha",
+    0.5
+   ],
+   [
+    "glandula_veneno",
+    0.15
+   ]
+  ]
  },
  "aranha_gigante": {
   "name": "Aranha Gigante",
@@ -1147,7 +1377,21 @@
    "dur": 5,
    "poder": 6,
    "chance": 0.6
-  }
+  },
+  "saque": [
+   [
+    "seda_aranha",
+    0.7
+   ],
+   [
+    "glandula_veneno",
+    0.4
+   ],
+   [
+    "olho_aranha",
+    0.2
+   ]
+  ]
  },
  "goblin_lanceiro": {
   "name": "Goblin Lanceiro",
@@ -1188,16 +1432,26 @@
     "poder": 1.5,
     "cor": "#e0d0a0"
    }
+  ],
+  "saque": [
+   [
+    "orelha_goblin",
+    0.5
+   ],
+   [
+    "ponta_lanca",
+    0.2
+   ]
   ]
  },
  "rei_goblin": {
   "name": "Rei Goblin",
   "regiao": "Acampamento Goblin",
   "desc": "Gordo, barulhento e cheio de ouro. Grita e o bando fica furioso.",
-  "hp": 280,
+  "hp": 600,
   "atk": 18,
   "def": 3,
-  "xp": 170,
+  "xp": 380,
   "gold": [
    40,
    90
@@ -1206,7 +1460,7 @@
   "range": 1.0,
   "aspd": 1.6,
   "aggro": 7,
-  "scale": 1.0,
+  "scale": 1.25,
   "colors": {
    "skin": "#80a048",
    "under": "#7a1a1a",
@@ -1243,7 +1497,25 @@
      "dur": 1.2
     }
    }
-  ]
+  ],
+  "saque": [
+   [
+    "coroa_goblin",
+    1.0
+   ],
+   [
+    "orelha_goblin",
+    1.0
+   ],
+   [
+    "bolsa_moedas",
+    0.5
+   ]
+  ],
+  "chefe": true,
+  "respawn": 200,
+  "drop": "chefe_botas_rei_goblin",
+  "drop_chance": 0.3
  },
  "orc": {
   "name": "Orc Guerreiro",
@@ -1287,6 +1559,16 @@
     "poder": 1.6,
     "cor": "#e09060"
    }
+  ],
+  "saque": [
+   [
+    "dente_orc",
+    0.45
+   ],
+   [
+    "pano_rasgado",
+    0.2
+   ]
   ]
  },
  "orc_xama": {
@@ -1348,16 +1630,26 @@
    }
   ],
   "proj": "#ff7a1a",
-  "el": "fogo"
+  "el": "fogo",
+  "saque": [
+   [
+    "dente_orc",
+    0.4
+   ],
+   [
+    "penas_xama",
+    0.3
+   ]
+  ]
  },
  "chefe_orc": {
   "name": "Chefe Orc",
   "regiao": "Acampamento Orc",
   "desc": "Chefe do acampamento. Enorme, com cicatrizes e uma fúria que contagia.",
-  "hp": 420,
+  "hp": 1100,
   "atk": 26,
   "def": 5,
-  "xp": 260,
+  "xp": 780,
   "gold": [
    50,
    120
@@ -1366,7 +1658,7 @@
   "range": 1.1,
   "aspd": 1.6,
   "aggro": 8,
-  "scale": 1.35,
+  "scale": 1.6,
   "colors": {
    "skin": "#4a5a26",
    "under": "#5a1a10",
@@ -1414,7 +1706,21 @@
     "poder": 1.7,
     "cor": "#ff8a60"
    }
-  ]
+  ],
+  "saque": [
+   [
+    "machado_orc",
+    1.0
+   ],
+   [
+    "dente_orc",
+    1.0
+   ]
+  ],
+  "chefe": true,
+  "respawn": 240,
+  "drop": "chefe_peitoral_orc",
+  "drop_chance": 0.3
  },
  "ciclope_jovem": {
   "name": "Ciclope Jovem",
@@ -1457,6 +1763,16 @@
     "vel": 280,
     "cor": "#8a7a66"
    }
+  ],
+  "saque": [
+   [
+    "lasca_pedra",
+    0.5
+   ],
+   [
+    "olho_ciclope",
+    0.05
+   ]
   ]
  },
  "ciclope": {
@@ -1514,6 +1830,593 @@
      "dur": 1.6
     }
    }
+  ],
+  "saque": [
+   [
+    "lasca_pedra",
+    0.6
+   ],
+   [
+    "olho_ciclope",
+    0.15
+   ]
   ]
+ },
+ "capitao_korvo": {
+  "name": "Capitão Korvo",
+  "hp": 650,
+  "atk": 20,
+  "def": 0,
+  "xp": 420,
+  "gold": [
+   60,
+   140
+  ],
+  "speed": 95.0,
+  "range": 0.9,
+  "aspd": 1.3,
+  "aggro": 7,
+  "scale": 1.3,
+  "colors": {
+   "skin": "#8c6b54",
+   "under": "#2e261f",
+   "hair": "#1f170f",
+   "eyes": "#ff3a1a",
+   "glow_eyes": true
+  },
+  "items": [
+   "capuz_aprendiz",
+   "gibao_verde",
+   "calca_tecido",
+   "botas_couro",
+   "luvas_couro"
+  ],
+  "regiao": "Ilha inicial",
+  "desc": "Líder dos bandidos da ilha. Esconde-se na mata a oeste da vila e arremessa facas envenenadas.",
+  "saque": [
+   [
+    "trofeu_korvo",
+    1.0
+   ],
+   [
+    "bolsa_moedas",
+    0.8
+   ]
+  ],
+  "habilidades": [
+   {
+    "tipo": "disparo",
+    "nome": "Faca Envenenada",
+    "desc": "Arremessa uma faca que envenena.",
+    "cd": 5,
+    "alcance": 6,
+    "poder": 1.3,
+    "cor": "#c8c8d0",
+    "efeito": {
+     "tipo": "veneno",
+     "dur": 4,
+     "poder": 5
+    }
+   },
+   {
+    "tipo": "uivo",
+    "nome": "Grito do Capitão",
+    "desc": "Fica mais rápido e mais forte por um tempo.",
+    "cd": 14,
+    "dur": 8,
+    "cor": "#ff6a3a"
+   }
+  ],
+  "drop": "chefe_capuz_korvo",
+  "chefe": true,
+  "respawn": 240,
+  "drop_chance": 0.3
+ },
+ "golem_ancestral": {
+  "name": "Golem Ancestral",
+  "sangue": "pedra",
+  "hp": 1300,
+  "atk": 30,
+  "def": 6.0,
+  "xp": 800,
+  "gold": [
+   120,
+   260
+  ],
+  "speed": 52.0,
+  "range": 1.2,
+  "aspd": 2.2,
+  "aggro": 6.0,
+  "scale": 2.2,
+  "el": "terra",
+  "colors": {
+   "skin": "#333030",
+   "under": "#292626",
+   "hair": "#2e2b2b",
+   "eyes": "#ff9926",
+   "glow_eyes": true,
+   "core": true
+  },
+  "items": [],
+  "regiao": "Morros de Pedra",
+  "desc": "O golem mais antigo dos morros, com runas acesas no peito. Faz a terra tremer.",
+  "saque": [
+   [
+    "coracao_golem",
+    1.0
+   ],
+   [
+    "lasca_pedra",
+    1.0
+   ],
+   [
+    "nucleo_magma",
+    0.5
+   ]
+  ],
+  "body": "humano",
+  "habilidades": [
+   {
+    "tipo": "onda",
+    "nome": "Terremoto Rúnico",
+    "desc": "A terra treme e atordoa todos em volta.",
+    "cd": 9,
+    "raio": 3.0,
+    "poder": 1.5,
+    "cor": "#ffa040",
+    "efeito": {
+     "tipo": "atordoado",
+     "dur": 1.6
+    }
+   },
+   {
+    "tipo": "disparo",
+    "nome": "Rocha Incandescente",
+    "desc": "Atira uma rocha em brasa que explode em área.",
+    "cd": 7,
+    "alcance": 7,
+    "poder": 1.6,
+    "area": 1.8,
+    "tamanho": 2.4,
+    "vel": 280,
+    "cor": "#ff7a2a"
+   }
+  ],
+  "drop": "chefe_ombreiras_granito",
+  "chefe": true,
+  "respawn": 240,
+  "drop_chance": 0.3
+ },
+ "slime_rei": {
+  "name": "Slime Rei",
+  "regiao": "Campos de Brumavale",
+  "desc": "Slime gigante com uma coroa engolida no meio da gosma. Pula esmagando tudo e solta filhotes de gosma.",
+  "hp": 520,
+  "atk": 14,
+  "def": 0,
+  "xp": 360,
+  "gold": [
+   40,
+   100
+  ],
+  "speed": 50,
+  "range": 0.9,
+  "aspd": 1.5,
+  "aggro": 6,
+  "scale": 2.4,
+  "colors": {
+   "main": "#7fe05a",
+   "dark": "#2f7b25",
+   "belly": "#c8ffaa",
+   "eyes": "#101010",
+   "mark": "#ffd23a"
+  },
+  "body": "slime",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "salto",
+    "nome": "Esmagamento Real",
+    "desc": "Salta e esmaga a área onde cai.",
+    "cd": 6,
+    "alcance": 5,
+    "poder": 1.6,
+    "cor": "#c8ffaa"
+   },
+   {
+    "tipo": "onda",
+    "nome": "Onda de Gosma",
+    "desc": "Espalha gosma em volta e deixa todos lentos.",
+    "cd": 9,
+    "raio": 2.6,
+    "poder": 1.1,
+    "cor": "#8aff5a",
+    "efeito": {
+     "tipo": "lento",
+     "dur": 3
+    }
+   },
+   {
+    "tipo": "cura",
+    "nome": "Regenerar Gosma",
+    "desc": "Recupera parte da vida.",
+    "cd": 15,
+    "poder": 0.15,
+    "cor": "#aaff8a"
+   }
+  ],
+  "saque": [
+   [
+    "geleia_real",
+    1.0
+   ],
+   [
+    "gosma_verde",
+    1.0
+   ],
+   [
+    "gosma_azul",
+    1.0
+   ]
+  ],
+  "drop": "chefe_amuleto_gelatinoso",
+  "chefe": true,
+  "respawn": 240,
+  "drop_chance": 0.3
+ },
+ "lich_mortecinza": {
+  "name": "Lich Mortecinza",
+  "regiao": "Cemitério Esquecido",
+  "desc": "O antigo senhor do cemitério, morto há séculos e ainda conjurando. Guarda a cripta.",
+  "hp": 950,
+  "atk": 22,
+  "def": 2,
+  "xp": 700,
+  "gold": [
+   90,
+   200
+  ],
+  "speed": 70,
+  "range": 6,
+  "aspd": 2.0,
+  "aggro": 8,
+  "scale": 1.45,
+  "colors": {
+   "skin": "#c8c8b8",
+   "under": "#1a2a1a",
+   "hair": "#e8e8e0",
+   "eyes": "#7aff9a",
+   "glow_eyes": true
+  },
+  "body": "humano",
+  "items": [
+   "capuz_aprendiz",
+   "manto_mistico",
+   "cajado_raiz"
+  ],
+  "habilidades": [
+   {
+    "tipo": "dreno",
+    "nome": "Toque da Morte",
+    "desc": "Suga muita vida do alvo.",
+    "cd": 6,
+    "alcance": 6,
+    "poder": 1.7,
+    "cor": "#7aff9a"
+   },
+   {
+    "tipo": "disparo",
+    "nome": "Crânio Flamejante",
+    "desc": "Crânio de fogo verde que explode em área.",
+    "cd": 7,
+    "alcance": 7,
+    "poder": 1.6,
+    "area": 1.8,
+    "tamanho": 1.8,
+    "cor": "#5aff7a",
+    "efeito": {
+     "tipo": "veneno",
+     "dur": 4,
+     "poder": 6
+    }
+   },
+   {
+    "tipo": "onda",
+    "nome": "Grito Gélido",
+    "desc": "Congela de medo todos em volta.",
+    "cd": 12,
+    "raio": 2.6,
+    "poder": 1.0,
+    "cor": "#aaffcc",
+    "efeito": {
+     "tipo": "preso",
+     "dur": 2
+    }
+   },
+   {
+    "tipo": "cura",
+    "nome": "Ritual Profano",
+    "desc": "Cura os mortos-vivos em volta.",
+    "cd": 9,
+    "poder": 0.3,
+    "cor": "#7aff9a"
+   }
+  ],
+  "proj": "#7aff9a",
+  "saque": [
+   [
+    "filacterio",
+    1.0
+   ],
+   [
+    "pano_sombrio",
+    1.0
+   ],
+   [
+    "cranio",
+    1.0
+   ]
+  ],
+  "drop": "chefe_cajado_lich",
+  "chefe": true,
+  "respawn": 240,
+  "drop_chance": 0.3
+ },
+ "matriarca_uivante": {
+  "name": "Matriarca Uivante",
+  "regiao": "Caverna Uivante",
+  "desc": "Loba branca enorme que governa a caverna. O uivo dela chama a matilha inteira.",
+  "hp": 950,
+  "atk": 26,
+  "def": 2,
+  "xp": 720,
+  "gold": [
+   80,
+   180
+  ],
+  "speed": 125,
+  "range": 0.9,
+  "aspd": 1.2,
+  "aggro": 8,
+  "scale": 1.9,
+  "colors": {
+   "main": "#c8ccd8",
+   "dark": "#6a6e7a",
+   "belly": "#e8eaf0",
+   "eyes": "#5ac8ff",
+   "glow": true,
+   "glow_col": "#5ac8ff"
+  },
+  "body": "quadrupede",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "uivo",
+    "nome": "Uivo da Matriarca",
+    "desc": "Toda a matilha em volta fica mais rápida e mais forte.",
+    "cd": 12,
+    "dur": 10,
+    "cor": "#5ac8ff"
+   },
+   {
+    "tipo": "salto",
+    "nome": "Bote Gélido",
+    "desc": "Salta, morde e deixa o alvo lento.",
+    "cd": 5,
+    "alcance": 6,
+    "poder": 1.8,
+    "cor": "#aae0ff",
+    "efeito": {
+     "tipo": "lento",
+     "dur": 2.5
+    }
+   },
+   {
+    "tipo": "onda",
+    "nome": "Rugido",
+    "desc": "Atordoa todos em volta.",
+    "cd": 11,
+    "raio": 2.4,
+    "poder": 1.0,
+    "cor": "#d8f0ff",
+    "efeito": {
+     "tipo": "atordoado",
+     "dur": 1.4
+    }
+   }
+  ],
+  "variant": "lobo",
+  "saque": [
+   [
+    "pelagem_matriarca",
+    1.0
+   ],
+   [
+    "pele_lobo",
+    1.0
+   ],
+   [
+    "presa_lobo",
+    1.0
+   ]
+  ],
+  "drop": "chefe_manto_matriarca",
+  "chefe": true,
+  "respawn": 240,
+  "drop_chance": 0.3
+ },
+ "rainha_aracnidea": {
+  "name": "Rainha Aracnídea",
+  "regiao": "Selva Rubra",
+  "desc": "A rainha de todas as aranhas da selva, com a marca vermelha brilhando nas costas.",
+  "hp": 1150,
+  "atk": 27,
+  "def": 3,
+  "xp": 850,
+  "gold": [
+   100,
+   220
+  ],
+  "speed": 85,
+  "range": 0.9,
+  "aspd": 1.5,
+  "aggro": 7,
+  "scale": 2.3,
+  "colors": {
+   "main": "#3a1a3e",
+   "dark": "#14081a",
+   "belly": "#5a2a60",
+   "eyes": "#ff3a8a",
+   "mark": "#ff3a8a"
+  },
+  "body": "aranha",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "disparo",
+    "nome": "Teia Grossa",
+    "desc": "Teia em área que prende.",
+    "cd": 9,
+    "alcance": 6,
+    "poder": 0.6,
+    "area": 1.4,
+    "cor": "#f0f0e8",
+    "efeito": {
+     "tipo": "preso",
+     "dur": 2.5
+    }
+   },
+   {
+    "tipo": "onda",
+    "nome": "Nuvem de Veneno",
+    "desc": "Solta veneno em volta.",
+    "cd": 11,
+    "raio": 2.0,
+    "poder": 0.8,
+    "cor": "#8aff4a",
+    "efeito": {
+     "tipo": "veneno",
+     "dur": 5,
+     "poder": 5
+    }
+   },
+   {
+    "tipo": "dreno",
+    "nome": "Picada Sugadora",
+    "desc": "Suga a vida do alvo.",
+    "cd": 7,
+    "alcance": 3,
+    "poder": 1.5,
+    "cor": "#ff3a8a"
+   }
+  ],
+  "efeito_ataque": {
+   "tipo": "veneno",
+   "dur": 5,
+   "poder": 6,
+   "chance": 0.6
+  },
+  "saque": [
+   [
+    "ovo_aracnideo",
+    1.0
+   ],
+   [
+    "seda_aranha",
+    1.0
+   ],
+   [
+    "olho_aranha",
+    0.6
+   ]
+  ],
+  "drop": "chefe_anel_aracnideo",
+  "chefe": true,
+  "respawn": 240,
+  "drop_chance": 0.3
+ },
+ "polifemo": {
+  "name": "Polifemo, o Ancião",
+  "regiao": "Acampamento dos Ciclopes",
+  "desc": "O ciclope mais velho e maior de todos. Cada pisada derruba quem estiver perto.",
+  "hp": 1600,
+  "atk": 36,
+  "def": 5,
+  "xp": 1100,
+  "gold": [
+   150,
+   320
+  ],
+  "speed": 55,
+  "range": 1.2,
+  "aspd": 2.2,
+  "aggro": 7,
+  "scale": 2.6,
+  "colors": {
+   "skin": "#7a6a50",
+   "under": "#2a2014",
+   "hair": "#d8d0c0",
+   "eyes": "#ffb03a",
+   "olho_unico": true,
+   "glow_eyes": true
+  },
+  "body": "humano",
+  "items": [
+   "calca_tecido",
+   "botas_couro"
+  ],
+  "habilidades": [
+   {
+    "tipo": "disparo",
+    "nome": "Pedregulho",
+    "desc": "Atira um pedregulho que acerta em área.",
+    "cd": 7,
+    "alcance": 7,
+    "poder": 1.6,
+    "area": 1.8,
+    "tamanho": 2.4,
+    "vel": 260,
+    "cor": "#7a6a56"
+   },
+   {
+    "tipo": "onda",
+    "nome": "Pisada Gigante",
+    "desc": "A terra treme e atordoa todos em volta.",
+    "cd": 10,
+    "raio": 2.8,
+    "poder": 1.4,
+    "cor": "#c8a878",
+    "efeito": {
+     "tipo": "atordoado",
+     "dur": 1.6
+    }
+   },
+   {
+    "tipo": "uivo",
+    "nome": "Fúria Ancestral",
+    "desc": "Fica mais rápido e mais forte.",
+    "cd": 15,
+    "dur": 8,
+    "cor": "#ffb03a"
+   }
+  ],
+  "saque": [
+   [
+    "olho_polifemo",
+    1.0
+   ],
+   [
+    "lasca_pedra",
+    1.0
+   ],
+   [
+    "olho_ciclope",
+    0.5
+   ]
+  ],
+  "drop": "chefe_olho_polifemo",
+  "chefe": true,
+  "respawn": 240,
+  "drop_chance": 0.3
  }
 }

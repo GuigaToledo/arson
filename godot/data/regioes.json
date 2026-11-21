@@ -2,12 +2,30 @@
  {
   "nome": "Ilha inicial",
   "desc": "A ilha da vila e do templo, onde todo aventureiro começa. Bandidos e cultistas rondam as matas e as estradas.",
-  "chars": ""
+  "chars": "",
+  "chefes": [
+   {
+    "tipo": "capitao_korvo",
+    "pos": [
+     12.5,
+     36.5
+    ]
+   }
+  ]
  },
  {
   "nome": "Morros de Pedra",
   "desc": "Rochedos ao norte da ilha, guardados por golens de pedra.",
-  "chars": ""
+  "chars": "",
+  "chefes": [
+   {
+    "tipo": "golem_ancestral",
+    "pos": [
+     27.5,
+     7.5
+    ]
+   }
+  ]
  },
  {
   "nome": "Campos de Brumavale",
@@ -37,7 +55,16 @@
     "troll_jovem",
     "slime_verde"
    ]
-  }
+  },
+  "chefes": [
+   {
+    "tipo": "slime_rei",
+    "pos": [
+     82.5,
+     37.5
+    ]
+   }
+  ]
  },
  {
   "nome": "Cemitério Esquecido",
@@ -53,12 +80,13 @@
     "esqueleto_guerreiro",
     "fantasma",
     "carnical",
-    "esqueleto"
+    "esqueleto",
+    "necromante"
    ]
   },
   "chefes": [
    {
-    "tipo": "necromante",
+    "tipo": "lich_mortecinza",
     "pos": [
      86.5,
      11.5
@@ -86,17 +114,10 @@
   },
   "chefes": [
    {
-    "tipo": "troll_caverna",
+    "tipo": "matriarca_uivante",
     "pos": [
      132.5,
      22.5
-    ]
-   },
-   {
-    "tipo": "lobo_caverna",
-    "pos": [
-     138.5,
-     34.5
     ]
    }
   ]
@@ -117,7 +138,16 @@
     "aranha",
     "aranha_gigante"
    ]
-  }
+  },
+  "chefes": [
+   {
+    "tipo": "rainha_aracnidea",
+    "pos": [
+     96.5,
+     84.5
+    ]
+   }
+  ]
  },
  {
   "nome": "Acampamento Goblin",
@@ -189,7 +219,7 @@
   },
   "chefes": [
    {
-    "tipo": "ciclope",
+    "tipo": "polifemo",
     "pos": [
      108.5,
      106.5

@@ -50,6 +50,7 @@ for f in sorted(glob.glob(f'{G}/data/items/*.tres')):
                   'slot': int(get('slot', '1')), 'nivel': int(get('level_req', '1')), 'atributos': stats})
 
 mons_raw = json.load(open(f'{G}/data/monstros.json', encoding='utf-8')) if os.path.exists(f'{G}/data/monstros.json') else {}
+saque_db = json.load(open(f'{G}/data/saque.json', encoding='utf-8')) if os.path.exists(f'{G}/data/saque.json') else {}
 monstros = []
 for k, m in mons_raw.items():
     if m.get('dummy') or m.get('wiki') is False:
@@ -58,8 +59,14 @@ for k, m in mons_raw.items():
     monstros.append({'id': k, 'nome': m['name'], 'regiao': m.get('regiao', 'Ilha inicial'), 'desc': m.get('desc', ''),
                      'hp': m['hp'], 'atk': m['atk'], 'def': m.get('def', 0), 'xp': m['xp'], 'gold': '%d–%d' % tuple(m['gold']),
                      'distancia': float(m.get('range', 1)) > 2.0, 'elemento': m.get('el', ''), 'cor': cor,
-                     'habilidades': [{'nome': s.get('nome', s['tipo']), 'desc': s.get('desc', '')} for s in m.get('habilidades', [])]})
-monstros.sort(key=lambda x: x['xp'])
+                     'habilidades': [{'nome': s.get('nome', s['tipo']), 'desc': s.get('desc', '')} for s in m.get('habilidades', [])],
+                     'chefe': bool(m.get('chefe')),
+                     'saque': ['%s (%d ouro, %d%%)' % (saque_db[i]['nome'], saque_db[i]['preco'], round(c * 100)) for i, c in m.get('saque', []) if i in saque_db],
+                     'drop': m.get('drop', ''), 'drop_chance': m.get('drop_chance', 0)})
+monstros.sort(key=lambda x: (x['chefe'], x['xp']))
+_nomes = {i['id']: i['nome'] for i in itens}
+for m in monstros:
+    m['drop'] = ('%s (%d%%)' % (_nomes.get(m['drop'], m['drop']), round(m['drop_chance'] * 100))) if m['drop'] else ''
 
 regioes = json.load(open(f'{G}/data/regioes.json', encoding='utf-8')) if os.path.exists(f'{G}/data/regioes.json') else []
 regioes = [{'nome': r['nome'], 'desc': r['desc'], 'monstros': [m['nome'] for m in monstros if m['regiao'] == r['nome']]} for r in regioes]
@@ -76,6 +83,9 @@ regras = [
     'O alvo é escolhido sozinho: o inimigo mais próximo. As magias ficam na barra (1 a 8 no PC).',
     'Cada elemento sobe de nível com o uso. A Defesa sobe quando você leva golpes.',
     'Monstros dão experiência e ouro e podem deixar itens. Cada região tem os seus monstros.',
+    'Qualquer monstro comum pode nascer Elite (aura dourada): 2,6x vida, mais dano, 3x experiência e ouro e mais saque.',
+    'Cada região tem um chefe (aura vermelha). Ele demora alguns minutos para voltar, deixa um troféu valioso e pode deixar um equipamento único.',
+    'O saque das criaturas (peles, ossos, gosmas...) vai para a bolsa de saque e é vendido ao Brann, na vila.',
     'A vila e o templo são áreas seguras: lá ninguém ataca você.',
     'Morrer faz perder um pouco da experiência e voltar ao templo.',
     'Jogue com amigos: todos que abrem o jogo entram no mesmo mundo.',

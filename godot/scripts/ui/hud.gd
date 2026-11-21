@@ -91,6 +91,10 @@ func _build() -> void:
 	menu.offset_top = 8
 	menu.add_theme_constant_override("separation", 6)
 	root.add_child(menu)
+	var bb := _menu_btn("Bolsa", _toggle_panel)
+	bb.custom_minimum_size = Vector2(86, 44)
+	bb.add_theme_font_size_override("font_size", 16)
+	menu.add_child(bb)
 	var mb := _menu_btn("Menu", func(): if game_menu: game_menu.toggle())
 	mb.custom_minimum_size = Vector2(96, 44)
 	mb.add_theme_font_size_override("font_size", 16)
@@ -683,17 +687,26 @@ class NameTags:
 			var h := 92.0 * (float(mon.info.scale) if mon else 1.0)
 			var pos := actor.get_global_transform_with_canvas() * Vector2(0, -h)
 			var col := Color(0.92, 0.88, 0.78) if actor is Npc else Color(0.35, 0.95, 0.35)
+			var fs := 13
 			if mon:
 				col = Color(1, 0.55, 0.45) if mon == foe else Color(0.9, 0.78, 0.7)
-			var w := font.get_string_size(actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+				if mon.boss:
+					col = Color(1, 0.35, 0.25)
+					fs = 15
+				elif mon.elite:
+					col = Color(1, 0.82, 0.3)
+			var w := font.get_string_size(actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			var at := pos + Vector2(-w * 0.5, 0)
-			draw_string_outline(font, at, actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color(0, 0, 0, 0.9))
-			draw_string(font, at, actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, col)
+			draw_string_outline(font, at, actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.9))
+			draw_string(font, at, actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 			if mon:
 				var f := clampf(mon.hp / mon.max_hp, 0, 1)
 				var bc := Color(0.25, 0.85, 0.25) if f > 0.6 else (Color(0.9, 0.75, 0.2) if f > 0.3 else Color(0.9, 0.2, 0.15))
-				draw_rect(Rect2(pos + Vector2(-20, 4), Vector2(40, 5)), Color(0, 0, 0, 0.8))
-				draw_rect(Rect2(pos + Vector2(-19, 5), Vector2(38 * f, 3)), bc)
+				var bw := 80.0 if mon.boss else (52.0 if mon.elite else 40.0)
+				draw_rect(Rect2(pos + Vector2(-bw * 0.5, 4), Vector2(bw, 5)), Color(0, 0, 0, 0.8))
+				draw_rect(Rect2(pos + Vector2(-bw * 0.5 + 1, 5), Vector2((bw - 2) * f, 3)), bc)
+				if mon.boss or mon.elite:
+					draw_rect(Rect2(pos + Vector2(-bw * 0.5, 4), Vector2(bw, 5)), col, false, 1.0)
 		# números de dano, cura e experiência
 		for it in CombatText.items:
 			var life := 1.6 if it.big else 1.0

@@ -112,6 +112,28 @@ var bag: Array = []
 const START_BAG := ["varinha_aprendiz", "livro_feiticos", "chapeu_aprendiz", "sandalias", "capa_lobo_infernal", "saia_lobo_infernal", "escudo_mimico"]
 
 
+## Bolsa de saque: id do material -> quantidade (vende no Brann).
+var loot: Dictionary = {}
+
+
+func loot_slots_used() -> int:
+	var n := 0
+	for k in loot:
+		n += int(ceil(float(loot[k]) / Loot.STACK))
+	return n
+
+
+func add_loot(id: String, q := 1) -> bool:
+	var have := int(loot.get(id, 0))
+	var need := int(ceil(float(have + q) / Loot.STACK)) - int(ceil(float(have) / Loot.STACK))
+	if loot_slots_used() + need > Loot.SLOTS:
+		_msg("Bolsa de saque cheia! Venda no Brann.")
+		return false
+	loot[id] = have + q
+	CombatText.add(global_position + Vector2(0, -136), "+%d %s" % [q, Loot.nome(id)], Loot.cor(id).lightened(0.3))
+	return true
+
+
 func owns(id: String) -> bool:
 	return bag.has(id)
 
@@ -150,6 +172,8 @@ func _load() -> void:
 		var bg = c.get_value("jogador", "bolsa", [])
 		if bg is Array and not bg.is_empty():
 			bag = bg.map(func(x): return str(x))
+		var lt = c.get_value("jogador", "saque", {})
+		loot = lt if lt is Dictionary else {}
 		var eq = c.get_value("jogador", "equip", {})
 		if eq is Dictionary and not eq.is_empty():
 			equipment.load_ids(eq)
@@ -192,6 +216,7 @@ func save() -> void:
 	c.set_value("jogador", "tarefa", task)
 	c.set_value("jogador", "magias_nivel", spell_pts)
 	c.set_value("jogador", "bolsa", bag)
+	c.set_value("jogador", "saque", loot)
 	c.set_value("jogador", "equip", equipment.to_ids())
 	if not dead:
 		c.set_value("jogador", "posicao", Iso.to_grid(global_position))
@@ -199,20 +224,33 @@ func save() -> void:
 	c.save(Chars.path())
 
 
-## Chance de item ao matar: um item que você ainda não tem, até 5 níveis acima do seu.
+## Saque ao matar: materiais da criatura (mais no elite) e chance de equipamento.
+## Chefes deixam o troféu e podem deixar o equipamento único deles.
 func _roll_drop(src: String) -> void:
-	var t := ""
-	for k in Monster.TYPES:
-		if str(Monster.TYPES[k].name) == src:
-			t = k
-	if t == "" or t == "boneco":
+	var lk := Monster.lookup(src)
+	if lk.is_empty() or lk.t == "boneco":
 		return
-	if randf() > (0.35 if t == "golem" else 0.12):
+	var mt: Dictionary = Monster.TYPES[lk.t]
+	var el: bool = lk.elite
+	for pair in mt.get("saque", []):
+		if randf() < float(pair[1]) * (1.6 if el else 1.0):
+			add_loot(str(pair[0]), 2 if el and randf() < 0.4 else 1)
+	if mt.get("chefe", false) and mt.has("drop"):
+		if randf() < float(mt.get("drop_chance", 0.3)):
+			var did := str(mt.drop)
+			if bag.has(did):
+				gold += 150
+				_msg("Já tem %s: +150 ouro" % ItemDB.get_item(did).display_name)
+			else:
+				give_item(did)
+				CombatText.add(global_position + Vector2(0, -170), "ITEM DE CHEFE!", Color(1, 0.4, 0.25), true)
+		return
+	if randf() > (0.25 if el else (0.35 if lk.t == "golem" else 0.1)):
 		return
 	var pool := []
 	for id in ItemDB.items:
 		var it: EquipmentItem = ItemDB.items[id]
-		if it.level_req > 1 and it.level_req <= level + 5 and not bag.has(String(id)):
+		if it.level_req > 1 and it.level_req <= level + 5 and not bag.has(String(id)) and not String(id).begins_with("chefe_"):
 			pool.append(String(id))
 	if not pool.is_empty():
 		give_item(pool[randi() % pool.size()])
@@ -221,7 +259,7 @@ func _roll_drop(src: String) -> void:
 func gain_xp(n: int, g: int, _src: String) -> void:
 	_roll_drop(_src)
 	# conta a morte para a tarefa da sacerdotisa
-	if not task.is_empty() and int(task.count) < int(task.need) and str(Monster.TYPES[task.type].name) == _src:
+	if not task.is_empty() and int(task.count) < int(task.need) and Monster.lookup(_src).get("t", "") == str(task.type):
 		task.count = int(task.count) + 1
 		if int(task.count) >= int(task.need):
 			CombatText.add(global_position + Vector2(0, -140), "Tarefa concluída! Volte até Lira", Color(1, 0.9, 0.5), true)

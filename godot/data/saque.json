@@ -1,0 +1,242 @@
+{
+ "gosma_verde": {
+  "nome": "Gosma Verde",
+  "preco": 3,
+  "cor": "#6fd04a",
+  "forma": "gota"
+ },
+ "gosma_azul": {
+  "nome": "Gosma Azul",
+  "preco": 4,
+  "cor": "#4aa8ff",
+  "forma": "gota"
+ },
+ "gosma_magma": {
+  "nome": "Gosma de Magma",
+  "preco": 7,
+  "cor": "#ff7a2a",
+  "forma": "gota"
+ },
+ "nucleo_magma": {
+  "nome": "Núcleo de Magma",
+  "preco": 45,
+  "cor": "#ffb030",
+  "forma": "cristal"
+ },
+ "osso": {
+  "nome": "Osso Velho",
+  "preco": 3,
+  "cor": "#ddd5bd",
+  "forma": "osso"
+ },
+ "cranio": {
+  "nome": "Crânio",
+  "preco": 14,
+  "cor": "#e8e0c8",
+  "forma": "cranio"
+ },
+ "carne_podre": {
+  "nome": "Carne Podre",
+  "preco": 4,
+  "cor": "#8a6a4a",
+  "forma": "carne"
+ },
+ "pano_rasgado": {
+  "nome": "Pano Rasgado",
+  "preco": 5,
+  "cor": "#8a7a62",
+  "forma": "pano"
+ },
+ "pano_sombrio": {
+  "nome": "Tecido Sombrio",
+  "preco": 16,
+  "cor": "#5a3a7a",
+  "forma": "pano"
+ },
+ "ectoplasma": {
+  "nome": "Ectoplasma",
+  "preco": 18,
+  "cor": "#9ae8ff",
+  "forma": "frasco"
+ },
+ "orelha_goblin": {
+  "nome": "Orelha de Goblin",
+  "preco": 6,
+  "cor": "#80a048",
+  "forma": "orelha"
+ },
+ "penas_xama": {
+  "nome": "Penas de Xamã",
+  "preco": 14,
+  "cor": "#ff5a3a",
+  "forma": "pena"
+ },
+ "ponta_lanca": {
+  "nome": "Ponta de Lança",
+  "preco": 10,
+  "cor": "#a8a8b0",
+  "forma": "dente"
+ },
+ "asa_morcego": {
+  "nome": "Asa de Morcego",
+  "preco": 6,
+  "cor": "#4a3a44",
+  "forma": "asa"
+ },
+ "presa_vampiro": {
+  "nome": "Presa de Vampiro",
+  "preco": 22,
+  "cor": "#f0e8e0",
+  "forma": "dente"
+ },
+ "pele_lobo": {
+  "nome": "Pele de Lobo",
+  "preco": 12,
+  "cor": "#7a7064",
+  "forma": "pele"
+ },
+ "presa_lobo": {
+  "nome": "Presa de Lobo",
+  "preco": 9,
+  "cor": "#eee6d6",
+  "forma": "dente"
+ },
+ "couro_troll": {
+  "nome": "Couro de Troll",
+  "preco": 15,
+  "cor": "#6a7a4a",
+  "forma": "pele"
+ },
+ "dente_troll": {
+  "nome": "Dente de Troll",
+  "preco": 12,
+  "cor": "#d8d0b0",
+  "forma": "dente"
+ },
+ "pele_urso": {
+  "nome": "Pele de Urso",
+  "preco": 20,
+  "cor": "#6a4a2a",
+  "forma": "pele"
+ },
+ "garra_urso": {
+  "nome": "Garra de Urso",
+  "preco": 16,
+  "cor": "#2a2420",
+  "forma": "garra"
+ },
+ "pele_pantera": {
+  "nome": "Pele de Pantera",
+  "preco": 24,
+  "cor": "#2a2830",
+  "forma": "pele"
+ },
+ "pele_onca": {
+  "nome": "Pele de Onça",
+  "preco": 26,
+  "cor": "#d8a040",
+  "forma": "pele"
+ },
+ "garra_felina": {
+  "nome": "Garra Felina",
+  "preco": 14,
+  "cor": "#e8e0d0",
+  "forma": "garra"
+ },
+ "seda_aranha": {
+  "nome": "Seda de Aranha",
+  "preco": 10,
+  "cor": "#f0f0e8",
+  "forma": "seda"
+ },
+ "glandula_veneno": {
+  "nome": "Glândula de Veneno",
+  "preco": 18,
+  "cor": "#8aff4a",
+  "forma": "frasco"
+ },
+ "olho_aranha": {
+  "nome": "Olho de Aranha",
+  "preco": 28,
+  "cor": "#ff3a2a",
+  "forma": "olho"
+ },
+ "dente_orc": {
+  "nome": "Dente de Orc",
+  "preco": 14,
+  "cor": "#e0d8b8",
+  "forma": "dente"
+ },
+ "lasca_pedra": {
+  "nome": "Lasca de Pedra",
+  "preco": 6,
+  "cor": "#8a8278",
+  "forma": "pedra"
+ },
+ "olho_ciclope": {
+  "nome": "Olho de Ciclope",
+  "preco": 60,
+  "cor": "#ff5a2a",
+  "forma": "olho"
+ },
+ "bolsa_moedas": {
+  "nome": "Bolsa de Moedas",
+  "preco": 30,
+  "cor": "#d8b040",
+  "forma": "saco"
+ },
+ "trofeu_korvo": {
+  "nome": "Tapa-olho do Capitão",
+  "preco": 120,
+  "cor": "#2a2420",
+  "forma": "pano"
+ },
+ "coracao_golem": {
+  "nome": "Coração de Golem Ancestral",
+  "preco": 220,
+  "cor": "#ff9926",
+  "forma": "cristal"
+ },
+ "geleia_real": {
+  "nome": "Geleia Real",
+  "preco": 150,
+  "cor": "#a8ff6a",
+  "forma": "gota"
+ },
+ "filacterio": {
+  "nome": "Filactério do Lich",
+  "preco": 320,
+  "cor": "#7aff9a",
+  "forma": "cristal"
+ },
+ "pelagem_matriarca": {
+  "nome": "Pelagem da Matriarca",
+  "preco": 280,
+  "cor": "#c8ccd8",
+  "forma": "pele"
+ },
+ "ovo_aracnideo": {
+  "nome": "Ovo Aracnídeo",
+  "preco": 300,
+  "cor": "#d8c8e8",
+  "forma": "ovo"
+ },
+ "coroa_goblin": {
+  "nome": "Coroa do Rei Goblin",
+  "preco": 200,
+  "cor": "#ffd23a",
+  "forma": "coroa"
+ },
+ "machado_orc": {
+  "nome": "Lâmina do Chefe Orc",
+  "preco": 300,
+  "cor": "#a84a2a",
+  "forma": "dente"
+ },
+ "olho_polifemo": {
+  "nome": "Olho Ancestral",
+  "preco": 400,
+  "cor": "#ffb03a",
+  "forma": "olho"
+ }
+}

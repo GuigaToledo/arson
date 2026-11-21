@@ -146,11 +146,12 @@ func _die() -> void:
 
 
 func _monsters() -> Array:
-	return get_tree().get_nodes_in_group("monsters").filter(func(m): return not m.dead)
+	# só monstros de verdade: o boneco de treino fica para o jogador
+	return get_tree().get_nodes_in_group("monsters").filter(func(m): return not m.dead and not m.info.get("dummy", false))
 
 
 func _ok(m) -> bool:
-	return m != null and is_instance_valid(m) and not m.dead and not Rules.is_safe(m.global_position)
+	return m != null and is_instance_valid(m) and not m.dead and not Rules.is_safe(m.global_position) and not (m is Monster and m.info.get("dummy", false))
 
 
 func _physics_process(delta: float) -> void:

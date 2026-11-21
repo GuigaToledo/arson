@@ -51,9 +51,43 @@ var _busy := 0.0
 var _buff_t := 0.0
 
 
-func configure(t: String, at: Vector2) -> Monster:
+## Elite: versão mais forte de qualquer monstro comum (aura dourada, mais vida, dano e saque).
+const ELITE_CHANCE := 0.07
+var elite := false
+var boss := false
+
+
+## Acha o tipo pelo nome mostrado (o saque e as tarefas chegam pelo nome, inclusive pela rede).
+static var _by_name := {}
+
+
+static func lookup(nome: String) -> Dictionary:
+	if _by_name.is_empty():
+		for k in TYPES:
+			_by_name[str(TYPES[k].name)] = k
+	var el := nome.ends_with(" Elite")
+	var base := nome.trim_suffix(" Elite")
+	if not _by_name.has(base):
+		return {}
+	return {"t": _by_name[base], "elite": el}
+
+
+func configure(t: String, at: Vector2, is_elite := false) -> Monster:
 	mtype = t
 	info = TYPES[t]
+	boss = bool(info.get("chefe", false))
+	elite = is_elite and not boss and not info.get("dummy", false)
+	if elite:
+		info = info.duplicate(true)
+		info["name"] = str(info.name) + " Elite"
+		info["hp"] = float(info.hp) * 2.6
+		info["atk"] = float(info.atk) * 1.45
+		info["def"] = float(info.def) + 2.0
+		info["xp"] = int(float(info.xp) * 3.0)
+		info["gold"] = [int(info.gold[0]) * 3, int(info.gold[1]) * 3 + 2]
+		info["scale"] = float(info.scale) * 1.2
+		info["aggro"] = float(info.aggro) + 1.0
+		info["speed"] = float(info.speed) * 1.08
 	display_name = info.name
 	body_colors = info.colors
 	start_items = info.items
@@ -86,6 +120,12 @@ func _ready() -> void:
 	for i in info.get("habilidades", []).size():
 		_scd[i] = randf() * float(info.habilidades[i].get("cd", 6.0)) * 0.6
 	visual.scale = Vector2.ONE * float(info.scale)
+	if elite or boss:
+		var au := RankAura.new()
+		au.boss = boss
+		au.r = 34.0 * float(info.scale)
+		add_child(au)
+		move_child(au, 0)
 	for c in get_children():
 		if c is CollisionShape2D:
 			_col = c
@@ -206,7 +246,7 @@ func _attack() -> void:
 	var tgt := foe
 	if info.get("dummy", false):
 		# o boneco revida em todos ao mesmo tempo (você e as invocações), 1% da vida total de cada um
-		for t2 in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("remote_players") + get_tree().get_nodes_in_group("summons"):
+		for t2 in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("remote_players"):
 			if not _valid_foe(t2) or Rules.gdist(global_position, t2.global_position) > 8.0:
 				continue
 			var mh := float(t2.get("max_hp")) if t2.get("max_hp") != null else 100.0 + 10.0 * (int(t2.get("level")) - 1)
@@ -553,7 +593,7 @@ func take_damage(n: int, by: Node2D, from_net := false) -> void:
 func _die(by: Node2D) -> void:
 	dead = true
 	foe = null
-	_respawn = randf_range(25.0, 40.0)
+	_respawn = float(info.get("respawn", 30.0)) * randf_range(0.85, 1.25) if boss else randf_range(25.0, 40.0) * (2.0 if elite else 1.0)
 	_die_visual()
 	if by != null and is_instance_valid(by) and by.has_method("gain_xp"):
 		var g: Array = info.gold
@@ -626,3 +666,37 @@ class StatusFx:
 					SpellArt.poly(self, PackedVector2Array([Vector2(x - 4, -40 * s), Vector2(x, -40 * s - h), Vector2(x + 4, -40 * s)]), Color(1, 0.55, 0.1, 0.6))
 			elif el == "raio":
 				SpellArt.jag(self, Vector2(randf_range(-12, 12), -80) * s, Vector2(randf_range(-12, 12), -20) * s, Color(0.85, 0.85, 1, 0.8), 1.2, 4, 5.0)
+
+
+## Aura no chão: dourada no elite, vermelha com runas girando no chefe.
+class RankAura:
+	extends Node2D
+	var boss := false
+	var r := 34.0
+	var _t := 0.0
+
+	func _ready() -> void:
+		z_index = -1
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		material = mat
+
+	func _process(d: float) -> void:
+		_t += d
+		var p := get_parent()
+		visible = p.visible and not p.dead
+		if visible:
+			queue_redraw()
+
+	func _draw() -> void:
+		var c := Color(1.0, 0.25, 0.15) if boss else Color(1.0, 0.8, 0.3)
+		var pulse := 0.75 + 0.25 * sin(_t * 3.0)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
+		draw_circle(Vector2.ZERO, r * 1.1, Color(c, 0.12 * pulse))
+		draw_arc(Vector2.ZERO, r, 0, TAU, 48, Color(c, 0.55 * pulse), 2.5)
+		if boss:
+			draw_arc(Vector2.ZERO, r * 1.25, 0, TAU, 48, Color(c, 0.3 * pulse), 1.5)
+			for i in 6:
+				var a := _t * 0.8 + i * TAU / 6.0
+				draw_circle(Vector2(cos(a), sin(a)) * r * 1.12, 3.0, Color(1, 0.6, 0.3, 0.8 * pulse))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
