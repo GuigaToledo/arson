@@ -473,10 +473,12 @@ func _auto_play(delta: float) -> void:
 		use_pot("mp")
 	if Rules.is_safe(global_position):
 		return
-	if A.alvo and not _alive_foe():
+	if A.alvo:
+		# sempre o inimigo mais próximo; só troca se o novo estiver claramente mais perto (evita ficar pulando)
 		var near := _nearest_to(global_position, 12.0, {})
-		if near:
-			foe = near
+		if near and near != foe:
+			if not _alive_foe() or Rules.gdist(global_position, near.global_position) + 0.6 < Rules.gdist(global_position, foe.global_position):
+				foe = near
 	if not A.ataque or not _alive_foe() or _action_time > 0.0:
 		return
 	var d := Rules.gdist(global_position, foe.global_position)
