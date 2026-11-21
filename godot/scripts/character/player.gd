@@ -48,7 +48,8 @@ func _ready() -> void:
 	spawn_pos = position
 	_load()
 	camera = Camera2D.new()
-	camera.zoom = Vector2(1.9, 1.9)
+	Settings.load_all()
+	camera.zoom = Vector2.ONE * Settings.zoom
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 6.0
 	camera.offset = Vector2(0, -30)
@@ -87,6 +88,13 @@ func _load() -> void:
 	_recalc()
 	hp = max_hp
 	mp = max_mp
+
+
+## Recarrega o progresso do arquivo (depois de importar um código).
+func reload() -> void:
+	skills = {"magia": [1, 0.0], "defesa": [1, 0.0]}
+	_load()
+	foe = null
 
 
 func save() -> void:
@@ -204,6 +212,7 @@ var skills := {"magia": [1, 0.0], "defesa": [1, 0.0]}
 var hp_pot := 5
 var mp_pot := 5
 var _pot_cd := 0.0
+var _auto_t := 0.0
 
 
 func _msg(t: String, c := Color(1, 0.8, 0.5)) -> void:
@@ -349,19 +358,21 @@ func use_pot(kind: String) -> void:
 	if dead or _pot_cd > 0.0:
 		return
 	if kind == "hp":
-		if hp_pot <= 0:
+		if hp_pot <= 0 and not Settings.auto.infinitas:
 			_msg("Sem poções de vida")
 			return
-		hp_pot -= 1
+		if not Settings.auto.infinitas:
+			hp_pot -= 1
 		var v := 90 + 3 * level
 		hp = minf(max_hp, hp + v)
 		CombatText.add(global_position + Vector2(0, -92), "+%d" % v, Color(0.4, 1, 0.5))
 		SpellFx.heal(get_parent(), global_position)
 	else:
-		if mp_pot <= 0:
+		if mp_pot <= 0 and not Settings.auto.infinitas:
 			_msg("Sem poções de mana")
 			return
-		mp_pot -= 1
+		if not Settings.auto.infinitas:
+			mp_pot -= 1
 		var v2 := 60 + 3 * level
 		mp = minf(max_mp, mp + v2)
 		CombatText.add(global_position + Vector2(0, -92), "+%d mana" % v2, Color(0.45, 0.65, 1))
@@ -393,6 +404,65 @@ func _auto_attack(delta: float) -> void:
 	get_parent().add_child(b)
 
 
+## Zoom da câmera (menu → Gráficos, roda do mouse, + e -).
+func set_zoom(z: float) -> void:
+	Settings.zoom = clampf(z, Settings.ZOOM_MIN, Settings.ZOOM_MAX)
+	if camera:
+		camera.zoom = Vector2.ONE * Settings.zoom
+
+
+## Automação (menu → Automação): cada item liga e desliga sozinho, como na versão 3D.
+func _auto_play(delta: float) -> void:
+	_auto_t -= delta
+	if _auto_t > 0.0 or dead:
+		return
+	_auto_t = 0.15
+	var A := Settings.auto
+	var hp_pct := hp * 100.0 / max_hp
+	var heal_i := -1
+	for i in SPELLS.size():
+		if SPELLS[i].type == "heal":
+			heal_i = i
+	if A.pocao_vida and hp_pct <= float(A.pocao_vida_pct) and _pot_cd <= 0.0:
+		use_pot("hp")
+	if A.cura and heal_i >= 0 and hp_pct <= float(A.cura_pct) and float(cds.get(SPELLS[heal_i].k, 0.0)) <= 0.0 and _action_time <= 0.0:
+		if mp < float(SPELLS[heal_i].mana) and A.pocao_mana and _pot_cd <= 0.0:
+			use_pot("mp")
+		if mp >= float(SPELLS[heal_i].mana):
+			cast_slot(heal_i)
+			return
+	if A.pocao_mana and mp * 100.0 / max_mp <= float(A.pocao_mana_pct) and _pot_cd <= 0.0:
+		use_pot("mp")
+	if Rules.is_safe(global_position):
+		return
+	if A.alvo and not _alive_foe():
+		var near := _nearest_to(global_position, 12.0, {})
+		if near:
+			foe = near
+	if not A.ataque or not _alive_foe() or _action_time > 0.0:
+		return
+	var d := Rules.gdist(global_position, foe.global_position)
+	# da magia mais forte para a mais fraca, a primeira que estiver pronta e alcançar
+	for i in range(SPELLS.size() - 1, -1, -1):
+		var sp: Dictionary = SPELLS[i]
+		if sp.type == "heal" or level < int(sp.lvl) or float(cds.get(sp.k, 0.0)) > 0.0:
+			continue
+		var reach := 7.0
+		if sp.has("range"):
+			reach = float(sp.range)
+		if sp.type == "area" and sp.at == "self":
+			reach = float(sp.radius)
+		if d > reach + 0.3:
+			continue
+		if mp < float(sp.mana):
+			if A.pocao_mana and _pot_cd <= 0.0:
+				use_pot("mp")
+			if mp < float(sp.mana):
+				continue
+		cast_slot(i)
+		return
+
+
 func _process(delta: float) -> void:
 	if dead:
 		return
@@ -402,6 +472,7 @@ func _process(delta: float) -> void:
 		cds[k] = maxf(0.0, float(cds[k]) - delta)
 	_pot_cd -= delta
 	_auto_attack(delta)
+	_auto_play(delta)
 	_save_t -= delta
 	if _save_t <= 0.0:
 		_save_t = 10.0
@@ -419,6 +490,10 @@ func _unhandled_input(ev: InputEvent) -> void:
 			return
 		target = get_global_mouse_position()
 		marker.show_at(target)
+	if mb and mb.pressed and (mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+		set_zoom(Settings.zoom * (1.08 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0 / 1.08))
+		Settings.save()
+		return
 	if mb and mb.pressed and mb.button_index == MOUSE_BUTTON_RIGHT:
 		cast_at(get_global_mouse_position())
 	var mm := ev as InputEventMouseMotion
@@ -431,6 +506,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 			cast_slot(kc - KEY_1, get_global_mouse_position())
 		elif kc >= KEY_KP_1 and kc <= KEY_KP_6:
 			cast_slot(kc - KEY_KP_1, get_global_mouse_position())
+		elif kc == KEY_EQUAL or kc == KEY_KP_ADD or kc == KEY_MINUS or kc == KEY_KP_SUBTRACT:
+			set_zoom(Settings.zoom * (1.1 if kc == KEY_EQUAL or kc == KEY_KP_ADD else 1.0 / 1.1))
+			Settings.save()
 		elif kc == KEY_Q:
 			use_pot("hp")
 		elif kc == KEY_E:

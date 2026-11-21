@@ -1,0 +1,55 @@
+class_name Settings
+extends RefCounted
+## Configurações do jogador (salvas separadas do progresso): automação, zoom e resolução.
+
+const PATH := "user://arson_config.cfg"
+
+## Automação (menu → Automação). Porcentagens de 5 a 95.
+static var auto := {
+	"alvo": false, "ataque": false,
+	"cura": false, "cura_pct": 60,
+	"pocao_vida": false, "pocao_vida_pct": 35,
+	"pocao_mana": false, "pocao_mana_pct": 25,
+	"infinitas": false,
+}
+static var zoom := 1.9
+## 0 = automática; 1 (mais leve) a 6 (resolução total).
+static var quality := 0
+## Nível em uso agora (na automática, muda sozinho conforme o desempenho).
+static var level_now := 6
+
+## Fração da resolução da tela usada em cada nível (1 a 6).
+const LEVELS := [0.0, 0.4, 0.5, 0.6, 0.72, 0.85, 1.0]
+const LEVEL_NAMES := ["Automática", "1 · muito leve", "2 · leve", "3 · média", "4 · boa", "5 · alta", "6 · máxima"]
+const ZOOM_MIN := 1.1
+const ZOOM_MAX := 3.0
+
+static var _loaded := false
+
+
+static func load_all() -> void:
+	if _loaded:
+		return
+	_loaded = true
+	var c := ConfigFile.new()
+	if c.load(PATH) != OK:
+		return
+	var a = c.get_value("config", "auto", {})
+	if a is Dictionary:
+		for k in auto:
+			if a.has(k) and typeof(a[k]) == typeof(auto[k]):
+				auto[k] = a[k]
+	zoom = clampf(float(c.get_value("config", "zoom", zoom)), ZOOM_MIN, ZOOM_MAX)
+	quality = clampi(int(c.get_value("config", "qualidade", 0)), 0, 6)
+
+
+static func save() -> void:
+	var c := ConfigFile.new()
+	c.set_value("config", "auto", auto)
+	c.set_value("config", "zoom", zoom)
+	c.set_value("config", "qualidade", quality)
+	c.save(PATH)
+
+
+static func is_mobile() -> bool:
+	return OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios")

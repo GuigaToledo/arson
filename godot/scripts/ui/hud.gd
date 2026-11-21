@@ -4,7 +4,7 @@ extends CanvasLayer
 ## - joystick à esquerda embaixo (ou toque no chão para andar)
 ## - botão grande de Bola de Fogo e botão de Correr à direita embaixo
 ## - retrato com vida e mana no canto superior esquerdo
-## - menu (Equipamento, Chat, Tela cheia) no canto superior direito
+## - menu (Menu, Equipamento, Chat, Tela cheia) no canto superior direito
 
 const EMU := InputEvent.DEVICE_ID_EMULATION
 const MOUSE_JOY := 999
@@ -22,6 +22,7 @@ var rotate_msg: Label
 var names: NameTags
 var spellbar: SpellBar
 var skill_panel: SkillPanel
+var game_menu: GameMenu
 var _joy_idx := -1
 var _lines: PackedStringArray = PackedStringArray()
 
@@ -86,6 +87,7 @@ func _build() -> void:
 	menu.offset_top = 8
 	menu.add_theme_constant_override("separation", 6)
 	root.add_child(menu)
+	menu.add_child(_menu_btn("Menu", func(): if game_menu: game_menu.toggle()))
 	menu.add_child(_menu_btn("Equip.", _toggle_panel))
 	menu.add_child(_menu_btn("Chat", _open_chat))
 	menu.add_child(_menu_btn("Tela cheia", _fullscreen))

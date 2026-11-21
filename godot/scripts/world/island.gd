@@ -55,6 +55,8 @@ func _ready() -> void:
 	_spawn_monsters()
 	if "--teste-combate" in OS.get_cmdline_user_args():
 		_teste_combate()
+	if "--teste-menu" in OS.get_cmdline_user_args():
+		_teste_menu.call_deferred()
 	if "--teste-boneco" in OS.get_cmdline_user_args():
 		_teste_boneco()
 	var net := NetSync.new()
@@ -65,9 +67,16 @@ func _ready() -> void:
 	ui.layer = 2
 	add_child(ui)
 	ui.bind(player)
+	var perf := Perf.new()
+	perf.name = "Desempenho"
+	add_child(perf)
+	var gm := GameMenu.new()
+	add_child(gm)
+	gm.bind(player, perf)
 	var hud := Hud.new()
 	add_child(hud)
 	hud.bind(player, net, ui)
+	hud.game_menu = gm
 
 
 func _build_ground() -> void:
@@ -347,3 +356,47 @@ class LampPost:
 		draw_line(Vector2(0, -66), Vector2(10, -66), Color(0.16, 0.11, 0.07), 3.0)
 		draw_rect(Rect2(5, -64, 10, 13), Color(0.12, 0.1, 0.08))
 		draw_rect(Rect2(7, -62, 6, 9), Color(1, 0.75, 0.4))
+
+
+func _teste_menu() -> void:
+	await get_tree().create_timer(0.3).timeout
+	var gm: GameMenu = null
+	var pf: Perf = null
+	for c in get_children():
+		if c is GameMenu: gm = c
+		if c is Perf: pf = c
+	gm.toggle()
+	for i in 4:
+		gm._tabs.current_tab = i
+		await get_tree().process_frame
+	gm.toggle()
+	for lv in range(1, 7):
+		Settings.quality = lv
+		pf.apply()
+		await get_tree().process_frame
+		print("TESTE resolucao nivel=", lv, " modo=", get_window().content_scale_mode, " desenho=", get_window().content_scale_size, " fator=", snappedf(get_window().content_scale_factor, 0.01), " tela_logica=", get_viewport().get_visible_rect().size)
+	Settings.quality = 0
+	pf.apply()
+	var code := gm._export_code()
+	var xp0 := player.xp
+	player.xp = 999999
+	gm.import_code(code)
+	print("TESTE export/import ok=", player.xp == xp0, " tamanho_codigo=", code.length())
+	var m: Monster = null
+	for c in get_tree().get_nodes_in_group("monsters"):
+		if c.mtype == "esqueleto" or c.mtype == "carnical":
+			m = c
+			break
+	player.global_position = m.home + Vector2(150, 50)
+	player.level = 12
+	player._recalc()
+	player.hp = player.max_hp * 0.3
+	for k in ["alvo", "ataque", "cura", "pocao_mana", "infinitas"]:
+		Settings.auto[k] = true
+	var hp0 := player.hp
+	await get_tree().create_timer(8.0).timeout
+	print("TESTE automacao alvo=", player.foe != null, " xp_ganho=", player.xp - xp0, " curou=", player.hp > hp0, " vida=", int(player.hp), "/", int(player.max_hp))
+	for k in ["alvo", "ataque", "cura", "pocao_mana", "infinitas"]:
+		Settings.auto[k] = false
+	player.set_zoom(2.5)
+	print("TESTE zoom=", player.camera.zoom)
