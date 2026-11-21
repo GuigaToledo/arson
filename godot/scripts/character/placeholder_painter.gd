@@ -107,12 +107,13 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 		ci.draw_circle(p.head + fwd(p, 1.8) + Vector2(0, 1.0), 4.6, skin)
 	if c.get("core", false) and p.toward:
 		var cc: Vector2 = Vector2(0, -51 + p.bob) + fwd(p, 3)
-		ci.draw_circle(cc, 7.0, Color(1, 0.35, 0.05, 0.25))
-		ci.draw_circle(cc, 4.2, Color(1, 0.45, 0.08))
-		ci.draw_circle(cc, 2.0, Color(1, 0.9, 0.6))
+		var ccol: Color = c.get("core_col", Color(1, 0.45, 0.08))
+		ci.draw_circle(cc, 7.0, Color(ccol, 0.25))
+		ci.draw_circle(cc, 4.2, ccol)
+		ci.draw_circle(cc, 2.0, ccol.lightened(0.6))
 		for k in 5:
 			var a := TAU * k / 5.0 + 0.4
-			ci.draw_line(cc + Vector2(cos(a), sin(a) * 0.6) * 4.0, cc + Vector2(cos(a), sin(a) * 0.6) * 9.5, Color(1, 0.4, 0.05, 0.8), 1.0)
+			ci.draw_line(cc + Vector2(cos(a), sin(a) * 0.6) * 4.0, cc + Vector2(cos(a), sin(a) * 0.6) * 9.5, Color(ccol.darkened(0.1), 0.8), 1.0)
 	eyes(ci, p, c.get("eyes", Color(1, 0.62, 0.15)), c.get("glow_eyes", false))
 
 

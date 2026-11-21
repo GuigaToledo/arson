@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"capuz_mare"
+display_name = "Capuz das Marés"
+item_type = "armadura"
+slot = 0
+stats = {"defesa": 2, "agua": 2}
+placeholder_style = &"hood"
+placeholder_color = Color(0.07, 0.14, 0.3, 1)
+placeholder_accent = Color(0.35, 0.8, 1, 1)
+glow = 0

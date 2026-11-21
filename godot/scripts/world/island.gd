@@ -151,6 +151,17 @@ func start_game(slot: int) -> void:
 				var mp0 := player.mp
 				player.cast_spell(sid)
 				print("TESTE vermagia ", sid, " gastou=", mp0 - player.mp, " seguro=", Rules.is_safe(player.global_position), " acao=", player._action_time, " liberada=", player.spell_unlocked(sid), " textos=", CombatText.items.map(func(x): return x.get("text", x.get("t", "")))))
+		if str(arg) == "--teste-skins":
+			var k := 0
+			for cl in MageClass.ORDER:
+				if cl == player.classe:
+					continue
+				k += 1
+				var rp := RemotePlayer.new()
+				rp.start_items = MageClass.info(cl).itens.duplicate()
+				rp.position = player.position + Vector2(-260 + k * 90, 60 + (k % 2) * 20)
+				entities.add_child(rp)
+				rp.apply_state({"x": rp.position.x, "y": rp.position.y, "c": cl, "n": MageClass.info(cl).nome, "f": "S", "a": "idle"})
 		if str(arg) == "--teste-levelup":
 			player.skill_gain(player.elem_a(), Rules.skill_need(player.elem_a(), player.elem_level(player.elem_a())))
 		if str(arg).begins_with("--teste-vermenu="):
@@ -405,8 +416,11 @@ func _teste_boneco() -> void:
 func _spawn_characters(classe: String) -> void:
 	player = Player.new()
 	player.classe = classe
-	var cj: String = MageClass.info(classe).cajado
-	player.start_items = player.start_items.map(func(it): return cj if it == "cajado_brasa" else it)
+	# skin da classe: peças, olhos e núcleo na cor do elemento
+	var ci := MageClass.info(classe)
+	player.start_items = ci.itens.duplicate()
+	player.body_colors["eyes"] = ci.olhos
+	player.body_colors["core_col"] = ci.nucleo
 	player.name = "Jogador"
 	player.position = Iso.to_screen(map.spawn)
 	entities.add_child(player)

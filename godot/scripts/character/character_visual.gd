@@ -52,12 +52,24 @@ func setup(eq: EquipmentComponent) -> void:
 			l.set_item(body_item)
 	eq.equipment_changed.connect(_on_equipment_changed)
 	if body_colors.get("core", false) and body_item == null:
-		_core_light = LightKit.make(Color(1, 0.45, 0.1), 0.6, 0.2, false, 0.2)
+		_core_light = LightKit.make(body_colors.get("core_col", Color(1, 0.45, 0.1)), 0.6, 0.2, false, 0.2)
 		add_child(_core_light)
 	if body_colors.get("glow_eyes", false) and body_item == null:
-		_eye_light = LightKit.make(Color(1, 0.55, 0.15), 0.45, 0.08, false, 0.1)
+		_eye_light = LightKit.make(body_colors.get("eyes", Color(1, 0.55, 0.15)), 0.45, 0.08, false, 0.1)
 		add_child(_eye_light)
 	_reorder(true)
+
+
+## Troca a cor do núcleo e dos olhos (skin da classe).
+func set_glow(core_col: Color, eye_col: Color) -> void:
+	body_colors["core_col"] = core_col
+	body_colors["eyes"] = eye_col
+	if _core_light:
+		_core_light.color = core_col
+	if _eye_light:
+		_eye_light.color = eye_col
+	for l in layers.values():
+		l.queue_redraw()
 
 
 func _on_equipment_changed(slot: int, item: EquipmentItem) -> void:

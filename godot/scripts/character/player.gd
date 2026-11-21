@@ -64,6 +64,9 @@ func _ready() -> void:
 	add_child(aura)
 	_aura = StatusAura.new()
 	add_child(_aura)
+	var ca := ClassAura.new()
+	add_child(ca)
+	ca.setup(classe)
 	marker = TapMarker.new()
 	marker.top_level = true
 	marker.z_index = -5

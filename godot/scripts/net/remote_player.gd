@@ -6,6 +6,8 @@ extends Actor
 var uid := ""
 var dead := false
 var level := 1
+var classe := ""
+var _class_aura: ClassAura
 
 
 func take_damage(n: int, src: String) -> void:
@@ -45,6 +47,15 @@ func apply_state(s: Dictionary) -> void:
 	_target = Vector2(float(s.get("x", position.x)), float(s.get("y", position.y)))
 	dead = int(s.get("d", 0)) == 1
 	level = int(s.get("l", 1))
+	var c := str(s.get("c", ""))
+	if MageClass.valid(c) and c != classe:
+		classe = c
+		var ci := MageClass.info(c)
+		visual.set_glow(ci.nucleo, ci.olhos)
+		if _class_aura == null:
+			_class_aura = ClassAura.new()
+			add_child(_class_aura)
+		_class_aura.setup(c)
 	visible = not dead
 	facing = str(s.get("f", "S"))
 	if not Iso.DIRS.has(facing):

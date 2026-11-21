@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"manto_mare"
+display_name = "Manto das Marés"
+item_type = "armadura"
+slot = 1
+stats = {"defesa": 3, "agua": 2}
+placeholder_style = &"robe"
+placeholder_color = Color(0.06, 0.1, 0.22, 1)
+placeholder_accent = Color(0.3, 0.75, 1, 1)
+glow = 0
