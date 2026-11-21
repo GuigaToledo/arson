@@ -185,6 +185,10 @@ func start_game(slot: int) -> void:
 				rp.position = player.position + Vector2(-260 + k * 90, 60 + (k % 2) * 20)
 				entities.add_child(rp)
 				rp.apply_state({"x": rp.position.x, "y": rp.position.y, "c": cl, "n": MageClass.info(cl).nome, "f": "S", "a": "idle"})
+		if str(arg).begins_with("--teste-zoom="):
+			player.camera.position_smoothing_enabled = false
+			player.global_position = Iso.to_screen(map.spawn)
+			player.camera.zoom = Vector2.ONE * float(str(arg).split("=")[1])
 		if str(arg) == "--teste-levelup":
 			player.skill_gain(player.elem_a(), Rules.skill_need(player.elem_a(), player.elem_level(player.elem_a())))
 		if str(arg).begins_with("--teste-vermenu="):
@@ -466,14 +470,14 @@ func _spawn_characters(classe: String) -> void:
 		{"skin": Color(0.6, 0.45, 0.35), "under": Color(0.25, 0.2, 0.15), "hair": Color(0.3, 0.2, 0.1), "eyes": Color(0.2, 0.15, 0.1)},
 		["avental_taverna", "calca_tecido", "botas_couro"], "S")
 	brann.role = "mercador"
-	brann.position = Iso.to_screen(_free_tile(map.spawn + Vector2(-2.5, -2.6)))
+	brann.position = Iso.to_screen(_free_tile(Vector2(23.0, 25.0)))
 	brann.add_to_group("npcs")
 	entities.add_child(brann)
 	var lira := Npc.new().configure("Lira, a Sacerdotisa",
 		{"skin": Color(0.78, 0.62, 0.5), "under": Color(0.8, 0.76, 0.66), "hair": Color(0.85, 0.75, 0.45), "eyes": Color(0.3, 0.5, 0.8)},
 		["capuz_sacerdotisa", "manto_sacerdotisa", "botas_couro"], "S")
 	lira.role = "sacerdotisa"
-	lira.position = Iso.to_screen(_free_tile(map.spawn + Vector2(3.5, -2.6)))
+	lira.position = Iso.to_screen(_free_tile(Vector2(31.6, 24.0)))
 	lira.add_to_group("npcs")
 	entities.add_child(lira)
 
