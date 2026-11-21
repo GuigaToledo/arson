@@ -201,6 +201,22 @@ func start_game(slot: int) -> void:
 				sm.anim = anims[i]
 				sm.facing = "SE"
 				i += 1
+		if str(arg) == "--teste-semsombra" or str(arg) == "--teste-semluz":
+			var cnt := [0, 0]
+			for l in find_children("*", "Light2D", true, false):
+				cnt[0] += 1
+				if l.shadow_enabled:
+					cnt[1] += 1
+				l.shadow_enabled = false
+				if str(arg) == "--teste-semluz":
+					l.visible = false
+			print("TESTE luzes=", cnt[0], " com_sombra=", cnt[1])
+		if str(arg) == "--teste-fps":
+			DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+			Engine.max_fps = 0
+			for k in 3:
+				await get_tree().create_timer(3.0).timeout
+				print("TESTE fps=", Engine.get_frames_per_second(), " objetos=", Performance.get_monitor(Performance.OBJECT_NODE_COUNT), " desenhos=", Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), " cpu_ms=", snappedf(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, 0.01))
 		if str(arg) == "--teste-levelup":
 			player.skill_gain(player.elem_a(), Rules.skill_need(player.elem_a(), player.elem_level(player.elem_a())))
 		if str(arg).begins_with("--teste-vermenu="):

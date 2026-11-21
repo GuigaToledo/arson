@@ -91,12 +91,11 @@ static func ellipse(n: CanvasItem, c: Vector2, rx: float, col: Color, filled := 
 
 ## Polígono de pedra irregular (mesmo formato para a mesma semente).
 static func rock(n: CanvasItem, c: Vector2, r: float, col: Color, sd: int, rot := 0.0) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = sd
 	var pts := PackedVector2Array()
 	for i in 7:
 		var a := TAU * i / 7.0 + rot
-		pts.append(c + Vector2(cos(a), sin(a)) * r * rng.randf_range(0.7, 1.05))
+		var h := fposmod(sin(float(sd) * 12.9898 + i * 78.233) * 43758.5453, 1.0)
+		pts.append(c + Vector2(cos(a), sin(a)) * r * (0.7 + h * 0.35))
 	n.draw_colored_polygon(pts, col)
 	n.draw_polyline(pts + PackedVector2Array([pts[0]]), col.darkened(0.45), 1.2, true)
 	n.draw_line(c + Vector2(-r * 0.3, -r * 0.4), c + Vector2(r * 0.25, -r * 0.5), col.lightened(0.35), 1.2)

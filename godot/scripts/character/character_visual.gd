@@ -33,6 +33,9 @@ var _frame_acc := 0.0
 var _order_key := ""
 ## Segundos desde o começo da animação atual (golpes e magias usam para o movimento).
 var _anim_t := 0.0
+## Área do mundo na tela (o jogador atualiza): quem está fora não é desenhado nem animado.
+static var view_rect := Rect2()
+var _draw_acc := 1.0
 var _eye_light: PointLight2D
 var _core_light: PointLight2D
 
@@ -96,6 +99,16 @@ func tick(delta: float, new_dir: String, new_anim: String, speed: float) -> void
 	while _frame_acc >= 1.0:
 		_frame_acc -= 1.0
 		_frame += 1
+	# otimização: fora da tela não desenha; na tela, atualiza o desenho no máximo 30x por segundo
+	if view_rect.size.x > 0.0 and not view_rect.has_point(global_position):
+		visible = false
+		_draw_acc = 1.0
+		return
+	visible = true
+	_draw_acc += delta
+	if _draw_acc < 1.0 / 30.0:
+		return
+	_draw_acc = 0.0
 	var pose := PlaceholderPainter.pose(dir, anim, _phase, _time, _anim_t)
 	for l: EquipLayer in layers.values():
 		l.update_pose(dir, anim, _frame, pose)

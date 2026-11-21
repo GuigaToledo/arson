@@ -59,12 +59,12 @@ static func _golem(ci: CanvasItem, p: Dictionary, el: String) -> void:
 	for b in bones(p):
 		var a: Vector2 = b[0]
 		var e: Vector2 = b[1]
-		for k in 3:
-			var q := a.lerp(e, (k + 0.5) / 3.0)
+		for k in 2:
+			var q := a.lerp(e, (k + 0.5) / 2.0)
 			if el == "gelo":
-				_crystal(ci, q, 5.0, stone, sd)
+				_crystal(ci, q, 6.2, stone, sd)
 			else:
-				SpellArt.rock(ci, q, 5.2, stone.darkened(0.05 * (k % 2)), sd)
+				SpellArt.rock(ci, q, 6.4, stone.darkened(0.05 * (k % 2)), sd)
 			sd += 7
 		if seam.a > 0.0:
 			ci.draw_line(a, e, Color(seam, 0.55), 1.6, true)

@@ -822,6 +822,10 @@ func _auto_play(delta: float) -> void:
 
 
 func _process(delta: float) -> void:
+	# área visível do mundo (com margem) para não desenhar o que está fora da tela
+	var vp := get_viewport()
+	var inv := vp.get_canvas_transform().affine_inverse()
+	CharacterVisual.view_rect = (inv * Rect2(Vector2.ZERO, vp.get_visible_rect().size)).grow(160.0)
 	if dead:
 		return
 	mp = minf(max_mp, mp + delta * 4.0)

@@ -36,6 +36,8 @@ func apply() -> void:
 	var win := get_window()
 	var lv := 6 if force_full else clampi(Settings.level_now, 1, 6)
 	_applied = lv
+	# bordas suaves (antisserrilhamento 4x) do nível 4 para cima; no celular e nos níveis baixos, desligado
+	win.msaa_2d = Viewport.MSAA_4X if lv >= 4 and not Settings.is_mobile() else Viewport.MSAA_DISABLED
 	_win = win.size
 	if lv >= 6:
 		win.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
