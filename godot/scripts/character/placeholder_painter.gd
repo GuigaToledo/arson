@@ -15,6 +15,19 @@ static func fwd(p: Dictionary, k: float) -> Vector2:
 	return Vector2(f.x * k, f.y * k * 0.5)
 
 
+## Casca de volume: une duas "fatias" (largura lateral w e profundidade d),
+## para o corpo ter volume também visto de lado.
+static func slab(p: Dictionary, c: Vector2, w: float, d: float) -> Array:
+	return [c + lat(p, -w) + fwd(p, -d), c + lat(p, w) + fwd(p, -d), c + lat(p, w) + fwd(p, d), c + lat(p, -w) + fwd(p, d)]
+
+
+static func vol(p: Dictionary, c1: Vector2, w1: float, d1: float, c2: Vector2, w2: float, d2: float) -> PackedVector2Array:
+	var h := Geometry2D.convex_hull(PackedVector2Array(slab(p, c1, w1, d1) + slab(p, c2, w2, d2)))
+	if h.size() > 1 and h[0].is_equal_approx(h[h.size() - 1]):
+		h.remove_at(h.size() - 1)
+	return h
+
+
 ## Pose do esqueleto para a direção/animação atual.
 static func pose(dir: String, anim: String, phase: float, t: float) -> Dictionary:
 	var p := {}
@@ -43,6 +56,9 @@ static func pose(dir: String, anim: String, phase: float, t: float) -> Dictionar
 	if p.casting:
 		p.handR = p.shR + Vector2(0, -12) + fwd(p, 9)
 	p.head = Vector2(0, -69 + bob)
+	p.shC = (p.shL + p.shR) * 0.5
+	p.hipC = (p.hipL + p.hipR) * 0.5
+	p.kneeC = Vector2(0, -10 + bob)
 	p.w = w
 	return p
 
@@ -69,8 +85,8 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 	var skin: Color = c.get("skin", Color(0.55, 0.42, 0.34))
 	var under: Color = c.get("under", Color(0.2, 0.18, 0.16))
 	var hair: Color = c.get("hair", Color(0.08, 0.06, 0.05))
-	ci.draw_line(p.hipL, p.footL, under.darkened(0.2), 5.5)
-	ci.draw_line(p.hipR, p.footR, under.darkened(0.2), 5.5)
+	ci.draw_line(p.hipL, p.footL, under.darkened(0.2), 6.5)
+	ci.draw_line(p.hipR, p.footR, under.darkened(0.2), 6.5)
 	var r: Vector2 = p.r
 	var near_right := r.y > 0.2
 	var near_left := r.y < -0.2
@@ -78,7 +94,7 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 		ci.draw_line(p.shL, p.handL, under.darkened(0.3), 4.5)
 	if near_left:
 		ci.draw_line(p.shR, p.handR, under.darkened(0.3), 4.5)
-	ci.draw_colored_polygon(PackedVector2Array([p.shL, p.shR, p.hipR, p.hipL]), under)
+	ci.draw_colored_polygon(vol(p, p.shC, p.w, 5.5, p.hipC, p.w * 0.55, 4.5), under)
 	if not near_right:
 		ci.draw_line(p.shL, p.handL, under.darkened(0.1), 4.5)
 	if not near_left:
@@ -120,16 +136,16 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 		"robe":
 			var kL: Vector2 = Vector2(0, -6 + p.bob) + lat(p, -p.w * 1.15)
 			var kR: Vector2 = Vector2(0, -6 + p.bob) + lat(p, p.w * 1.15)
-			ci.draw_colored_polygon(PackedVector2Array([p.shL + Vector2(0, -1), p.shR + Vector2(0, -1), kR, kL]), col)
+			ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.kneeC + Vector2(0, 4), p.w * 1.15, 7.5), col)
 			ci.draw_line(p.hipL + Vector2(0, -2), p.hipR + Vector2(0, -2), acc, 2.0)
 			ci.draw_line((p.shL + p.shR) * 0.5, (kL + kR) * 0.5, acc.darkened(0.3), 1.0)
 			ci.draw_line(p.shL, p.handL, col, 5.0)
 			ci.draw_line(p.shR, p.handR, col, 5.0)
 		"vest":
-			ci.draw_colored_polygon(PackedVector2Array([p.shL + Vector2(0, -1), p.shR + Vector2(0, -1), p.hipR + Vector2(0, 4), p.hipL + Vector2(0, 4)]), col)
+			ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.hipC + Vector2(0, 4), p.w * 0.6, 5.0), col)
 			ci.draw_line(p.hipL + Vector2(0, 1), p.hipR + Vector2(0, 1), acc, 2.0)
 		"apron":
-			ci.draw_colored_polygon(PackedVector2Array([p.shL, p.shR, p.hipR + Vector2(0, 2), p.hipL + Vector2(0, 2)]), acc)
+			ci.draw_colored_polygon(vol(p, p.shC, p.w, 6.0, p.hipC + Vector2(0, 2), p.w * 0.6, 5.0), acc)
 			if p.toward:
 				var a: Vector2 = (p.hipL + p.hipR) * 0.5 + fwd(p, 2)
 				ci.draw_colored_polygon(PackedVector2Array([a + lat(p, -6) + Vector2(0, -12), a + lat(p, 6) + Vector2(0, -12), a + lat(p, 7) + Vector2(0, 20), a + lat(p, -7) + Vector2(0, 20)]), col)
@@ -150,7 +166,7 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 			ci.draw_line(p.footR + Vector2(0, -2), p.footR + Vector2(0, -8), col, 5.0)
 		"cape":
 			var bot := Vector2(0, -3)
-			ci.draw_colored_polygon(PackedVector2Array([p.shL + Vector2(0, 1), p.shR + Vector2(0, 1), bot + lat(p, p.w * 1.3) - fwd(p, 5), bot + lat(p, -p.w * 1.3) - fwd(p, 5)]), col)
+			ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, 1) - fwd(p, 3), p.w, 3.0, bot - fwd(p, 8), p.w * 1.3, 3.0), col)
 			ci.draw_line(p.shL + Vector2(0, 1), p.shR + Vector2(0, 1), acc, 2.0)
 		"staff":
 			var top := staff_top(p)
@@ -231,7 +247,7 @@ static func draw_wolfcape_back(ci: CanvasItem, p: Dictionary, it: EquipmentItem)
 	var w: float = p.w
 	var bl: Vector2 = bot + lat(p, -w * 1.9) - fwd(p, 6)
 	var br: Vector2 = bot + lat(p, w * 1.9) - fwd(p, 6)
-	ci.draw_colored_polygon(PackedVector2Array([p.shL + Vector2(0, -3), p.shR + Vector2(0, -3), br, bl]), col)
+	ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, -3) - fwd(p, 3), w, 4.0, bot - fwd(p, 9), w * 1.9, 4.0), col)
 	for i in 9:
 		var t := i / 8.0
 		var top: Vector2 = p.shL.lerp(p.shR, t)
@@ -246,7 +262,7 @@ static func draw_wolfcape_front(ci: CanvasItem, p: Dictionary, it: EquipmentItem
 	var h: Vector2 = p.head
 	var w: float = p.w
 	# manto de pelo nos ombros
-	ci.draw_colored_polygon(PackedVector2Array([p.shL + lat(p, -4) + Vector2(0, 4), h + Vector2(0, 4) - fwd(p, 2), p.shR + lat(p, 4) + Vector2(0, 4), p.shR + Vector2(0, 10), p.shL + Vector2(0, 10)]), col)
+	ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, -3), w + 3.5, 7.0, p.shC + Vector2(0, 9), w + 1.0, 6.5), col)
 	if p.toward:
 		fur_edge(ci, p.shL + Vector2(0, 8), (p.shL + p.shR) * 0.5 + Vector2(0, 6), 7.0, col.lightened(0.05), 5, 2.0)
 		fur_edge(ci, (p.shL + p.shR) * 0.5 + Vector2(0, 6), p.shR + Vector2(0, 8), 7.0, col.lightened(0.05), 5, 4.0)
@@ -275,7 +291,7 @@ static func draw_wolfskirt(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> 
 	ci.draw_line(p.hipR, p.footR + Vector2(0, -3), Color(0.08, 0.07, 0.075), 6.0)
 	var kl: Vector2 = Vector2(0, -12 + p.bob) + lat(p, -w * 1.2)
 	var kr: Vector2 = Vector2(0, -12 + p.bob) + lat(p, w * 1.2)
-	ci.draw_colored_polygon(PackedVector2Array([p.hipL + Vector2(0, -4), p.hipR + Vector2(0, -4), kr, kl]), col)
+	ci.draw_colored_polygon(vol(p, p.hipC + Vector2(0, -4), w * 0.65, 5.5, p.kneeC, w * 1.2, 8.5), col)
 	ci.draw_line(p.hipL + Vector2(0, -3), p.hipR + Vector2(0, -3), Color(0.35, 0.28, 0.2), 2.0)
 	fur_edge(ci, kl, kr, 7.0, col, 9, 3.0)
 	for i in 6:

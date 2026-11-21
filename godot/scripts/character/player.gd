@@ -30,10 +30,10 @@ func _ready() -> void:
 	super()
 	add_to_group("player")
 	camera = Camera2D.new()
-	camera.zoom = Vector2(1.25, 1.25)
+	camera.zoom = Vector2(1.9, 1.9)
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 6.0
-	camera.offset = Vector2(0, -40)
+	camera.offset = Vector2(0, -30)
 	add_child(camera)
 	camera.make_current()
 	# raio de luz do herói (como no Diablo 2): o mundo é escuro, a luz acompanha o personagem

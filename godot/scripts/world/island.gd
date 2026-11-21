@@ -145,15 +145,19 @@ func _build_buildings() -> void:
 	for y in map.h:
 		for x in map.w:
 			var ch := map.at(x, y)
+			if not ResourceLoader.exists(OBJ + "arvore.png"):
+				break
 			var chance := 0.24 if ch == "f" else (0.025 if ch == "." else 0.0)
 			if chance == 0.0 or map.tile_rand(x, y) > chance:
 				continue
 			var j := Vector2(map.tile_rand(x, y, 1), map.tile_rand(x, y, 2)) * 0.6 + Vector2(0.2, 0.2)
 			var t := Prop.new().setup("box", Vector2(x, y) + j - Vector2(0.18, 0.18), Vector2(0.36, 0.36), 200.0, Color(0.3, 0.2, 0.1))
-			t.with_image(OBJ + "arvore_vermelha.png", 0.5 + map.tile_rand(x, y, 3) * 0.25, Vector2(0, 6), map.tile_rand(x, y, 4) > 0.5)
+			t.with_image(OBJ + "arvore.png", 0.5 + map.tile_rand(x, y, 3) * 0.25, Vector2(0, 6), map.tile_rand(x, y, 4) > 0.5)
 			t.casts_shadow = false
 			entities.add_child(t)
 	# carroças na estrada do sul
+	if not ResourceLoader.exists(OBJ + "carroca.png"):
+		return
 	var c1 := Prop.new().setup("box", Vector2(24.2, 37.2), Vector2(1.2, 0.8), 60.0, Color(0.3, 0.2, 0.1))
 	c1.with_image(OBJ + "carroca.png", 0.75, Vector2(0, 14))
 	entities.add_child(c1)
@@ -171,6 +175,8 @@ func _build_lights() -> void:
 	var camp := Prop.new().setup("box", Vector2(30.6, 35.6), Vector2(0.8, 0.8), 40.0, Color(0.3, 0.2, 0.1))
 	camp.with_image(OBJ + "fogueira.png", 1.0, Vector2(0, 6))
 	camp.fade_when_behind = false
+	if camp.tex == null:
+		camp.kind = "campfire"
 	entities.add_child(camp)
 	Fx.fire(camp, Vector2(0, -8), 0.45)
 	var fl := LightKit.make(Color(1.0, 0.55, 0.2), 1.3, 2.4, true, 0.2)

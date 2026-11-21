@@ -137,6 +137,11 @@ func _draw() -> void:
 			for i in [0, 1, 3, 2]:
 				draw_line(legs[i], up(legs[i], height - 4), color.darkened(0.45), 2.5)
 			box(A, B, C, D, height - 4, height, color)
+		"campfire":
+			var ctr := (A + C) * 0.5
+			for i in 8:
+				var a := TAU * i / 8.0
+				PlaceholderPainter.ellipse(self, ctr + Vector2(cos(a) * 16, sin(a) * 8), 4, 3, Color(0.32, 0.3, 0.28))
 		"barrel":
 			var ctr := (A + C) * 0.5
 			var rx := (B.x - D.x) * 0.36
