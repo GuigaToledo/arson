@@ -229,6 +229,16 @@ func start_game(slot: int) -> void:
 			for k in 3:
 				await get_tree().create_timer(3.0).timeout
 				print("TESTE fps=", Engine.get_frames_per_second(), " objetos=", Performance.get_monitor(Performance.OBJECT_NODE_COUNT), " desenhos=", Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), " cpu_ms=", snappedf(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, 0.01))
+		if str(arg) == "--teste-itens":
+			var mp0 := player.max_mp
+			player.equipment.unequip(EquipSlot.Slot.HEAD)
+			var neg := player.try_equip(ItemDB.get_item("diadema_arcano")) if player.level < 35 else false
+			player.level = 40
+			player._recalc()
+			for id in ["chapeu_feiticeiro", "manto_arquimago", "calca_encantada", "botas_macias", "capa_estelar", "tomo_ancestral", "cetro_magma", "amuleto_mana", "anel_energia"]:
+				player.give_item(id)
+				player.try_equip(ItemDB.get_item(id))
+			print("TESTE itens recusou_sem_nivel=", not neg, " atributos=", player.gear(), " mana_max=", int(mp0), "->", int(player.max_mp), " bolsa=", player.bag.size())
 		if str(arg) == "--teste-levelup":
 			player.skill_gain(player.elem_a(), Rules.skill_need(player.elem_a(), player.elem_level(player.elem_a())))
 		if str(arg).begins_with("--teste-vermenu="):

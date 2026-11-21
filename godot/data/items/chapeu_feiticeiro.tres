@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"chapeu_feiticeiro"
+display_name = "Chapéu do Feiticeiro"
+item_type = "cabeça"
+slot = 0
+level_req = 20
+stats = {"defesa": 3, "magia": 10, "mana": 50}
+placeholder_style = &"wizardhat"
+placeholder_color = Color(0.08, 0.06, 0.2, 1)
+placeholder_accent = Color(0.75, 0.55, 1, 1)
+glow = 0.2

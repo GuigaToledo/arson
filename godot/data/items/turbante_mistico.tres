@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"turbante_mistico"
+display_name = "Turbante Místico"
+item_type = "cabeça"
+slot = 0
+level_req = 8
+stats = {"defesa": 2, "magia": 5, "mana": 20}
+placeholder_style = &"turban"
+placeholder_color = Color(0.15, 0.3, 0.6, 1)
+placeholder_accent = Color(0.95, 0.8, 0.3, 1)
+glow = 0

@@ -163,7 +163,7 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 	if near_left:
 		limb(ci, p.shR, p.elbowR, p.handR, 4.8, 4.0, under.darkened(0.35))
 	var torso := vol(p, p.shC, p.w, 5.5, p.hipC, p.w * 0.55, 4.5)
-	ci.draw_colored_polygon(torso, under)
+	SpellArt.poly(ci, torso, under)
 	outline(ci, torso, under.darkened(0.5))
 	if not near_right:
 		limb(ci, p.shL, p.elbowL, p.handL, 4.8, 4.0, under.darkened(0.1))
@@ -215,8 +215,8 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 	match String(it.placeholder_style):
 		"hood":
 			ci.draw_circle(p.head + Vector2(0, -0.8), 7.2, col)
-			ci.draw_colored_polygon(PackedVector2Array([p.head + lat(p, -5) + Vector2(0, -4), p.head + lat(p, 5) + Vector2(0, -4), p.head - fwd(p, 7) + Vector2(0, -9)]), col.darkened(0.15))
-			ci.draw_colored_polygon(PackedVector2Array([p.shL + Vector2(0, -2), p.shR + Vector2(0, -2), p.head + Vector2(0, 5)]), col)
+			SpellArt.poly(ci, PackedVector2Array([p.head + lat(p, -5) + Vector2(0, -4), p.head + lat(p, 5) + Vector2(0, -4), p.head - fwd(p, 7) + Vector2(0, -9)]), col.darkened(0.15))
+			SpellArt.poly(ci, PackedVector2Array([p.shL + Vector2(0, -2), p.shR + Vector2(0, -2), p.head + Vector2(0, 5)]), col)
 			if p.toward:
 				ci.draw_circle(p.head + fwd(p, 2.4) + Vector2(0, 1.0), 4.3, Color(0.03, 0.02, 0.02))
 				eyes(ci, p, acc, true)
@@ -229,19 +229,19 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 		"robe":
 			var kL: Vector2 = Vector2(0, -6 + p.bob) + lat(p, -p.w * 1.15)
 			var kR: Vector2 = Vector2(0, -6 + p.bob) + lat(p, p.w * 1.15)
-			ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.kneeC + Vector2(0, 4), p.w * 1.15, 7.5), col)
+			SpellArt.poly(ci, vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.kneeC + Vector2(0, 4), p.w * 1.15, 7.5), col)
 			ci.draw_line(p.hipL + Vector2(0, -2), p.hipR + Vector2(0, -2), acc, 2.0)
 			ci.draw_line((p.shL + p.shR) * 0.5, (kL + kR) * 0.5, acc.darkened(0.3), 1.0)
 			limb(ci, p.shL, p.elbowL, p.handL.lerp(p.elbowL, 0.15), 5.6, 5.0, col)
 			limb(ci, p.shR, p.elbowR, p.handR.lerp(p.elbowR, 0.15), 5.6, 5.0, col)
 		"vest":
-			ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.hipC + Vector2(0, 4), p.w * 0.6, 5.0), col)
+			SpellArt.poly(ci, vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.hipC + Vector2(0, 4), p.w * 0.6, 5.0), col)
 			ci.draw_line(p.hipL + Vector2(0, 1), p.hipR + Vector2(0, 1), acc, 2.0)
 		"apron":
-			ci.draw_colored_polygon(vol(p, p.shC, p.w, 6.0, p.hipC + Vector2(0, 2), p.w * 0.6, 5.0), acc)
+			SpellArt.poly(ci, vol(p, p.shC, p.w, 6.0, p.hipC + Vector2(0, 2), p.w * 0.6, 5.0), acc)
 			if p.toward:
 				var a: Vector2 = (p.hipL + p.hipR) * 0.5 + fwd(p, 2)
-				ci.draw_colored_polygon(PackedVector2Array([a + lat(p, -6) + Vector2(0, -12), a + lat(p, 6) + Vector2(0, -12), a + lat(p, 7) + Vector2(0, 20), a + lat(p, -7) + Vector2(0, 20)]), col)
+				SpellArt.poly(ci, PackedVector2Array([a + lat(p, -6) + Vector2(0, -12), a + lat(p, 6) + Vector2(0, -12), a + lat(p, 7) + Vector2(0, 20), a + lat(p, -7) + Vector2(0, 20)]), col)
 		"pauldron":
 			for s in [p.shL, p.shR]:
 				ellipse(ci, s + Vector2(0, -1), 5.0, 3.6, col)
@@ -271,6 +271,58 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 			ci.draw_circle(top, 2.0, Color(1, 0.95, 0.75))
 		"mimic":
 			draw_mimic(ci, p, it)
+		"book":
+			draw_book(ci, p, it)
+		"wizardhat":
+			# aba larga e ponta caída para trás
+			ellipse(ci, p.head + Vector2(0, -4), 11.0, 4.0, col.darkened(0.2))
+			var tip: Vector2 = p.head + Vector2(0, -26) - fwd(p, 6) + lat(p, 3)
+			SpellArt.poly(ci, PackedVector2Array([p.head + lat(p, -6.5) + Vector2(0, -5), p.head + lat(p, 6.5) + Vector2(0, -5), tip]), col)
+			ci.draw_line(p.head + lat(p, -6) + Vector2(0, -6), p.head + lat(p, 6) + Vector2(0, -6), acc, 2.0, true)
+			ci.draw_circle(tip, 1.5, acc)
+			if p.toward:
+				ci.draw_circle(p.head + fwd(p, 2.4) + Vector2(0, 1.0), 4.3, Color(0.03, 0.02, 0.02, 0.5))
+				eyes(ci, p, Color(1, 0.75, 0.3), false)
+		"turban":
+			for i in 3:
+				ellipse(ci, p.head + Vector2(0, -3 - i * 2.2), 7.0 - i * 0.8, 3.0, col.lightened(0.08 * (i % 2)))
+			if p.toward:
+				ci.draw_circle(p.head + fwd(p, 5) + Vector2(0, -5), 1.8, acc)
+		"circlet":
+			ellipse(ci, p.head + Vector2(0, -3), 6.2, 2.4, Color(0, 0, 0, 0))
+			ci.draw_arc(p.head + Vector2(0, -3), 6.0, PI * 0.05, PI * 0.95, 12, col, 1.6, true)
+			if p.toward:
+				ci.draw_circle(p.head + fwd(p, 5) + Vector2(0, -4), 1.7, acc)
+		"kilt":
+			SpellArt.poly(ci, vol(p, p.hipC + Vector2(0, -3), p.w * 0.6, 5.0, p.kneeC + Vector2(0, -2), p.w * 1.05, 7.0), col)
+			for i in 5:
+				var tk := (i + 0.5) / 5.0
+				ci.draw_line((p.hipL as Vector2).lerp(p.hipR, tk), ((p.kneeL as Vector2) + lat(p, -3)).lerp((p.kneeR as Vector2) + lat(p, 3), tk), col.darkened(0.3), 1.0, true)
+		"sandals":
+			for q in [p.footL, p.footR]:
+				ellipse(ci, q + Vector2(0, -1), 3.6, 1.8, col)
+				ci.draw_line(q + Vector2(-2, -2), q + Vector2(2, -4), acc, 1.0, true)
+		"wand":
+			var hb: Vector2 = p.handR
+			var wt: Vector2 = hb + Vector2(0, -14) + fwd(p, 5)
+			ci.draw_line(hb + Vector2(0, 3), wt, col, 2.4, true)
+			ci.draw_line(hb + Vector2(0, 3), wt, col.lightened(0.25), 0.8, true)
+			ci.draw_circle(wt, 3.6, Color(acc, 0.25))
+			SpellArt.poly(ci, PackedVector2Array([wt + Vector2(0, -4), wt + Vector2(2.2, 0), wt + Vector2(0, 2.5), wt + Vector2(-2.2, 0)]), acc)
+		"rod":
+			var top2 := staff_top(p)
+			var base2: Vector2 = p.handR + Vector2(0, 24) + fwd(p, 2)
+			ci.draw_line(base2, top2, col, 3.2, true)
+			ci.draw_line(base2, top2, col.lightened(0.3), 1.0, true)
+			for s2 in [-1.0, 1.0]:
+				ci.draw_line(top2 + Vector2(0, 6), top2 + lat(p, s2 * 5) + Vector2(0, -2), col, 1.6, true)
+			ci.draw_circle(top2, 7.5, Color(acc, 0.22))
+			SpellArt.poly(ci, PackedVector2Array([top2 + Vector2(0, -6), top2 + Vector2(3.5, 0), top2 + Vector2(0, 5), top2 + Vector2(-3.5, 0)]), acc)
+			ci.draw_circle(top2 + Vector2(-1, -1.5), 1.2, Color(1, 1, 1, 0.9))
+		"ring":
+			ci.draw_circle(p.handR, 3.2, Color(acc, 0.35))
+			ci.draw_arc(p.handR, 2.0, 0, TAU, 10, col, 1.2, true)
+			ci.draw_circle(p.handR + Vector2(0, -1.5), 1.0, acc)
 		"wolfcape":
 			draw_wolfcape_back(ci, p, it)
 		"wolfskirt":
@@ -299,7 +351,7 @@ static func draw_cloth(ci: CanvasItem, p: Dictionary, top: Vector2, bot: Vector2
 		right.append(c + lat(p, ww) + fwd(p, -wv))
 	right.reverse()
 	var poly := left + right
-	ci.draw_colored_polygon(poly, col)
+	SpellArt.poly(ci, poly, col)
 	outline(ci, poly, col.darkened(0.5))
 	for i in 4:
 		var k2 := (i + 1) / 5.0
@@ -326,7 +378,7 @@ static func draw_mimic(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void
 	var hw := 12.0 * face
 	var hh := 27.0
 	var rect := PackedVector2Array([c + Vector2(-hw, -hh + 3), c + Vector2(0, -hh), c + Vector2(hw, -hh + 3), c + Vector2(hw, hh - 2), c + Vector2(0, hh), c + Vector2(-hw, hh - 2)])
-	ci.draw_colored_polygon(rect, it.placeholder_color.darkened(0.1))
+	SpellArt.poly(ci, rect, it.placeholder_color.darkened(0.1))
 	var rim := rect.duplicate()
 	rim.append(rect[0])
 	ci.draw_polyline(rim, Color(0.42, 0.36, 0.28), 2.0)
@@ -336,17 +388,38 @@ static func draw_mimic(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void
 			var ep: Vector2 = c + Vector2(e.x * hw, e.y)
 			ci.draw_circle(ep, 2.6, Color(acc, 0.3))
 			ci.draw_circle(ep, 1.3, acc)
-		ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-hw * 0.75, 0), c + Vector2(hw * 0.75, 0), c + Vector2(hw * 0.5, 16), c + Vector2(-hw * 0.5, 16)]), Color(0.1, 0.02, 0.02))
-		ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-3, 6), c + Vector2(3, 6), c + Vector2(2, 15), c + Vector2(-2, 15)]), Color(0.55, 0.22, 0.2))
+		SpellArt.poly(ci, PackedVector2Array([c + Vector2(-hw * 0.75, 0), c + Vector2(hw * 0.75, 0), c + Vector2(hw * 0.5, 16), c + Vector2(-hw * 0.5, 16)]), Color(0.1, 0.02, 0.02))
+		SpellArt.poly(ci, PackedVector2Array([c + Vector2(-3, 6), c + Vector2(3, 6), c + Vector2(2, 15), c + Vector2(-2, 15)]), Color(0.55, 0.22, 0.2))
 		for i in 6:
 			var x := lerpf(-hw * 0.65, hw * 0.65, i / 5.0)
-			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(x - 1.6, 0), c + Vector2(x + 1.6, 0), c + Vector2(x, 5)]), Color(0.88, 0.82, 0.68))
-			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(x * 0.8 - 1.4, 16), c + Vector2(x * 0.8 + 1.4, 16), c + Vector2(x * 0.8, 11)]), Color(0.88, 0.82, 0.68))
+			SpellArt.poly(ci, PackedVector2Array([c + Vector2(x - 1.6, 0), c + Vector2(x + 1.6, 0), c + Vector2(x, 5)]), Color(0.88, 0.82, 0.68))
+			SpellArt.poly(ci, PackedVector2Array([c + Vector2(x * 0.8 - 1.4, 16), c + Vector2(x * 0.8 + 1.4, 16), c + Vector2(x * 0.8, 11)]), Color(0.88, 0.82, 0.68))
 		for r in [Vector2(0, -21), Vector2(0, 21)]:
 			ci.draw_circle(c + r, 2.2, Color(0.5, 0.42, 0.3))
 	else:
 		for k in [-0.5, 0.0, 0.5]:
 			ci.draw_line(c + Vector2(k * hw, -hh + 4), c + Vector2(k * hw, hh - 4), Color(0.18, 0.1, 0.06), 1.0)
+
+
+## Livro de feitiços na mão esquerda (fica onde fica o escudo): capa, cantoneiras e runa brilhando.
+static func draw_book(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
+	var c := shield_center(p) + Vector2(0, -6)
+	var f: Vector2 = p.f
+	var face := absf(f.y) * 0.7 + 0.3
+	var hw := 8.0 * face
+	var hh := 11.0
+	var col := it.placeholder_color
+	var acc := it.placeholder_accent
+	SpellArt.poly(ci, PackedVector2Array([c + Vector2(-hw, -hh), c + Vector2(hw, -hh + 1), c + Vector2(hw, hh), c + Vector2(-hw, hh - 1)]), col)
+	ci.draw_line(c + Vector2(-hw, -hh), c + Vector2(-hw, hh - 1), col.darkened(0.4), 2.0, true)
+	if p.toward and face > 0.5:
+		# aberto: páginas e runa
+		SpellArt.poly(ci, PackedVector2Array([c + Vector2(-hw + 1.5, -hh + 2), c + Vector2(hw - 1.5, -hh + 3), c + Vector2(hw - 1.5, hh - 2), c + Vector2(-hw + 1.5, hh - 3)]), Color(0.86, 0.8, 0.66))
+		ci.draw_line(c + Vector2(0, -hh + 2), c + Vector2(0, hh - 2), Color(0.5, 0.42, 0.3), 1.0)
+		ci.draw_arc(c + Vector2(hw * 0.45, 0), 2.6, 0, TAU, 10, acc, 1.2, true)
+		ci.draw_circle(c + Vector2(hw * 0.45, 0), 4.5, Color(acc, 0.2))
+	for q in [Vector2(-hw, -hh), Vector2(hw, -hh + 1), Vector2(hw, hh), Vector2(-hw, hh - 1)]:
+		ci.draw_circle(c + q, 1.2, acc.lerp(Color(0.8, 0.7, 0.4), 0.6))
 
 
 static func fur_edge(ci: CanvasItem, a: Vector2, b: Vector2, depth: float, col: Color, n: int, sd: float) -> void:
@@ -378,7 +451,7 @@ static func draw_wolfcape_front(ci: CanvasItem, p: Dictionary, it: EquipmentItem
 	var h: Vector2 = p.head
 	var w: float = p.w
 	# manto de pelo nos ombros
-	ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, -3), w + 3.5, 7.0, p.shC + Vector2(0, 9), w + 1.0, 6.5), col)
+	SpellArt.poly(ci, vol(p, p.shC + Vector2(0, -3), w + 3.5, 7.0, p.shC + Vector2(0, 9), w + 1.0, 6.5), col)
 	if p.toward:
 		fur_edge(ci, p.shL + Vector2(0, 8), (p.shL + p.shR) * 0.5 + Vector2(0, 6), 7.0, col.lightened(0.05), 5, 2.0)
 		fur_edge(ci, (p.shL + p.shR) * 0.5 + Vector2(0, 6), p.shR + Vector2(0, 8), 7.0, col.lightened(0.05), 5, 4.0)
@@ -387,10 +460,10 @@ static func draw_wolfcape_front(ci: CanvasItem, p: Dictionary, it: EquipmentItem
 	# capuz com cabeça de lobo
 	ci.draw_circle(h + Vector2(0, -1), 7.6, col)
 	var snout_base: Vector2 = h + Vector2(0, -5) + fwd(p, 3)
-	ci.draw_colored_polygon(PackedVector2Array([snout_base + lat(p, -3.5), snout_base + lat(p, 3.5), snout_base + fwd(p, 9) + Vector2(0, 1.5)]), col.darkened(0.2))
+	SpellArt.poly(ci, PackedVector2Array([snout_base + lat(p, -3.5), snout_base + lat(p, 3.5), snout_base + fwd(p, 9) + Vector2(0, 1.5)]), col.darkened(0.2))
 	for s in [-1.0, 1.0]:
 		var e: Vector2 = h + lat(p, s * 4.2) + Vector2(0, -6) - fwd(p, 1)
-		ci.draw_colored_polygon(PackedVector2Array([e + lat(p, -2.0), e + lat(p, 2.0), e + Vector2(0, -7)]), col.darkened(0.1))
+		SpellArt.poly(ci, PackedVector2Array([e + lat(p, -2.0), e + lat(p, 2.0), e + Vector2(0, -7)]), col.darkened(0.1))
 		ci.draw_line(e, e + Vector2(0, -6), Color(0.6, 0.08, 0.04), 1.0)
 		if p.toward:
 			var we: Vector2 = h + lat(p, s * 2.6) + Vector2(0, -6) + fwd(p, 4)
@@ -407,7 +480,7 @@ static func draw_wolfskirt(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> 
 	limb(ci, p.hipR, p.kneeR, p.footR + Vector2(0, -3), 6.4, 5.4, Color(0.08, 0.07, 0.075))
 	var kl: Vector2 = Vector2(0, -12 + p.bob) + lat(p, -w * 1.2)
 	var kr: Vector2 = Vector2(0, -12 + p.bob) + lat(p, w * 1.2)
-	ci.draw_colored_polygon(vol(p, p.hipC + Vector2(0, -4), w * 0.65, 5.5, p.kneeC, w * 1.2, 8.5), col)
+	SpellArt.poly(ci, vol(p, p.hipC + Vector2(0, -4), w * 0.65, 5.5, p.kneeC, w * 1.2, 8.5), col)
 	ci.draw_line(p.hipL + Vector2(0, -3), p.hipR + Vector2(0, -3), Color(0.35, 0.28, 0.2), 2.0)
 	fur_edge(ci, kl, kr, 7.0, col, 9, 3.0)
 	for i in 6:
@@ -418,8 +491,12 @@ static func draw_wolfskirt(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> 
 ## Ponto onde o item emite luz (cajado, amuleto, olhos do escudo).
 static func glow_point(it: EquipmentItem, p: Dictionary) -> Vector2:
 	match String(it.placeholder_style):
-		"staff":
+		"staff", "rod":
 			return staff_top(p)
+		"wand":
+			return p.handR + Vector2(0, -14) + fwd(p, 5)
+		"book":
+			return shield_center(p) + Vector2(0, -6)
 		"amulet":
 			return amulet_pos(p)
 		"mimic":

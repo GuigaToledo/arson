@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"diadema_arcano"
+display_name = "Diadema Arcano"
+item_type = "cabeça"
+slot = 0
+level_req = 35
+stats = {"defesa": 4, "magia": 15, "mana": 90}
+placeholder_style = &"circlet"
+placeholder_color = Color(0.75, 0.65, 0.3, 1)
+placeholder_accent = Color(0.6, 0.85, 1, 1)
+glow = 0.4

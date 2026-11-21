@@ -461,6 +461,6 @@ class StatusFx:
 				for i in 4:
 					var x := sin(_t * 7 + i * 1.7) * 10 * s
 					var h := (14 + sin(_t * 11 + i) * 6) * s
-					draw_colored_polygon(PackedVector2Array([Vector2(x - 4, -40 * s), Vector2(x, -40 * s - h), Vector2(x + 4, -40 * s)]), Color(1, 0.55, 0.1, 0.6))
+					SpellArt.poly(self, PackedVector2Array([Vector2(x - 4, -40 * s), Vector2(x, -40 * s - h), Vector2(x + 4, -40 * s)]), Color(1, 0.55, 0.1, 0.6))
 			elif el == "raio":
 				SpellArt.jag(self, Vector2(randf_range(-12, 12), -80) * s, Vector2(randf_range(-12, 12), -20) * s, Color(0.85, 0.85, 1, 0.8), 1.2, 4, 5.0)

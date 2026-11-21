@@ -5,6 +5,8 @@ extends CanvasLayer
 const GOLD := Color(0.92, 0.82, 0.6)
 const DIM := Color(0.72, 0.66, 0.58)
 const POTION_PRICE := 20
+## Itens à venda com Brann: [id, preço].
+const SHOP := [["varinha_aprendiz", 30], ["livro_feiticos", 40], ["chapeu_aprendiz", 40], ["sandalias", 20], ["manto_estudioso", 60], ["saia_linho", 30], ["colar_protecao", 150], ["turbante_mistico", 300], ["botas_ligeiras", 350], ["amuleto_mana", 400]]
 ## Tarefas por faixa de nível: [até o nível, monstro, quantidade].
 const TASKS := [[5, "esqueleto", 10], [10, "carnical", 12], [18, "bandido", 15], [28, "cultista", 15], [99999, "golem", 8]]
 
@@ -108,6 +110,20 @@ func _render(say: String) -> void:
 		_col.add_child(_lbl("Poções: %d de vida · %d de mana" % [player.hp_pot, player.mp_pot], 14, DIM))
 		_col.add_child(_row([_btn("Vida ×1", func(): _buy("hp", 1)), _btn("Vida ×5", func(): _buy("hp", 5)), _btn("Vida ×20", func(): _buy("hp", 20))]))
 		_col.add_child(_row([_btn("Mana ×1", func(): _buy("mp", 1)), _btn("Mana ×5", func(): _buy("mp", 5)), _btn("Mana ×20", func(): _buy("mp", 20))]))
+		_col.add_child(_lbl("Itens de mago:", 14, DIM))
+		var row := []
+		for it2 in SHOP:
+			var item := ItemDB.get_item(it2[0])
+			if item == null or player.owns(String(it2[0])):
+				continue
+			var id2: String = it2[0]
+			var pr: int = it2[1]
+			row.append(_btn("%s\n%d ouro (nv %d)" % [item.display_name, pr, item.level_req], func(): _buy_item(id2, pr)))
+			if row.size() == 3:
+				_col.add_child(_row(row))
+				row = []
+		if not row.is_empty():
+			_col.add_child(_row(row))
 	else:
 		var t := ""
 		var tk: Dictionary = player.task
@@ -136,6 +152,15 @@ func _buy(kind: String, q: int) -> void:
 		player.mp_pot += q
 	player.save()
 	_render("Aqui estão %d poção(ões) de %s. Boa caçada!" % [q, "vida" if kind == "hp" else "mana"])
+
+
+func _buy_item(id: String, price: int) -> void:
+	if player.gold < price:
+		_render("Isso custa %d de ouro, e você só tem %d." % [price, player.gold])
+		return
+	player.gold -= price
+	player.give_item(id)
+	_render("Bom uso! Equipe no painel de equipamento (tecla I ou Menu → Equipamento).")
 
 
 func _cure() -> void:

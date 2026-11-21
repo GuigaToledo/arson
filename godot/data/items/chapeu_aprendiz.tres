@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"chapeu_aprendiz"
+display_name = "Chapéu de Aprendiz"
+item_type = "cabeça"
+slot = 0
+level_req = 1
+stats = {"defesa": 1, "magia": 2}
+placeholder_style = &"wizardhat"
+placeholder_color = Color(0.25, 0.2, 0.35, 1)
+placeholder_accent = Color(0.8, 0.7, 0.3, 1)
+glow = 0

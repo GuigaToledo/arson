@@ -12,6 +12,8 @@ const MIRROR := {"E": "W", "W": "E", "NE": "NW", "NW": "NE", "SE": "SW", "SW": "
 @export var item_type: String = "armadura"
 ## Slot compatível.
 @export var slot: EquipSlot.Slot = EquipSlot.Slot.CHEST
+## Nível do personagem para usar.
+@export var level_req: int = 1
 
 @export_group("Sprites")
 ## Animações nomeadas "<animação>_<direção>", ex.: "walk_SE". Vazio = arte provisória.

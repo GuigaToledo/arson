@@ -71,6 +71,13 @@ func _ready() -> void:
 	aura.position = Vector2(0, -30)
 	aura.height = 60.0
 	add_child(aura)
+	if bag.is_empty():
+		bag = START_BAG.duplicate()
+		for id in start_items:
+			if not bag.has(str(id)):
+				bag.append(str(id))
+	equipment.equipment_changed.connect(func(_s, _i): _recalc())
+	_recalc()
 	_aura = StatusAura.new()
 	add_child(_aura)
 	var ca := ClassAura.new()
@@ -84,8 +91,46 @@ func _ready() -> void:
 
 # ------------------------------------------------------------ progresso
 func _recalc() -> void:
-	max_hp = 100.0 + 10.0 * (level - 1)
-	max_mp = 100.0 + 15.0 * (level - 1)
+	var g := gear()
+	max_hp = 100.0 + 10.0 * (level - 1) + float(g.get("vida", 0))
+	max_mp = 100.0 + 15.0 * (level - 1) + float(g.get("mana", 0))
+	var v := 1.0 + float(g.get("velocidade", 0)) / 100.0
+	walk_speed = 120.0 * v
+	run_speed = 210.0 * v
+	hp = minf(hp, max_hp)
+	mp = minf(mp, max_mp)
+
+
+## Atributos somados dos itens equipados.
+func gear() -> Dictionary:
+	return equipment.total_stats() if equipment else {}
+
+
+## Itens que o jogador tem (a bolsa). Equipar só o que tem e com o nível pedido.
+var bag: Array = []
+const START_BAG := ["varinha_aprendiz", "livro_feiticos", "chapeu_aprendiz", "sandalias", "capa_lobo_infernal", "saia_lobo_infernal", "escudo_mimico"]
+
+
+func owns(id: String) -> bool:
+	return bag.has(id)
+
+
+func give_item(id: String) -> void:
+	if not bag.has(id) and ItemDB.get_item(id):
+		bag.append(id)
+		var it := ItemDB.get_item(id)
+		CombatText.add(global_position + Vector2(0, -150), "Novo item: %s" % it.display_name, Color(1, 0.85, 0.35), true)
+		save()
+
+
+func try_equip(it: EquipmentItem) -> bool:
+	if it == null:
+		return false
+	if level < it.level_req:
+		_msg("%s: nível %d" % [it.display_name, it.level_req])
+		return false
+	equipment.equip(it)
+	return true
 
 
 func _load() -> void:
@@ -98,6 +143,12 @@ func _load() -> void:
 		mp_pot = int(c.get_value("jogador", "pocao_mana", 5))
 		saved_pos = c.get_value("jogador", "posicao", Vector2(-1, -1))
 		saved_map = int(c.get_value("jogador", "mapa", 0))
+		var bg = c.get_value("jogador", "bolsa", [])
+		if bg is Array and not bg.is_empty():
+			bag = bg.map(func(x): return str(x))
+		var eq = c.get_value("jogador", "equip", {})
+		if eq is Dictionary and not eq.is_empty():
+			equipment.load_ids(eq)
 		var tk = c.get_value("jogador", "tarefa", {})
 		task = tk if tk is Dictionary and tk.has("type") and Monster.TYPES.has(str(tk.type)) else {}
 		var bb = c.get_value("jogador", "barra", [])
@@ -135,13 +186,35 @@ func save() -> void:
 	c.set_value("jogador", "habilidades", skills)
 	c.set_value("jogador", "barra", bar)
 	c.set_value("jogador", "tarefa", task)
+	c.set_value("jogador", "bolsa", bag)
+	c.set_value("jogador", "equip", equipment.to_ids())
 	if not dead:
 		c.set_value("jogador", "posicao", Iso.to_grid(global_position))
 		c.set_value("jogador", "mapa", map_hash)
 	c.save(Chars.path())
 
 
+## Chance de item ao matar: um item que você ainda não tem, até 5 níveis acima do seu.
+func _roll_drop(src: String) -> void:
+	var t := ""
+	for k in Monster.TYPES:
+		if str(Monster.TYPES[k].name) == src:
+			t = k
+	if t == "" or t == "boneco":
+		return
+	if randf() > (0.35 if t == "golem" else 0.12):
+		return
+	var pool := []
+	for id in ItemDB.items:
+		var it: EquipmentItem = ItemDB.items[id]
+		if it.level_req > 1 and it.level_req <= level + 5 and not bag.has(String(id)):
+			pool.append(String(id))
+	if not pool.is_empty():
+		give_item(pool[randi() % pool.size()])
+
+
 func gain_xp(n: int, g: int, _src: String) -> void:
+	_roll_drop(_src)
 	# conta a morte para a tarefa da sacerdotisa
 	if not task.is_empty() and int(task.count) < int(task.need) and str(Monster.TYPES[task.type].name) == _src:
 		task.count = int(task.count) + 1
@@ -171,6 +244,7 @@ func take_damage(n: int, src: String) -> void:
 		return
 	if src != "Boneco de Treino":
 		n = maxi(1, int(round(n / (1.0 + 0.04 * int(skills.defesa[0])) * (0.8 if buff_t > 0.0 else 1.0))))
+		n = maxi(1, n - int(float(gear().get("defesa", 0)) * 0.6))
 	if shield_hp > 0.0:
 		var ab := minf(shield_hp, n)
 		shield_hp -= ab
@@ -373,6 +447,11 @@ func spell_power(s: Dictionary) -> float:
 		el_lv += elem_level(e)
 	el_lv /= maxf(1, s.els.size())
 	var p := (float(s.get("base", 0.0)) + float(s.get("perL", 0.0)) * level) * (1.0 + 0.06 * el_lv)
+	var g := gear()
+	var bonus := float(g.get("magia", 0))
+	for e in s.els:
+		bonus += float(g.get(e, 0))
+	p *= 1.0 + bonus / 100.0
 	return p * (1.25 if buff_t > 0.0 else 1.0)
 
 
@@ -787,7 +866,7 @@ func _auto_attack(delta: float) -> void:
 	b.global_position = global_position + Vector2(0, -2)
 	b.on_hit = func():
 		if is_instance_valid(tgt) and not tgt.dead:
-			tgt.take_damage(Rules.roll((9.0 + 1.3 * level) * (1.0 + 0.06 * elem_level(elem_a())) * (1.25 if buff_t > 0.0 else 1.0), float(tgt.info.def)), self)
+			tgt.take_damage(Rules.roll((9.0 + 1.3 * level + float(gear().get("ataque", 0))) * (1.0 + 0.06 * elem_level(elem_a())) * (1.25 if buff_t > 0.0 else 1.0), float(tgt.info.def)), self)
 	get_parent().add_child(b)
 
 
@@ -1009,7 +1088,7 @@ class StatusAura:
 					var a := TAU * i / 14.0 + _t * 1.5
 					var p := c + Vector2(cos(a) * 26, sin(a) * 30)
 					var h := 10 + sin(_t * 9 + i) * 5
-					draw_colored_polygon(PackedVector2Array([p + Vector2(-4, 0), p + Vector2(0, -h), p + Vector2(4, 0)]), Color(1, 0.5 + 0.2 * sin(i), 0.1, 0.55))
+					SpellArt.poly(self, PackedVector2Array([p + Vector2(-4, 0), p + Vector2(0, -h), p + Vector2(4, 0)]), Color(1, 0.5 + 0.2 * sin(i), 0.1, 0.55))
 			"lava":  # placas de rocha com veios de lava girando
 				for i in 5:
 					var a := TAU * i / 5.0 + _t * 0.8
@@ -1028,7 +1107,7 @@ class StatusAura:
 					var a := TAU * i / 9.0
 					var p := c + Vector2(cos(a) * 22, sin(a) * 28)
 					var tip := p + Vector2(cos(a), sin(a)) * 10
-					draw_colored_polygon(PackedVector2Array([p + Vector2(-3, 0), tip, p + Vector2(3, 0)]), Color(0.8, 0.95, 1, 0.75))
+					SpellArt.poly(self, PackedVector2Array([p + Vector2(-3, 0), tip, p + Vector2(3, 0)]), Color(0.8, 0.95, 1, 0.75))
 			"vento":  # vento girando
 				for i in 3:
 					var a0 := _t * 5.0 + i * 2.1
@@ -1074,6 +1153,6 @@ class StatusAura:
 				var sgn := -1 if wi == 0 else 1
 				var wc: Color = wing_cols[wi]
 				var pts := PackedVector2Array([Vector2(0, -52), Vector2(sgn * 38 * fl, -88), Vector2(sgn * 52 * fl, -64), Vector2(sgn * 30 * fl, -48)])
-				draw_colored_polygon(pts, Color(wc, 0.5))
+				SpellArt.poly(self, pts, Color(wc, 0.5))
 				for f in 3:
 					draw_line(Vector2(0, -52), Vector2(sgn * (30 + f * 9) * fl, -84 + f * 10), Color(wc.lightened(0.5), 0.7), 1.5)

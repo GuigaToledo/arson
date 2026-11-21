@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"manto_mistico"
+display_name = "Manto Místico"
+item_type = "armadura"
+slot = 1
+level_req = 12
+stats = {"defesa": 4, "mana": 60, "magia": 5}
+placeholder_style = &"robe"
+placeholder_color = Color(0.3, 0.1, 0.35, 1)
+placeholder_accent = Color(0.95, 0.75, 0.35, 1)
+glow = 0

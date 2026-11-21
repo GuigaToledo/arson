@@ -78,13 +78,31 @@ static func parts(parent: Node, pos: Vector2, amount: int, speed: float, life: f
 	return p
 
 
+## Polígono seguro: pula os sem área (ex.: espinho com altura 0) e conserta os torcidos (capa de lado).
+static func poly(n: CanvasItem, pts: PackedVector2Array, col: Color) -> void:
+	if pts.size() < 3:
+		return
+	var area := 0.0
+	for i in pts.size():
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[(i + 1) % pts.size()]
+		area += a.x * b.y - b.x * a.y
+	if absf(area) < 1.0:
+		return
+	if pts.size() > 3 and Geometry2D.triangulate_polygon(pts).is_empty():
+		pts = Geometry2D.convex_hull(pts)
+		if pts.size() < 4:
+			return
+	n.draw_colored_polygon(pts, col)
+
+
 static func ellipse(n: CanvasItem, c: Vector2, rx: float, col: Color, filled := true, w := 2.0) -> void:
 	var pts := PackedVector2Array()
 	for i in 33:
 		var a := TAU * i / 32.0
 		pts.append(c + Vector2(cos(a) * rx, sin(a) * rx * 0.5))
 	if filled:
-		n.draw_colored_polygon(pts, col)
+		poly(n, pts, col)
 	else:
 		n.draw_polyline(pts, col, w, true)
 
@@ -96,7 +114,7 @@ static func rock(n: CanvasItem, c: Vector2, r: float, col: Color, sd: int, rot :
 		var a := TAU * i / 7.0 + rot
 		var h := fposmod(sin(float(sd) * 12.9898 + i * 78.233) * 43758.5453, 1.0)
 		pts.append(c + Vector2(cos(a), sin(a)) * r * (0.7 + h * 0.35))
-	n.draw_colored_polygon(pts, col)
+	poly(n, pts, col)
 	n.draw_polyline(pts + PackedVector2Array([pts[0]]), col.darkened(0.45), 1.2, true)
 	n.draw_line(c + Vector2(-r * 0.3, -r * 0.4), c + Vector2(r * 0.25, -r * 0.5), col.lightened(0.35), 1.2)
 
@@ -114,7 +132,7 @@ static func jag(n: CanvasItem, a: Vector2, b: Vector2, col: Color, w: float, seg
 static func thorn(n: CanvasItem, base: Vector2, tip: Vector2, w: float, col: Color) -> void:
 	var d := (tip - base).normalized()
 	var s := Vector2(-d.y, d.x) * w
-	n.draw_colored_polygon(PackedVector2Array([base + s, tip, base - s]), col)
+	poly(n, PackedVector2Array([base + s, tip, base - s]), col)
 	n.draw_line(base, tip, col.lightened(0.3), 1.0, true)
 
 
@@ -231,7 +249,7 @@ class Proj:
 			"gelo":
 				var n := Vector2(-dir.y, dir.x)
 				var tip := c + dir * 13 * s
-				draw_colored_polygon(PackedVector2Array([tip, c + n * 5 * s, c - dir * 10 * s, c - n * 5 * s]), Color(0.75, 0.92, 1, 0.95))
+				SpellArt.poly(self, PackedVector2Array([tip, c + n * 5 * s, c - dir * 10 * s, c - n * 5 * s]), Color(0.75, 0.92, 1, 0.95))
 				draw_line(c - dir * 9 * s, tip, Color(1, 1, 1), 1.5, true)
 				draw_circle(c, 10 * s, Color(0.6, 0.85, 1, 0.2))
 			"vento":
@@ -356,7 +374,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 				for i in 12:
 					var p := Vector2(rng.randf_range(-1, 1) * rx * 0.8, rng.randf_range(-0.4, 0.4) * rx)
 					var h := rng.randf_range(18, 40) * g
-					n.draw_colored_polygon(PackedVector2Array([p + Vector2(-5, 0), p + Vector2(0, -h), p + Vector2(5, 0)]), Color(0.75, 0.92, 1, 0.85 * a))
+					poly(n, PackedVector2Array([p + Vector2(-5, 0), p + Vector2(0, -h), p + Vector2(5, 0)]), Color(0.75, 0.92, 1, 0.85 * a))
 					n.draw_line(p, p + Vector2(0, -h), Color(1, 1, 1, a), 1.0)
 				ellipse(n, Vector2.ZERO, rx, Color(0.8, 0.95, 1, 0.15 * a)))
 		"vento":  # Rajada: lufadas para fora
@@ -429,7 +447,7 @@ static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, hal
 					var t := dir.angle() - half_ang + 2.0 * half_ang * (i + 0.5) / 8.0
 					var p := Vector2(cos(t), sin(t) * 0.55) * length_px * minf(1.0, k * 1.8) * (0.5 + 0.5 * (i % 2))
 					var d2 := Vector2(cos(t), sin(t) * 0.55)
-					n.draw_colored_polygon(PackedVector2Array([p - d2 * 10 + Vector2(0, -30), p + d2 * 10 + Vector2(0, -30), p + Vector2(0, -36) + Vector2(-d2.y, d2.x) * 4]), Color(0.8, 0.95, 1, 1.0 - k)))
+					poly(n, PackedVector2Array([p - d2 * 10 + Vector2(0, -30), p + d2 * 10 + Vector2(0, -30), p + Vector2(0, -36) + Vector2(-d2.y, d2.x) * 4]), Color(0.8, 0.95, 1, 1.0 - k)))
 		"vento":
 			fx(parent, pos, 0.6, func(n: DrawFx, k: float):
 				for i in 10:
@@ -492,7 +510,7 @@ static func line(parent: Node, a: Vector2, b: Vector2, el: String) -> void:
 					if f <= g:
 						var p := d * f
 						var h := 26.0 * minf(1.0, (g - f) * 6.0) * al
-						n.draw_colored_polygon(PackedVector2Array([p + Vector2(-7, 0), p + Vector2(-1, -h), p + Vector2(7, 0)]), Color(0.42, 0.36, 0.3, al)))
+						poly(n, PackedVector2Array([p + Vector2(-7, 0), p + Vector2(-1, -h), p + Vector2(7, 0)]), Color(0.42, 0.36, 0.3, al)))
 			for i in 5:
 				parts(parent, a + d * (i + 1) / 5.0, 8, 120.0, 0.6, 0.05, Color(0.6, 0.5, 0.4), Color(0.35, 0.3, 0.25), 450.0, 50.0, Vector2.UP, false)
 		_:

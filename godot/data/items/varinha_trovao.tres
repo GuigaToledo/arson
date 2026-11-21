@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"varinha_trovao"
+display_name = "Varinha do Trovão"
+item_type = "arma"
+slot = 7
+level_req = 7
+stats = {"ataque": 14, "vento": 5}
+placeholder_style = &"wand"
+placeholder_color = Color(0.3, 0.3, 0.35, 1)
+placeholder_accent = Color(0.75, 0.75, 1, 1)
+glow = 0.8

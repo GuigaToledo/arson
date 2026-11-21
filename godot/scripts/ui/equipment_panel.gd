@@ -55,7 +55,7 @@ func _build() -> void:
 	vb.add_child(top)
 	var title := Label.new()
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.text = "Mago das Chamas — equipamento"
+	title.text = "Equipamento (I)"
 	title.add_theme_color_override("font_color", Color(1, 0.7, 0.35))
 	top.add_child(title)
 	var close := Button.new()
@@ -90,7 +90,7 @@ func _build() -> void:
 		buttons[slot] = b
 	var row := HBoxContainer.new()
 	vb.add_child(row)
-	for pair in [["Lendário", _equip_all], ["Tirar tudo", _unequip_all]]:
+	for pair in [["Tirar tudo", _unequip_all]]:
 		var b := Button.new()
 		b.text = pair[0]
 		b.focus_mode = Control.FOCUS_NONE
@@ -112,11 +112,11 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 
 func _cycle(slot: int) -> void:
-	var options := ItemDB.for_slot(slot)
+	var options := ItemDB.for_slot(slot).filter(func(it): return player.owns(String(it.id)) and player.level >= it.level_req)
 	var cur := player.equipment.get_item(slot)
 	var idx := options.find(cur)
 	if idx + 1 < options.size():
-		player.equipment.equip(options[idx + 1])
+		player.try_equip(options[idx + 1])
 	else:
 		player.equipment.unequip(slot)
 
@@ -134,16 +134,19 @@ func _unequip_all() -> void:
 func _refresh() -> void:
 	for slot in buttons:
 		var it := player.equipment.get_item(slot)
-		buttons[slot].text = "%s\n%s" % [EquipSlot.slot_name(slot), it.display_name if it else "—"]
+		var n_own := ItemDB.for_slot(slot).filter(func(x): return player.owns(String(x.id))).size()
+		buttons[slot].text = "%s (%d)\n%s" % [EquipSlot.slot_name(slot), n_own, it.display_name if it else "—"]
 		buttons[slot].tooltip_text = _stats_text(it.stats) if it else ""
 	var st := _stats_text(player.equipment.total_stats())
-	stats_label.text = "Atributos: " + (st if st != "" else "nenhum")
+	stats_label.text = "Atributos: " + (st if st != "" else "nenhum") + "\nToque num espaço para trocar pelos seus itens (o número é quantos você tem). Itens caem dos monstros e o Brann vende alguns."
 
 
 func _stats_text(d: Dictionary) -> String:
 	var parts := PackedStringArray()
+	var nomes := {"vida": "vida", "mana": "mana", "defesa": "defesa", "magia": "% magias", "ataque": "ataque", "velocidade": "% velocidade"}
 	for k in d:
-		parts.append("%s +%d" % [k, d[k]])
+		var nm: String = nomes.get(k, "% " + Rules.skill_name(k))
+		parts.append("+%d %s" % [d[k], nm])
 	return ", ".join(parts)
 
 

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"grimorio_tempestade"
+display_name = "Grimório da Tempestade"
+item_type = "livro"
+slot = 8
+level_req = 15
+stats = {"defesa": 3, "vento": 10, "raio": 10}
+placeholder_style = &"book"
+placeholder_color = Color(0.3, 0.32, 0.38, 1)
+placeholder_accent = Color(0.75, 0.7, 1, 1)
+glow = 0.3

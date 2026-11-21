@@ -117,15 +117,15 @@ static func _crystal(ci: CanvasItem, c: Vector2, r: float, col: Color, sd: int) 
 		var a := TAU * i / 6.0
 		var rr := r * (1.3 if i % 2 == 0 else 0.75) * rng.randf_range(0.85, 1.1)
 		pts.append(c + Vector2(cos(a) * rr * 0.8, sin(a) * rr))
-	ci.draw_colored_polygon(pts, col)
+	SpellArt.poly(ci, pts, col)
 	ci.draw_line(c + Vector2(-r * 0.3, -r * 0.6), c + Vector2(r * 0.2, r * 0.3), Color(1, 1, 1, 0.7), 1.0, true)
 
 
 # ------------------------------------------------------------ fogo: chamas flutuando
 static func _flame(ci: CanvasItem, base: Vector2, h: float, w: float, t: float, sd: float) -> void:
 	var sway := sin(t * 8.0 + sd) * w * 0.5
-	ci.draw_colored_polygon(PackedVector2Array([base + Vector2(-w, 0), base + Vector2(sway, -h), base + Vector2(w, 0)]), Color(1, 0.35, 0.05, 0.75))
-	ci.draw_colored_polygon(PackedVector2Array([base + Vector2(-w * 0.55, 0), base + Vector2(sway * 0.6, -h * 0.65), base + Vector2(w * 0.55, 0)]), Color(1, 0.75, 0.2, 0.9))
+	SpellArt.poly(ci, PackedVector2Array([base + Vector2(-w, 0), base + Vector2(sway, -h), base + Vector2(w, 0)]), Color(1, 0.35, 0.05, 0.75))
+	SpellArt.poly(ci, PackedVector2Array([base + Vector2(-w * 0.55, 0), base + Vector2(sway * 0.6, -h * 0.65), base + Vector2(w * 0.55, 0)]), Color(1, 0.75, 0.2, 0.9))
 
 
 static func _fire(ci: CanvasItem, p: Dictionary) -> void:
@@ -221,7 +221,7 @@ static func _water(ci: CanvasItem, p: Dictionary) -> void:
 		var a := TAU * i / 20.0
 		var rr := 10.0 + sin(a * 3 + t * 4.0) * 1.2
 		pts.append(cc + Vector2(cos(a) * rr, sin(a) * rr * 1.45))
-	ci.draw_colored_polygon(pts, col)
+	SpellArt.poly(ci, pts, col)
 	ci.draw_arc(cc + Vector2(-3, -6), 5, PI, PI * 1.6, 8, hi, 1.5, true)
 	ci.draw_circle(p.head, 6.0, col)
 	ci.draw_arc(p.head + Vector2(-1.5, -1.5), 3.5, PI, PI * 1.6, 8, hi, 1.2, true)
@@ -258,7 +258,7 @@ static func _roots(ci: CanvasItem, p: Dictionary) -> void:
 	for q in [p.shL, p.shR, p.head + Vector2(-4, -6), p.head + Vector2(4, -6), p.head + Vector2(0, -8)]:
 		var a := sin(t * 2.0 + q.x) * 0.3
 		ci.draw_set_transform(q, a, Vector2.ONE)
-		ci.draw_colored_polygon(PackedVector2Array([Vector2(0, 0), Vector2(3, -3), Vector2(0, -7), Vector2(-3, -3)]), Color(0.35, 0.65, 0.22))
+		SpellArt.poly(ci, PackedVector2Array([Vector2(0, 0), Vector2(3, -3), Vector2(0, -7), Vector2(-3, -3)]), Color(0.35, 0.65, 0.22))
 		ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	ci.draw_circle(p.head, 5.0, bark)
 	_strands(ci, p.head + Vector2(-5, 0), p.head + Vector2(5, 0), 2, 2.0, bark.darkened(0.2), t)
