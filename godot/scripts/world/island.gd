@@ -44,6 +44,10 @@ func _ready() -> void:
 	sun.shadow_color = Color(0, 0, 0, 0.45)
 	sun.max_distance = 600.0
 	add_child(sun)
+	day_night = DayNight.new()
+	day_night.cm = cm
+	day_night.sun = sun
+	add_child(day_night)
 	_build_ground()
 	entities = Node2D.new()
 	entities.name = "Entidades"
@@ -53,6 +57,7 @@ func _ready() -> void:
 	_build_details()
 	_build_lights()
 	_build_regions()
+	_build_glow()
 	# câmera da tela inicial (o mundo aparece escuro ao fundo)
 	var intro := Camera2D.new()
 	intro.name = "CameraInicial"
@@ -178,6 +183,8 @@ func start_game(slot: int) -> void:
 	gm.on_chat = hud._open_chat
 	gm.on_equip = hud._toggle_panel
 	gm.on_full = hud._fullscreen
+	if "--teste-noite" in OS.get_cmdline_user_args():
+		DayNight.force = 0.85
 	if "--teste-ui" in OS.get_cmdline_user_args():
 		_teste_ui(ui, dlg, gm)
 	for arg in _test_args():
@@ -425,6 +432,40 @@ func _build_lights() -> void:
 	camp.add_child(fl)
 
 
+var day_night: DayNight
+
+
+## Brilhos do mapa: cogumelos verdes nas florestas, cristais coloridos nas cavernas,
+## poças de lava no meio dos morros de pedra.
+func _build_glow() -> void:
+	var n := [0, 0, 0]
+	for y in map.h:
+		for x in map.w:
+			var ch := map.at(x, y)
+			var r := map.tile_rand(x, y, 41)
+			var j := Vector2(map.tile_rand(x, y, 42), map.tile_rand(x, y, 43)) * 0.6 + Vector2(0.2, 0.2)
+			var gp := Vector2(x, y) + j
+			match ch:
+				"f", "j":
+					if r < 0.018:
+						GlowProps.mushrooms(entities, Iso.to_screen(gp), x * 131 + y * 7)
+						n[0] += 1
+				"k":
+					if r < 0.045:
+						GlowProps.crystal(entities, Iso.to_screen(gp), x * 17 + y * 3)
+						n[1] += 1
+				"r":
+					if r < 0.06 and Vector2(x, y).distance_to(map.spawn) > 6.0:
+						var inner := true
+						for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, -1)]:
+							if map.at(x + d.x, y + d.y) != "r":
+								inner = false
+						if inner:
+							GlowProps.lava_pool(entities, Iso.to_screen(Vector2(x + 0.5, y + 0.5)), x * 7 + y * 13, 48.0 + r * 300.0)
+							n[2] += 1
+	print("brilhos: %d cogumelos, %d cristais, %d poças de lava" % n)
+
+
 ## Regiões do continente (gerar_mapa.py): cemitério, caverna, selva e acampamentos.
 const CAMPS := {"b": Vector2(76.5, 66.5), "o": Vector2(124.5, 74.5), "y": Vector2(106.5, 104.5)}
 var regioes: Array = []
@@ -473,11 +514,6 @@ func _build_regions() -> void:
 				"k":
 					if r1 < 0.035:
 						piece("estalagmite", og, og - Vector2(0.15, 0.15), Vector2(0.3, 0.3), flip, false, sc)
-					elif r1 < 0.05:
-						var cr := piece("cristal", og, og - Vector2(0.1, 0.1), Vector2(0.2, 0.2), flip, false)
-						var cl := LightKit.make(Color(0.4, 0.7, 1.0), 0.6, 1.2, false, 0.0)
-						cl.position = cr.tex_foot + Vector2(0, -20)
-						cr.add_child(cl)
 					elif r1 > 0.985:
 						piece("ossos", og, og, Vector2(0.05, 0.05), flip, false)
 				"j":
@@ -641,6 +677,8 @@ func _teste_boneco() -> void:
 func _spawn_characters(classe: String) -> void:
 	player = Player.new()
 	player.classe = classe
+	if day_night:
+		day_night.player = player
 	# skin da classe: peças, olhos e núcleo na cor do elemento
 	var ci := MageClass.info(classe)
 	player.start_items = ci.itens.duplicate()

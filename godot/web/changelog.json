@@ -1,5 +1,19 @@
 [
  {
+  "versao": "0.7.0",
+  "data": "2026-11-21",
+  "titulo": "Dia e noite, brilhos e magias de fogo e lava",
+  "itens": [
+   "Passagem do tempo: o dia dura 15 minutos e a noite 5, igual para todos os jogadores, com relógio no topo da tela",
+   "Amanhecer e entardecer coloridos; à noite as luzes da vila, as fogueiras e os brilhos do mapa se destacam",
+   "Cogumelos que iluminam as florestas e a selva de verde",
+   "Cristais de seis cores iluminando a Caverna Uivante",
+   "Poças de lava borbulhando e iluminando os morros de pedra",
+   "Magias de fogo com chamas animadas de verdade: bola de fogo com cauda, Marca Ardente acende o chão, Sopro de Chamas e Chuva de Fogo deixam o chão queimando",
+   "Magias de lava com magma animado: crosta rachada, veios brilhando, bolhas estourando e respingos que caem no chão"
+  ]
+ },
+ {
   "versao": "0.6.1",
   "data": "2026-11-21",
   "titulo": "Celular: tela cheia e tela sempre acesa",

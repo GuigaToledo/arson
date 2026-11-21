@@ -50,7 +50,11 @@ jobs:
           # continente: leva o jogador aos campos, à caverna e ao acampamento goblin (monstros usam magias)
           timeout 120 $HOME/godot --headless --path godot --quit-after 900 -- --teste-continente 2>&1 | tee -a run.log || true
           # inventário, loja e saque
-          timeout 120 $HOME/godot --headless --path godot --quit-after 120 -- --teste-ui 2>&1 | tee -a run.log || true
+          timeout 120 $HOME/godot --headless --path godot --quit-after 120 -- --teste-ui --teste-noite 2>&1 | tee -a run.log || true
+          # magias de fogo e lava (visual novo)
+          for m in fogo:1 fogo:2 fogo:4 fogo:6 lava:1 lava:2 lava:4 lava:6; do
+            timeout 60 $HOME/godot --headless --path godot --quit-after 240 -- --teste-vermagia=$m 2>&1 | tee -a run.log || true
+          done
           grep -q "TESTE UI ok" run.log || { echo "teste do inventário não terminou"; exit 1; }
           if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Invalid call|Invalid access" import.log run.log; then
             echo "::error::Erros de script encontrados"

@@ -25,6 +25,7 @@ var names: NameTags
 var spellbar: SpellBar
 var skill_panel: SkillPanel
 var task_lbl: Label
+var clock_lbl: Label
 var game_menu: GameMenu
 var _joy_idx := -1
 var _lines: PackedStringArray = PackedStringArray()
@@ -129,6 +130,13 @@ func _build() -> void:
 	run_btn.offset_bottom = -18
 	root.add_child(run_btn)
 
+	clock_lbl = _label(13, Color(0.95, 0.88, 0.7))
+	clock_lbl.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	clock_lbl.offset_left = -60
+	clock_lbl.offset_right = 60
+	clock_lbl.offset_top = 6
+	clock_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(clock_lbl)
 	task_lbl = _label(13, Color(1, 0.85, 0.5))
 	task_lbl.position = Vector2(10, 98)
 	root.add_child(task_lbl)
@@ -280,6 +288,8 @@ func _process(_d: float) -> void:
 	if player == null:
 		return
 	var online := ("%d online%s" % [net.online_count, " · anfitrião" if net.is_host else ""]) if net.enabled else ""
+	if Engine.get_process_frames() % 30 == 0:
+		clock_lbl.text = ("Noite  " if DayNight.is_night_now() else "Dia  ") + DayNight.clock_text()
 	bars.hp = player.hp / player.max_hp
 	bars.mp = player.mp / player.max_mp
 	bars.title = "%s · nível %d" % [player.display_name if player.display_name != "" else MageClass.info(player.classe).nome, player.level]

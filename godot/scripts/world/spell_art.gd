@@ -235,6 +235,133 @@ static func shake(node: Node, amount: float, dur: float) -> void:
 	tw.tween_property(cam, "offset", Vector2(0, -30), 0.05)
 
 
+# ------------------------------------------------------------ fogo e lava animados
+## Língua de fogo tremulando: base no chão, ponta para cima. Camadas vermelha, laranja e amarela.
+static func flame(n: CanvasItem, base: Vector2, h: float, w: float, t: float, sd: float, a := 1.0) -> void:
+	if h < 2.0 or a <= 0.01:
+		return
+	var sway := sin(t * 7.0 + sd * 3.1) * w * 0.35 + sin(t * 13.0 + sd) * w * 0.15
+	for layer in 3:
+		var k: float = [1.0, 0.68, 0.38][layer]
+		var col: Color = [Color(0.9, 0.18, 0.02, 0.55 * a), Color(1, 0.5, 0.08, 0.75 * a), Color(1, 0.88, 0.45, 0.9 * a)][layer]
+		var hh := h * k * (0.9 + 0.1 * sin(t * 17.0 + sd * 5.0 + layer))
+		var ww := w * k
+		var tip := base + Vector2(sway * k, -hh)
+		var pts := PackedVector2Array()
+		for i in 7:
+			var f := i / 6.0
+			var bulge := sin(f * PI) * ww * (1.0 - f * 0.55)
+			pts.append(base.lerp(tip, f) + Vector2(-bulge + sway * f * f * 0.5, 0) + Vector2(0, -sin(f * PI) * 0.0))
+		for i in range(6, -1, -1):
+			var f := i / 6.0
+			var bulge := sin(f * PI) * ww * (1.0 - f * 0.55)
+			pts.append(base.lerp(tip, f) + Vector2(bulge + sway * f * f * 0.5, 0))
+		n.draw_colored_polygon(pts, col)
+
+
+## Várias chamas espalhadas numa elipse (chão em chamas). g = altura 0..1.
+static func flames_in(n: CanvasItem, rx: float, count: int, h: float, t: float, g: float, a: float, sd: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = sd
+	var arr := []
+	for i in count:
+		var ang := rng.randf() * TAU
+		var r := sqrt(rng.randf()) * rx
+		arr.append([Vector2(cos(ang) * r, sin(ang) * r * 0.5), rng.randf_range(0.6, 1.2), rng.randf() * 10.0])
+	arr.sort_custom(func(p, q): return p[0].y < q[0].y)
+	for e in arr:
+		flame(n, e[0], h * e[1] * g, 7.0 + 5.0 * e[1], t, e[2], a)
+
+
+## Lava: crosta escura rachada por cima de magma que se mexe, veios brilhando e bolhas estourando.
+static func lava(n: CanvasItem, c: Vector2, rx: float, t: float, sd: int, a := 1.0, ry_k := 0.5) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = sd
+	var edge := PackedVector2Array()
+	var molten := PackedVector2Array()
+	var ph := rng.randf() * TAU
+	for i in 22:
+		var ang := TAU * i / 22.0
+		var wob := 1.0 + 0.12 * sin(ang * 3.0 + ph) + 0.06 * sin(ang * 7.0 + ph * 2.0)
+		edge.append(c + Vector2(cos(ang), sin(ang) * ry_k) * rx * wob)
+		var mw := wob * (0.8 + 0.05 * sin(t * 2.0 + ang * 4.0))
+		molten.append(c + Vector2(cos(ang), sin(ang) * ry_k) * rx * mw)
+	n.draw_colored_polygon(edge, Color(0.16, 0.05, 0.03, 0.95 * a))
+	n.draw_colored_polygon(molten, Color(0.95, 0.28, 0.03, a))
+	# manchas de magma mais quente deslizando
+	for i in 6:
+		var ang := rng.randf() * TAU + t * (0.25 + rng.randf() * 0.3)
+		var r := rng.randf_range(0.1, 0.55) * rx
+		var p := c + Vector2(cos(ang) * r, sin(ang) * r * ry_k)
+		n.draw_set_transform(p, 0.0, Vector2(1, ry_k))
+		n.draw_circle(Vector2.ZERO, rx * rng.randf_range(0.12, 0.22), Color(1, 0.62 + 0.15 * sin(t * 3.0 + i), 0.12, 0.85 * a))
+		n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# placas de crosta boiando
+	for i in 5:
+		var ang := rng.randf() * TAU + t * 0.15
+		var r := rng.randf_range(0.2, 0.6) * rx
+		var p := c + Vector2(cos(ang) * r, sin(ang) * r * ry_k)
+		var sz := rx * rng.randf_range(0.08, 0.15)
+		var pl := PackedVector2Array()
+		for j in 5:
+			var b := TAU * j / 5.0 + rng.randf() * 0.6
+			pl.append(p + Vector2(cos(b), sin(b) * ry_k) * sz * rng.randf_range(0.7, 1.2))
+		n.draw_colored_polygon(pl, Color(0.22, 0.07, 0.04, 0.9 * a))
+	# veios brilhando
+	for i in 4:
+		var p0 := c + Vector2(rng.randf_range(-0.6, 0.6) * rx, rng.randf_range(-0.25, 0.25) * rx)
+		var pts := PackedVector2Array([p0])
+		for j in 3:
+			p0 += Vector2(rng.randf_range(-0.25, 0.25) * rx, rng.randf_range(-0.1, 0.1) * rx)
+			pts.append(p0)
+		n.draw_polyline(pts, Color(1, 0.9, 0.45, (0.5 + 0.5 * sin(t * 4.0 + i)) * a), 2.0)
+	# bolhas que incham e estouram
+	for i in 5:
+		var p := c + Vector2(rng.randf_range(-0.55, 0.55) * rx, rng.randf_range(-0.22, 0.22) * rx)
+		var b := fmod(t * (0.8 + rng.randf() * 0.6) + rng.randf(), 1.0)
+		if b < 0.75:
+			n.draw_circle(p + Vector2(0, -b * 4.0), 2.0 + b * 6.0, Color(1, 0.55 + b * 0.35, 0.15, a))
+			n.draw_arc(p + Vector2(-1, -b * 4.0 - 1), 1.5 + b * 4.0, PI * 1.1, PI * 1.6, 6, Color(1, 1, 0.8, 0.7 * a), 1.2)
+		else:
+			var q := (b - 0.75) / 0.25
+			for j in 4:
+				var d := Vector2(cos(j * 1.6 + i), -1.0).normalized() * q * 14.0
+				n.draw_circle(p + d + Vector2(0, q * q * 10.0), 1.8 * (1.0 - q), Color(1, 0.7, 0.2, a))
+
+
+## Respingo de lava: gotas em arco que caem e deixam pingos no chão.
+static func lava_splash(parent: Node, pos: Vector2, count: int, spread: float) -> void:
+	var drops := []
+	for i in count:
+		drops.append([Vector2(randf_range(-1, 1), randf_range(-0.5, 0.5)) * spread, randf_range(30, 80), randf_range(2.5, 5.0)])
+	fxn(parent, pos, 0.7, func(n: DrawFx, k: float):
+		for d in drops:
+			var p: Vector2 = d[0] * k + Vector2(0, -sin(k * PI) * d[1] - 30.0 * (1.0 - k))
+			n.draw_circle(p, d[2], Color(0.95, 0.35, 0.05))
+			n.draw_circle(p + Vector2(-1, -1), d[2] * 0.5, Color(1, 0.85, 0.4)))
+	parent.get_tree().create_timer(0.7).timeout.connect(func():
+		if not is_instance_valid(parent):
+			return
+		for d in drops:
+			var at: Vector2 = pos + d[0]
+			var sz: float = d[2]
+			fxg(parent, at, 2.5, func(n: DrawFx, k: float):
+				n.draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
+				n.draw_circle(Vector2.ZERO, sz * 1.6, Color(0.15, 0.05, 0.03, 0.8 * (1.0 - k)))
+				n.draw_circle(Vector2.ZERO, sz * 1.1, Color(1, 0.4 * (1.0 - k) + 0.1, 0.05, 1.0 - k))
+				n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)))
+
+
+## Chão pegando fogo por um tempo.
+static func fire_patch(parent: Node, pos: Vector2, rx: float, dur: float, count := 6) -> void:
+	fx(parent, pos, dur, func(n: DrawFx, k: float):
+		var g := minf(1.0, k * 6.0)
+		var a := 1.0 - maxf(0.0, k - 0.65) / 0.35
+		ellipse(n, Vector2.ZERO, rx * 1.1, Color(1, 0.3, 0.05, 0.12 * a))
+		flames_in(n, rx, count, 34.0, n.t, g, a, n.seed_v))
+	parts(parent, pos + Vector2(0, -10), int(6 + rx * 0.1), 30.0, 1.3, 0.04, Color(1, 0.75, 0.3), Color(0.6, 0.1, 0.0), -70.0, 40.0)
+
+
 # ------------------------------------------------------------ projéteis (magia 1 e fusão 7)
 class Proj:
 	extends Node2D
@@ -252,7 +379,7 @@ class Proj:
 	var _light: PointLight2D
 
 	func _ready() -> void:
-		material = SpellFx._add_mat() if el != "terra" and el != "natureza" else null
+		material = SpellFx._add_mat() if el != "terra" and el != "natureza" and el != "lava" else null
 		z_index = 5
 		_from = global_position
 		_last = target.global_position
@@ -301,14 +428,22 @@ class Proj:
 				for i in range(_trail.size() - 1, 0, -1):
 					var q: Vector2 = _trail[i] - global_position
 					draw_circle(q, (9.0 - i * 0.7) * s, Color(1, 0.35 + i * 0.03, 0.05, 0.35 - i * 0.03))
+				# bola de fogo com chamas viradas para trás (cometa)
+				var back := -dir
+				draw_set_transform(c, back.angle() + PI * 0.5, Vector2.ONE * s)
+				for j in 3:
+					SpellArt.flame(self, Vector2((j - 1) * 4.0, 4.0), 26.0 - absf(j - 1) * 8.0, 7.0, _t, j * 2.3)
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 				draw_circle(c, 10 * s, Color(1, 0.35, 0.05, 0.45))
 				draw_circle(c, 6.5 * s, Color(1, 0.65, 0.15))
 				draw_circle(c, 3.5 * s, Color(1, 0.95, 0.7))
 			"lava":
-				SpellArt.rock(self, c, 8 * s, Color(0.22, 0.08, 0.05), 7, _t * 6.0)
-				draw_line(c + Vector2(-4, -1) * s, c + Vector2(3, 2) * s, Color(1, 0.5, 0.1), 2.0)
-				draw_line(c + Vector2(0, -4) * s, c + Vector2(1, 4) * s, Color(1, 0.7, 0.2), 1.5)
-				draw_circle(c, 12 * s, Color(1, 0.3, 0.05, 0.18))
+				# bolha de magma com crosta, pingando
+				draw_circle(c, 14 * s, Color(1, 0.3, 0.05, 0.22))
+				SpellArt.lava(self, c, 9.0 * s, _t * 2.0, 7, 1.0, 1.0)
+				for i in range(1, _trail.size(), 2):
+					var q: Vector2 = _trail[i] - global_position + Vector2(0, i * 1.5)
+					draw_circle(q, maxf(1.0, (5.0 - i * 0.45) * s), Color(1, 0.45, 0.08, 0.9 - i * 0.08))
 			"agua":
 				var pts := PackedVector2Array()
 				for q in _trail:
@@ -375,9 +510,12 @@ static func impact(parent: Node, pos: Vector2, el: String, big := false) -> void
 	var c := cor(el)
 	var s := 1.6 if big else 1.0
 	match el:
-		"fogo": parts(parent, pos + Vector2(0, -40), int(30 * s), 120.0, 0.6, 0.07, Color(1, 0.85, 0.4), Color(0.8, 0.1, 0.0), -80.0)
+		"fogo":
+			parts(parent, pos + Vector2(0, -40), int(30 * s), 120.0, 0.6, 0.07, Color(1, 0.85, 0.4), Color(0.8, 0.1, 0.0), -80.0)
+			fire_patch(parent, pos, 26.0 * s, 0.9, int(4 * s))
 		"lava":
-			parts(parent, pos + Vector2(0, -36), int(24 * s), 150.0, 0.8, 0.06, Color(1, 0.6, 0.15), Color(0.4, 0.05, 0.0), 420.0, 70.0)
+			parts(parent, pos + Vector2(0, -36), int(14 * s), 150.0, 0.8, 0.05, Color(1, 0.6, 0.15), Color(0.4, 0.05, 0.0), 420.0, 70.0)
+			lava_splash(parent, pos, int(7 * s), 40.0 * s)
 		"agua":
 			parts(parent, pos + Vector2(0, -36), int(30 * s), 160.0, 0.7, 0.045, Color(0.8, 0.95, 1), Color(0.2, 0.45, 1), 520.0, 70.0)
 			fx(parent, pos, 0.5, func(n: DrawFx, k: float): ellipse(n, Vector2.ZERO, 10 + 30 * k * s, Color(0.6, 0.85, 1, 1.0 - k), false, 2.0))
@@ -412,19 +550,26 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 				for i in 6:
 					var t := TAU * i / 6.0 + k * 1.5
 					n.draw_line(Vector2(cos(t), sin(t) * 0.5) * rx * 0.7, Vector2(cos(t + 2.1), sin(t + 2.1) * 0.5) * rx * 0.7, Color(1, 0.8, 0.3, a), 2.0, SpellArt.AA))
+			# a runa acende e o chão pega fogo: chamas na borda e no meio
+			fx(parent, center, 1.6, func(n: DrawFx, k: float):
+				var g := minf(1.0, k * 5.0)
+				var a := 1.0 - maxf(0.0, k - 0.6) / 0.4
+				for i in 14:
+					var t := TAU * i / 14.0
+					flame(n, Vector2(cos(t), sin(t) * 0.5) * rx, (34.0 + 12.0 * sin(i * 1.7)) * g, 9.0, n.t, i * 1.3, a)
+				flames_in(n, rx * 0.6, 7, 46.0, n.t, g, a, n.seed_v))
 			parts(parent, center, 40, 40.0, 1.2, 0.06, Color(1, 0.8, 0.3), Color(0.8, 0.1, 0), -90.0, 180.0)
-		"lava":  # Poça de Lava borbulhando
+		"lava":  # Poça de Lava borbulhando: magma de verdade, bolhas, fumaça e calor
 			fxg(parent, center, 3.0, func(n: DrawFx, k: float):
 				var a := minf(1.0, k * 6.0) * (1.0 - maxf(0.0, k - 0.8) / 0.2)
-				ellipse(n, Vector2.ZERO, rx, Color(0.25, 0.05, 0.02, 0.85 * a))
-				ellipse(n, Vector2.ZERO, rx * 0.85, Color(1, 0.35, 0.05, 0.75 * a))
-				ellipse(n, Vector2.ZERO, rx * 0.5, Color(1, 0.7, 0.2, 0.6 * a))
-				var rng := RandomNumberGenerator.new()
-				rng.seed = n.seed_v
-				for i in 7:
-					var p := Vector2(rng.randf_range(-0.7, 0.7) * rx, rng.randf_range(-0.3, 0.3) * rx)
-					var b := fmod(k * 4.0 + i * 0.37, 1.0)
-					n.draw_arc(p, 3 + b * 6, PI, TAU, 10, Color(1, 0.85, 0.4, (1.0 - b) * a), 1.5, SpellArt.AA))
+				var g := minf(1.0, k * 5.0)
+				lava(n, Vector2.ZERO, rx * (0.55 + 0.45 * g), n.t, n.seed_v, a))
+			fx(parent, center, 3.0, func(n: DrawFx, k: float):
+				var a := minf(1.0, k * 6.0) * (1.0 - maxf(0.0, k - 0.8) / 0.2)
+				ellipse(n, Vector2.ZERO, rx * 1.15, Color(1, 0.35, 0.05, 0.14 * a))
+				flames_in(n, rx * 0.7, 4, 22.0, n.t, 1.0, a * 0.6, n.seed_v))
+			parts(parent, center, 30, 30.0, 2.5, 0.04, Color(1, 0.7, 0.25), Color(0.5, 0.08, 0.0), -60.0, 180.0)
+			parts(parent, center + Vector2(0, -20), 14, 18.0, 2.5, 0.16, Color(0.25, 0.22, 0.2, 0.35), Color(0.1, 0.1, 0.1, 0.0), -40.0, 30.0, Vector2.UP, false)
 		"agua":  # Maré Sufocante: redemoinho
 			fx(parent, center, 1.6, func(n: DrawFx, k: float):
 				var a := 1.0 - k
@@ -499,6 +644,19 @@ static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, hal
 	match el:
 		"fogo":
 			SpellFx.cone(parent, pos, dir, length_px, half_ang, Color(1, 0.85, 0.5), Color(0.8, 0.12, 0.02))
+			# lençol de chamas avançando no cone e o chão queimando onde passou
+			fx(parent, pos, 0.9, func(n: DrawFx, k: float):
+				var a := 1.0 - maxf(0.0, k - 0.55) / 0.45
+				var base := dir.angle()
+				for i in 9:
+					var t := base - half_ang + 2.0 * half_ang * (i + 0.5) / 9.0
+					for j in 3:
+						var f := minf(1.0, k * 2.2) * (0.35 + j * 0.3)
+						var p := Vector2(cos(t), sin(t) * 0.55) * length_px * f
+						flame(n, p, (22.0 + j * 10.0) * (1.0 - absf(f - 0.6)), 8.0 + j * 2.0, n.t, i * 2.1 + j, a))
+			for i in 3:
+				var fp := pos + Vector2(dir.x, dir.y * 0.55) * length_px * (0.45 + i * 0.22)
+				parent.get_tree().create_timer(0.15 + i * 0.1).timeout.connect(func(): fire_patch(parent, fp, 30.0, 1.2, 4))
 			parts(parent, o + dir * length_px * 0.6, 30, 30.0, 1.4, 0.12, Color(0.3, 0.28, 0.26, 0.6), Color(0.1, 0.1, 0.1, 0.0), -50.0, 180.0, Vector2.UP, false)
 		"agua":  # Onda: frente de água avançando
 			fx(parent, pos, 0.7, func(n: DrawFx, k: float):
@@ -546,20 +704,23 @@ static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, hal
 static func line(parent: Node, a: Vector2, b: Vector2, el: String) -> void:
 	var d := b - a
 	match el:
-		"lava":  # Rio de Lava: um rastro de lava no chão que esfria
-			fxg(parent, a, 1.8, func(n: DrawFx, k: float):
-				var g := minf(1.0, k * 4.0)
+		"lava":  # Rio de Lava: magma correndo pelo chão, esfriando no fim
+			var segs := 7
+			for i in segs:
+				var f := (i + 0.5) / segs
+				var p := a + d * f
+				var dl := f * 0.35
+				parent.get_tree().create_timer(dl).timeout.connect(func():
+					fxg(parent, p, 2.0, func(n: DrawFx, k: float):
+						var g := minf(1.0, k * 6.0)
+						var al := 1.0 - maxf(0.0, k - 0.6) / 0.4
+						lava(n, Vector2.ZERO, 30.0 * g, n.t, n.seed_v, al))
+					parts(parent, p + Vector2(0, -6), 5, 50.0, 0.8, 0.04, Color(1, 0.6, 0.15), Color(0.4, 0.05, 0), 260.0, 40.0))
+			fx(parent, a, 1.8, func(n: DrawFx, k: float):
 				var al := 1.0 - maxf(0, k - 0.6) / 0.4
-				var pts := PackedVector2Array()
-				for i in 16:
-					var f := i / 15.0 * g
-					pts.append(d * f + Vector2(-d.normalized().y, d.normalized().x) * sin(f * 10) * 6)
-				if pts.size() > 1:
-					n.draw_polyline(pts, Color(0.25, 0.05, 0.02, al), 18.0, SpellArt.AA)
-					n.draw_polyline(pts, Color(1, 0.35, 0.05, al), 11.0, SpellArt.AA)
-					n.draw_polyline(pts, Color(1, 0.8, 0.3, al), 4.0, SpellArt.AA))
-			for i in 6:
-				parts(parent, a + d * (i + 1) / 6.0 + Vector2(0, -6), 8, 60.0, 0.8, 0.05, Color(1, 0.6, 0.15), Color(0.4, 0.05, 0), 300.0, 40.0)
+				for i in 10:
+					var f := fmod(k * 1.8 + i / 10.0, 1.0)
+					n.draw_circle(d * f, 4.0, Color(1, 0.85, 0.4, al * 0.8)))
 		"raio":  # Corrente Elétrica
 			fx(parent, Vector2.ZERO, 0.4, func(n: DrawFx, k: float):
 				jag(n, a + Vector2(0, -44), b + Vector2(0, -40), Color(0.85, 0.85, 1, 1.0 - k), 3.0, 14, 14.0)
@@ -700,6 +861,11 @@ static func area(parent: Node, center: Vector2, radius: float, el: String, on_im
 static func _fall(parent: Node, p: Vector2, col: Color, dur: float, el: String) -> void:
 	var f: DrawFx = fx(parent, p, dur, func(n: DrawFx, k: float):
 		var q := Vector2(60, -380) * (1.0 - k)
+		if el == "fogo":
+			n.draw_set_transform(q, Vector2(60, -380).angle() + PI * 0.5, Vector2.ONE)
+			for j in 3:
+				flame(n, Vector2((j - 1) * 4.0, 2.0), 30.0 - absf(j - 1) * 9.0, 7.0, n.t, j * 1.7)
+			n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		n.draw_line(q + Vector2(30, -190) * 0.2, q, Color(col, 0.4), 6.0, SpellArt.AA)
 		n.draw_circle(q, 7, col)
 		n.draw_circle(q, 3.5, Color(1, 1, 0.9)))
