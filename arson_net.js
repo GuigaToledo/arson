@@ -12,6 +12,18 @@
 //    ArsonNet.say(texto)         -> mensagem de chat
 // ============================================================
 (function () {
+  // ---- atualização automática: a página sabe a própria versão (arson_net.js?v=xxxx) e
+  // confere version.json a cada minuto. O Godot vê updateReady() e recarrega salvando tudo.
+  const BUILD = (() => { try { return new URL(document.currentScript.src).searchParams.get('v') || ''; } catch (e) { return ''; } })();
+  let NEW_BUILD = '';
+  function checkVersion() {
+    if (!BUILD) return;
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
+      if (j && j.v && j.v !== BUILD) NEW_BUILD = j.v;
+    }).catch(() => { });
+  }
+  setInterval(checkVersion, 60000);
+  setTimeout(checkVersion, 15000);
   const SALA = (new URLSearchParams(location.search).get('sala') || '').replace(/[^a-z0-9-]/gi, '').slice(0, 24);
   const HOST_ID = 'arson-godot-taverna-v1-q9w4z' + (SALA ? '-' + SALA : '');
   const MAX_PLAYERS = 20;
@@ -258,6 +270,11 @@
       if (q) return q;
       try { return localStorage.getItem('arson-g-nome') || ''; } catch (e) { return ''; }
     },
+    build() { return BUILD; },
+    updateReady() { return NEW_BUILD !== ''; },
+    // recarrega para a versão nova e, na volta, entra direto no personagem (pula a tela inicial)
+    reloadForUpdate() { try { sessionStorage.setItem('arson-resume', '1'); } catch (e) { } location.reload(); },
+    takeResume() { try { const r = sessionStorage.getItem('arson-resume') === '1'; sessionStorage.removeItem('arson-resume'); return r; } catch (e) { return false; } },
     saveName(n) { try { localStorage.setItem('arson-g-nome', String(n).slice(0, 16)); } catch (e) { } },
   };
 })();
