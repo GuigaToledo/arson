@@ -148,7 +148,7 @@ func _draw() -> void:
 			title += " · " + Spellbook.TIER_KIND[n.t]
 		desc = Spellbook.spell_desc(n.el, n.t)
 		var sid2 := "%s:%d" % [n.el, n.t]
-		desc += "   ·   Nível da magia %d  ·  melhorias %d/5" % [player.spell_lvl(sid2), player.spell_up(sid2)]
+		desc += "   ·   Melhoria %d/5" % player.spell_up(sid2)
 	var col := Color(0.5, 1, 0.55) if n.ok else Color(1, 0.55, 0.4)
 	draw_string(font, box.position + Vector2(10, 21), title, HORIZONTAL_ALIGNMENT_LEFT, size.x * 0.62, 15, Color(1, 0.88, 0.6))
 	draw_string(font, box.position + Vector2(size.x * 0.64, 21), ("Liberada" if n.ok else "Requer: " + n.req), HORIZONTAL_ALIGNMENT_LEFT, size.x * 0.36 - 8, 13, col)

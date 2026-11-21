@@ -451,17 +451,25 @@ const UPGRADES := [3, 6, 10, 16, 25]
 
 
 func spell_lvl(id: String) -> int:
-	return 1 + int(sqrt(float(spell_pts.get(id, 0))))
+	return spell_up(id)
 
 
-## Quantas das 5 melhorias a magia já tem.
+## Melhorias da magia (1 a 5): a magia nasce na melhoria 1 e ganha +1 a cada nível do elemento,
+## até a 5ª; no nível seguinte libera a próxima magia (por isso elas vêm de 5 em 5).
 func spell_up(id: String) -> int:
-	var lv := spell_lvl(id)
-	var n := 0
-	for t in UPGRADES:
-		if lv >= t:
-			n += 1
-	return n
+	var s := Spells.get_spell(id, classe)
+	if s.is_empty() or not spell_unlocked(id):
+		return 0
+	var t := int(s.tier)
+	var lv: int
+	var req: int
+	if id.begins_with("fus:"):
+		lv = elem_level(elem_b())
+		req = int(FUS_REQ.get(t, 30))
+	else:
+		lv = elem_level(str(s.els[0]))
+		req = tier_req(t)
+	return clampi(lv - req + 1, 1, 5)
 ## Habilidades: nome -> [nível, pontos]. Sobem com o uso e sem limite.
 var skills := {}
 ## Escudo mágico (absorve dano), bênçãos e estados da Luz.
@@ -602,7 +610,7 @@ func spell_power(s: Dictionary) -> float:
 	var p := (float(s.get("base", 0.0)) + float(s.get("perL", 0.0)) * ml) * (1.0 + 0.02 * ml) * magic_mult(s)
 	# nível da própria magia (+2% por nível) e melhorias (+8% cada)
 	var sid := str(s.get("id", ""))
-	p *= (1.0 + 0.02 * (spell_lvl(sid) - 1)) * (1.0 + 0.08 * spell_up(sid))
+	p *= 1.0 + 0.12 * (spell_up(sid) - 1)  # melhorias 1 a 5: até +48%
 	var g := gear()
 	var bonus := float(g.get("magia", 0))
 	for e in s.els:
@@ -626,12 +634,37 @@ func skill_gain(k: String, amt: float) -> void:
 		var col: Color = Spellbook.ELEMENTS[k].cor if Spellbook.ELEMENTS.has(k) else Color(1, 0.78, 0.25)
 		CombatText.add(global_position + Vector2(0, -118), "%s %d!" % [Rules.skill_name(k), sk[0]], col.lightened(0.2), true)
 		SpellFx.level_up(get_parent(), global_position, col)
+		_announce_spells(k)
 		# elemento base no 31: ganha o primeiro nível do segundo elemento
 		if k == elem_a() and int(sk[0]) >= 31 and elem_level(elem_b()) <= 0:
 			skills[elem_b()] = [1, 0.0]
 			var c2: Color = Spellbook.ELEMENTS[elem_b()].cor
 			CombatText.add(global_position + Vector2(0, -150), "NOVO ELEMENTO: %s!" % Spellbook.ELEMENTS[elem_b()].nome, c2, true)
 			SpellFx.level_up(get_parent(), global_position, c2)
+
+
+## Ao subir o nível de um elemento: avisa a melhoria da magia atual ou a magia nova liberada.
+func _announce_spells(k: String) -> void:
+	if not Spellbook.ELEMENTS.has(k):
+		return
+	var lv := elem_level(k)
+	var n: int = Spellbook.ELEMENTS[k].magias.size()
+	var col: Color = Spellbook.ELEMENTS[k].cor
+	for t in range(1, n + 1):
+		var id := "%s:%d" % [k, t]
+		var sp := Spells.get_spell(id, classe)
+		if sp.is_empty():
+			continue
+		if lv == tier_req(t):
+			CombatText.add(global_position + Vector2(0, -170), "NOVA MAGIA: %s!" % sp.nome, col.lightened(0.3), true)
+		elif lv > tier_req(t) and lv <= tier_req(t) + 4:
+			CombatText.add(global_position + Vector2(0, -170), "%s: melhoria %d/5" % [sp.nome, spell_up(id)], col.lightened(0.3), true)
+	if k == elem_b():
+		for t in FUS_REQ:
+			if lv == int(FUS_REQ[t]):
+				var fs := Spells.get_spell("fus:%d" % t, classe)
+				if not fs.is_empty():
+					CombatText.add(global_position + Vector2(0, -190), "MAGIA SUPREMA: %s!" % fs.nome, Color(1, 0.85, 0.4), true)
 
 
 func cast_slot(i: int, world_pos = null) -> void:
@@ -682,7 +715,7 @@ func cast_spell(id: String, world_pos = null) -> void:
 	var col: Color = s.color
 	var els: Array = s.els
 	var pw := spell_power(s)
-	SpellArt.boost = spell_up(id)
+	SpellArt.boost = maxi(0, spell_up(id) - 1)
 	var hard := int(s.tier) >= 2
 	var ok := true
 	match s.type:
@@ -821,17 +854,12 @@ func cast_spell(id: String, world_pos = null) -> void:
 			immortal_t = float(s.dur)
 			_msg("ASCENSÃO! Imortal por 30 s", col)
 			SpellFx.level_up(get_parent(), global_position, col)
-	var up := spell_up(id)
+	var up := spell_up(id) - 1
 	SpellArt.boost = 0
 	if not ok:
 		return
 	if up > 0:
 		SpellArt.upgrade_fx(get_parent(), aim if attack else global_position, col, up)
-	var old_up := up
-	spell_pts[id] = int(spell_pts.get(id, 0)) + 1
-	if spell_up(id) > old_up:
-		CombatText.add(global_position + Vector2(0, -150), "%s: melhoria %d/5!" % [s.nome, spell_up(id)], col.lightened(0.3), true)
-		SpellFx.level_up(get_parent(), global_position, col)
 	if attack and invis:
 		invis = false
 	mp -= float(s.mana)
