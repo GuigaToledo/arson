@@ -9,6 +9,9 @@ on:
     paths: ["godot/**", "ferramentas/**", ".github/workflows/visual-qa.yml"]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
   group: visual-qa
   cancel-in-progress: true
@@ -42,10 +45,17 @@ jobs:
             --resolution 1280x720 -- --teste-fotos=$GITHUB_WORKSPACE/fotos 2>&1 | tee fotos.log || true
           ls -la fotos
           python3 ferramentas/vf/folha_contato.py fotos fotos/_folha.png || true
-      - uses: actions/upload-artifact@v4
-        with:
-          name: fotos
-          path: |
-            fotos/
-            fotos.log
-          retention-days: 14
+      - name: Guardar as fotos no ramo visual-qa
+        run: |
+          # fotos em JPG (menores) num ramo separado, substituído a cada rodada
+          cd fotos
+          for f in *.png; do convert "$f" -quality 85 "${f%.png}.jpg" && rm "$f"; done
+          cp ../fotos.log .
+          git init -q
+          git checkout -q -b visual-qa
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "Fotos da inspeção visual do commit ${GITHUB_SHA::7}" > LEIA-ME.txt
+          git add -A
+          git commit -qm "fotos ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" visual-qa
