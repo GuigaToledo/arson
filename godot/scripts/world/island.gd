@@ -27,6 +27,7 @@ func _exit_tree() -> void:
 
 func _ready() -> void:
 	map = WorldMap.load_file(MAP_PATH)
+	Player.map_hash = FileAccess.get_file_as_string(MAP_PATH).hash()
 	Actor.walkable = map.walkable
 	# zona segura: calçamento e construções da vila
 	Rules.safe_check = func(pos: Vector2) -> bool:
@@ -110,6 +111,8 @@ func start_game(slot: int) -> void:
 		_teste_magias.call_deferred()
 	if "--teste-summon" in OS.get_cmdline_user_args():
 		_teste_summon.call_deferred()
+	if "--teste-npc" in OS.get_cmdline_user_args():
+		_teste_npc.call_deferred()
 	if "--teste-boneco" in OS.get_cmdline_user_args():
 		_teste_boneco()
 	var net := NetSync.new()
@@ -123,6 +126,8 @@ func start_game(slot: int) -> void:
 	var perf := Perf.new()
 	perf.name = "Desempenho"
 	add_child(perf)
+	var dlg := NpcDialog.new()
+	add_child(dlg)
 	var gm := GameMenu.new()
 	add_child(gm)
 	gm.bind(player, perf)
@@ -426,6 +431,9 @@ func _spawn_characters(classe: String) -> void:
 	player.name = "Jogador"
 	player.position = Iso.to_screen(map.spawn)
 	entities.add_child(player)
+	# volta onde estava (se o mapa não mudou e o lugar ainda é chão livre)
+	if player.saved_map == Player.map_hash and player.saved_pos.x >= 0 and map.walkable_grid(player.saved_pos):
+		player.global_position = Iso.to_screen(player.saved_pos)
 
 	var guard := Npc.new().configure("Guarda do Templo",
 		{"skin": Color(0.55, 0.42, 0.33), "under": Color(0.2, 0.18, 0.16), "hair": Color(0.1, 0.08, 0.06), "eyes": Color(0.2, 0.15, 0.1)},
@@ -437,11 +445,38 @@ func _spawn_characters(classe: String) -> void:
 	for p in [Vector2(27.5, 31), Vector2(27.5, 42), Vector2(27.5, 31), Vector2(12, 28), Vector2(27.5, 28),
 			Vector2(27.5, 14), Vector2(27.5, 28), Vector2(45, 28)]:
 		pts.append(g(p.x, p.y))
+	# NPCs de conversa (como na versão 3D): mercador de poções e sacerdotisa
+	var brann := Npc.new().configure("Brann, o Mercador",
+		{"skin": Color(0.6, 0.45, 0.35), "under": Color(0.25, 0.2, 0.15), "hair": Color(0.3, 0.2, 0.1), "eyes": Color(0.2, 0.15, 0.1)},
+		["avental_taverna", "calca_tecido", "botas_couro"], "S")
+	brann.role = "mercador"
+	brann.position = Iso.to_screen(_free_tile(map.spawn + Vector2(-2.5, -2.6)))
+	brann.add_to_group("npcs")
+	entities.add_child(brann)
+	var lira := Npc.new().configure("Lira, a Sacerdotisa",
+		{"skin": Color(0.78, 0.62, 0.5), "under": Color(0.8, 0.76, 0.66), "hair": Color(0.85, 0.75, 0.45), "eyes": Color(0.3, 0.5, 0.8)},
+		["capuz_sacerdotisa", "manto_sacerdotisa", "botas_couro"], "S")
+	lira.role = "sacerdotisa"
+	lira.position = Iso.to_screen(_free_tile(map.spawn + Vector2(3.5, -2.6)))
+	lira.add_to_group("npcs")
+	entities.add_child(lira)
+
 	var walker := Npc.new().configure("Viajante",
 		{"skin": Color(0.5, 0.38, 0.3), "under": Color(0.2, 0.17, 0.14), "hair": Color(0.15, 0.1, 0.07), "eyes": Color(0.2, 0.15, 0.1)},
 		["gibao_verde", "calca_tecido", "botas_couro", "capa_viagem"], "S", pts)
 	walker.position = pts[0]
 	entities.add_child(walker)
+
+
+## Casa de chão livre mais perto de um ponto da grade (procura em volta).
+func _free_tile(near: Vector2) -> Vector2:
+	for r in range(0, 8):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				var gp := Vector2(floor(near.x) + dx + 0.5, floor(near.y) + dy + 0.5)
+				if map.walkable_grid(gp) and gp.distance_to(map.spawn) > 1.2:
+					return gp
+	return near
 
 
 ## Poste com lampião (provisório).
@@ -572,3 +607,32 @@ func _teste_summon() -> void:
 	player.cast_spell("fus:5")
 	await get_tree().create_timer(0.5).timeout
 	print("TESTE summon fundido=", player.summons.keys(), " rede=", player.summons_state())
+
+
+func _teste_npc() -> void:
+	await get_tree().create_timer(0.3).timeout
+	var brann: Npc = null
+	var lira: Npc = null
+	for n in get_tree().get_nodes_in_group("npcs"):
+		if n.role == "mercador": brann = n
+		else: lira = n
+	print("TESTE npc brann=", Iso.to_grid(brann.position), " lira=", Iso.to_grid(lira.position), " spawn=", map.spawn)
+	player.gold = 100
+	var p0 := player.hp_pot
+	NpcDialog.inst.open(brann, player)
+	NpcDialog.inst._buy("hp", 5)
+	NpcDialog.inst._buy("mp", 1)
+	print("TESTE npc compra pocoes_vida=", player.hp_pot - p0, " ouro=", player.gold)
+	player.task = {}
+	NpcDialog.inst.open(lira, player)
+	NpcDialog.inst._task()
+	var tk: Dictionary = player.task
+	var nm: String = Monster.TYPES[tk.type].name
+	for i in int(tk.need):
+		player.gain_xp(1, 0, nm)
+	var xp0 := player.xp
+	NpcDialog.inst._task()
+	print("TESTE npc tarefa=", tk.type, " recompensa_xp=", player.xp - xp0, " tarefa_agora=", player.task)
+	NpcDialog.inst.close()
+	player.global_position = brann.global_position + Vector2(0, 40)
+	NpcDialog.inst.open(brann, player)

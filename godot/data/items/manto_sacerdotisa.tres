@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentItem" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/equipment/equipment_item.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"manto_sacerdotisa"
+display_name = "Manto da Sacerdotisa"
+item_type = "armadura"
+slot = 1
+stats = {"defesa": 1}
+placeholder_style = &"robe"
+placeholder_color = Color(0.8, 0.76, 0.66, 1)
+placeholder_accent = Color(0.95, 0.75, 0.3, 1)
+glow = 0

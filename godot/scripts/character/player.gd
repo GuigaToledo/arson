@@ -28,6 +28,15 @@ var foe: Node2D = null
 var spawn_pos := Vector2.ZERO
 var _atk_cd := 0.0
 var _save_t := 10.0
+## Tarefa da sacerdotisa: {type, need, count} (vazio = nenhuma).
+var task := {}
+## Versão do mapa (o mapa mudou numa atualização = volta para o início da vila).
+static var map_hash := 0
+## Onde estava ao sair (grade) e em qual versão do mapa.
+var saved_pos := Vector2(-1, -1)
+var saved_map := 0
+## NPC com quem vai conversar ao chegar perto.
+var _talk: Node2D = null
 
 
 func _init() -> void:
@@ -87,6 +96,10 @@ func _load() -> void:
 		gold = int(c.get_value("jogador", "ouro", 0))
 		hp_pot = int(c.get_value("jogador", "pocao_vida", 5))
 		mp_pot = int(c.get_value("jogador", "pocao_mana", 5))
+		saved_pos = c.get_value("jogador", "posicao", Vector2(-1, -1))
+		saved_map = int(c.get_value("jogador", "mapa", 0))
+		var tk = c.get_value("jogador", "tarefa", {})
+		task = tk if tk is Dictionary and tk.has("type") and Monster.TYPES.has(str(tk.type)) else {}
 		var bb = c.get_value("jogador", "barra", [])
 		if bb is Array and bb.size() == 8:
 			bar = bb.map(func(x): return str(x))
@@ -121,10 +134,19 @@ func save() -> void:
 	c.set_value("jogador", "pocao_mana", mp_pot)
 	c.set_value("jogador", "habilidades", skills)
 	c.set_value("jogador", "barra", bar)
+	c.set_value("jogador", "tarefa", task)
+	if not dead:
+		c.set_value("jogador", "posicao", Iso.to_grid(global_position))
+		c.set_value("jogador", "mapa", map_hash)
 	c.save(Chars.path())
 
 
 func gain_xp(n: int, g: int, _src: String) -> void:
+	# conta a morte para a tarefa da sacerdotisa
+	if not task.is_empty() and int(task.count) < int(task.need) and str(Monster.TYPES[task.type].name) == _src:
+		task.count = int(task.count) + 1
+		if int(task.count) >= int(task.need):
+			CombatText.add(global_position + Vector2(0, -140), "Tarefa concluída! Volte até Lira", Color(1, 0.9, 0.5), true)
 	xp += n
 	gold += g
 	CombatText.add(global_position + Vector2(0, -96), "+%d xp" % n, Color(1, 1, 1))
@@ -206,6 +228,22 @@ func target_nearest() -> void:
 		return
 	list.sort_custom(func(a, b): return a[0] < b[0])
 	foe = list[1][1] if list[0][1] == foe and list.size() > 1 else list[0][1]
+
+
+func npc_at(p: Vector2) -> Node2D:
+	for n in get_tree().get_nodes_in_group("npcs"):
+		var q: Vector2 = n.global_position
+		if absf(p.x - q.x) < 22.0 and p.y < q.y + 12.0 and p.y > q.y - 90.0:
+			return n
+	return null
+
+
+func _open_npc(n: Node2D) -> void:
+	_talk = null
+	target = null
+	facing = Iso.dir_from_vector(n.global_position - global_position)
+	if NpcDialog.inst:
+		NpcDialog.inst.open(n, self)
 
 
 func monster_at(p: Vector2) -> Node2D:
@@ -799,6 +837,15 @@ func _unhandled_input(ev: InputEvent) -> void:
 		return
 	var mb := ev as InputEventMouseButton
 	if mb and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+		var np := npc_at(get_global_mouse_position())
+		if np != null:
+			if Rules.gdist(global_position, np.global_position) <= 2.5:
+				_open_npc(np)
+			else:
+				_talk = np
+				target = np.global_position
+				marker.show_at(target)
+			return
 		var m := monster_at(get_global_mouse_position())
 		if m != null:
 			foe = m
@@ -837,6 +884,8 @@ func _physics_process(delta: float) -> void:
 	if dead:
 		velocity = Vector2.ZERO
 		return
+	if _talk != null and is_instance_valid(_talk) and Rules.gdist(global_position, _talk.global_position) <= 2.2:
+		_open_npc(_talk)
 	var d := Vector2.ZERO
 	if get_viewport().gui_get_focus_owner() == null:
 		d = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")

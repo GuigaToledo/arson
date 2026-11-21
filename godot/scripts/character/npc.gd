@@ -3,6 +3,8 @@ extends Actor
 ## NPC simples: fica parado olhando para um lado ou passeia entre pontos.
 
 var waypoints: Array = []
+## "mercador" ou "sacerdotisa" = dá para conversar (clique/toque).
+var role := ""
 var idle_facing := "S"
 var _wp := 0
 var _wait := 0.0

@@ -24,6 +24,7 @@ var rotate_msg: Label
 var names: NameTags
 var spellbar: SpellBar
 var skill_panel: SkillPanel
+var task_lbl: Label
 var game_menu: GameMenu
 var _joy_idx := -1
 var _lines: PackedStringArray = PackedStringArray()
@@ -122,6 +123,10 @@ func _build() -> void:
 	run_btn.offset_right = 258
 	run_btn.offset_bottom = -18
 	root.add_child(run_btn)
+
+	task_lbl = _label(13, Color(1, 0.85, 0.5))
+	task_lbl.position = Vector2(10, 98)
+	root.add_child(task_lbl)
 
 	skill_panel = SkillPanel.new()
 	skill_panel.player = player
@@ -279,6 +284,13 @@ func _process(_d: float) -> void:
 	bars.gold = player.gold
 	bars.sub = "%s %s" % [net.status, online]
 	CombatText.step(get_process_delta_time())
+	var tk: Dictionary = player.task
+	if tk.is_empty():
+		task_lbl.text = ""
+	elif int(tk.count) >= int(tk.need):
+		task_lbl.text = "Tarefa concluída! Volte até Lira"
+	else:
+		task_lbl.text = "Tarefa: %d/%d %s" % [tk.count, tk.need, Monster.TYPES[tk.type].name]
 	names.foe = player.foe
 	spellbar.queue_redraw()
 	skill_panel.queue_redraw()
