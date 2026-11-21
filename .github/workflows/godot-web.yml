@@ -23,9 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Gerar peças 2D com IA (grátis)
-        run: timeout 1200 python3 ferramentas/gerar_pecas.py || true
-
       - name: Peças de cenário (remove fundo)
         run: |
           pip install --quiet pillow
