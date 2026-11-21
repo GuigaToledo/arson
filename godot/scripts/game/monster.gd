@@ -6,7 +6,7 @@ extends Actor
 
 const TYPES := {
 	"esqueleto": {
-		"name": "Esqueleto", "hp": 40, "atk": 6.0, "def": 0.0, "xp": 14, "gold": [1, 6], "speed": 75.0,
+		"name": "Esqueleto", "sangue": "osso", "hp": 40, "atk": 6.0, "def": 0.0, "xp": 14, "gold": [1, 6], "speed": 75.0,
 		"range": 0.9, "aspd": 1.4, "aggro": 5.0, "scale": 1.0,
 		"colors": {"skin": Color(0.78, 0.74, 0.64), "under": Color(0.32, 0.3, 0.27), "hair": Color(0.78, 0.74, 0.64), "eyes": Color(1, 0.25, 0.1), "glow_eyes": true},
 		"items": ["elmo_ferro"],
@@ -30,13 +30,13 @@ const TYPES := {
 		"items": ["tunica_aprendiz", "capuz_aprendiz", "botas_couro"],
 	},
 	"boneco": {
-		"name": "Boneco de Treino", "hp": 1000, "atk": 1.0, "def": 0.0, "xp": 0, "gold": [0, 0], "speed": 0.0,
+		"name": "Boneco de Treino", "sangue": "palha", "hp": 1000, "atk": 1.0, "def": 0.0, "xp": 0, "gold": [0, 0], "speed": 0.0,
 		"range": 1.3, "aspd": 2.0, "aggro": 2.6, "scale": 1.0, "dummy": true,
 		"colors": {"skin": Color(0.78, 0.64, 0.36), "under": Color(0.6, 0.48, 0.25), "hair": Color(0.85, 0.72, 0.4), "eyes": Color(0.2, 0.15, 0.1)},
 		"items": ["avental_taverna"],
 	},
 	"golem": {
-		"name": "Golem de Pedra", "hp": 320, "atk": 24.0, "def": 6.0, "xp": 160, "gold": [30, 70], "speed": 52.0,
+		"name": "Golem de Pedra", "sangue": "pedra", "hp": 320, "atk": 24.0, "def": 6.0, "xp": 160, "gold": [30, 70], "speed": 52.0,
 		"range": 1.2, "aspd": 2.2, "aggro": 6.0, "scale": 1.55, "el": "terra",
 		"colors": {"skin": Color(0.2, 0.19, 0.19), "under": Color(0.16, 0.15, 0.15), "hair": Color(0.18, 0.17, 0.17), "eyes": Color(1, 0.6, 0.15), "glow_eyes": true, "core": true},
 		"items": [],
@@ -140,6 +140,7 @@ func _physics_process(delta: float) -> void:
 			reach = 8.0
 			if dist > 9.0:
 				foe = null
+				return
 		if _root_t > 0.0 and dist > reach:
 			pass  # preso nas raízes: não anda, só ataca se alcançar
 		elif dist <= reach:
@@ -174,19 +175,25 @@ func _physics_process(delta: float) -> void:
 
 
 func _attack() -> void:
-	play_action("attack", 0.4)
+	if info.has("proj"):
+		play_action("attack", 0.4)
+	elif not info.get("dummy", false):
+		play_action("punch" if randf() < 0.6 else "kick", 0.45)
 	var tgt := foe
 	if info.get("dummy", false):
-		if Rules.gdist(global_position, tgt.global_position) > float(info.range) + 0.6:
+		# o boneco revida em todos ao mesmo tempo (você e as invocações), 1% da vida total de cada um
+		for t2 in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("remote_players") + get_tree().get_nodes_in_group("summons"):
+			if not _valid_foe(t2) or Rules.gdist(global_position, t2.global_position) > 8.0:
+				continue
+			var mh := float(t2.get("max_hp")) if t2.get("max_hp") != null else 100.0 + 10.0 * (int(t2.get("level")) - 1)
+			var dmg := maxi(1, int(ceil(mh * 0.01)))
 			var b2 := Bolt.new()
 			b2.color = Color(0.85, 0.72, 0.4)
-			b2.speed = 420.0
-			b2.target = tgt
+			b2.speed = 520.0
+			b2.target = t2
 			b2.global_position = global_position
-			b2.on_hit = func(): if _valid_foe(tgt): tgt.take_damage(1, display_name)
+			b2.on_hit = func(): if _valid_foe(t2): t2.take_damage(dmg, display_name)
 			get_parent().add_child(b2)
-		elif _valid_foe(tgt):
-			tgt.take_damage(1, display_name)
 		return
 	if info.has("proj"):
 		var b := Bolt.new()
@@ -365,11 +372,13 @@ func take_damage(n: int, by: Node2D, from_net := false) -> void:
 	if NetSync.is_puppet() and not from_net:
 		hurt_t = 0.25
 		CombatText.add(global_position + Vector2(0, -80 * float(info.scale)), str(n), Color(1, 0.35, 0.25))
+		SpellArt.blood(get_parent(), global_position, float(n) / max_hp, str(info.get("sangue", "sangue")), 44.0 * float(info.scale))
 		NetSync.inst.send({"t": "dmg", "i": idx, "n": n})
 		return
 	hp -= n
 	hurt_t = 0.25
 	CombatText.add(global_position + Vector2(0, -80 * float(info.scale)), str(n), Color(1, 0.35, 0.25))
+	SpellArt.blood(get_parent(), global_position, float(n) / max_hp, str(info.get("sangue", "sangue")), 44.0 * float(info.scale))
 	if foe == null and _valid_foe(by):
 		foe = by
 	if info.get("dummy", false):

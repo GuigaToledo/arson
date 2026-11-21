@@ -107,6 +107,16 @@ func _ready() -> void:
 		print("TESTE titulo vaga=", Chars.slot, " classe=", player.classe, " cajado=", player.equipment.get_item(EquipSlot.Slot.MAIN_HAND).id, " salvo=", Chars.info(3), " nome=", player.display_name)
 
 
+## Ganchos de teste: linha de comando (-- --teste-x) ou, no navegador, ?teste=x,y=1 (vira --teste-x, --teste-y=1).
+func _test_args() -> Array:
+	var out: Array = Array(OS.get_cmdline_user_args())
+	if OS.has_feature("web"):
+		var q := str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('teste') || ''", true))
+		for t in q.split(",", false):
+			out.append("--teste-" + t)
+	return out
+
+
 ## Começa o jogo com o personagem da vaga escolhida (chamado pela tela inicial).
 func start_game(slot: int) -> void:
 	var inf := Chars.info(slot)
@@ -129,6 +139,8 @@ func start_game(slot: int) -> void:
 		_teste_summon.call_deferred()
 	if "--teste-npc" in OS.get_cmdline_user_args():
 		_teste_npc.call_deferred()
+	if "--teste-etapa1" in OS.get_cmdline_user_args():
+		_teste_etapa1.call_deferred()
 	if "--teste-boneco" in OS.get_cmdline_user_args():
 		_teste_boneco()
 	var net := NetSync.new()
@@ -156,7 +168,7 @@ func start_game(slot: int) -> void:
 	gm.on_chat = hud._open_chat
 	gm.on_equip = hud._toggle_panel
 	gm.on_full = hud._fullscreen
-	for arg in OS.get_cmdline_user_args():
+	for arg in _test_args():
 		if str(arg).begins_with("--teste-vermagia="):
 			for k in player.skills:
 				player.skills[k] = [8, 0.0]
@@ -684,3 +696,37 @@ func _teste_npc() -> void:
 	NpcDialog.inst.close()
 	player.global_position = brann.global_position + Vector2(0, 40)
 	NpcDialog.inst.open(brann, player)
+
+
+func _teste_etapa1() -> void:
+	await get_tree().create_timer(0.3).timeout
+	for k in player.skills:
+		player.skills[k] = [5, 0.0]
+	player.level = 20
+	player._recalc()
+	player.hp = player.max_hp
+	player.mp = player.max_mp
+	player.cast_spell(player.elem_a() + ":3")
+	print("TESTE escudo elementos=", player.shield_els, " absorcao=", int(player.shield_hp))
+	player.shield_hp = 0.0
+	var dm: Monster = null
+	for c in get_tree().get_nodes_in_group("monsters"):
+		if c.mtype == "boneco":
+			dm = c
+	player.global_position = dm.global_position + Vector2(160, 40)
+	player.bar[4] = player.elem_a() + ":5"
+	player.bar[5] = player.elem_b() + ":5"
+	Settings.auto.summon_auto = true
+	await get_tree().create_timer(6.0).timeout
+	var hp0 := player.hp
+	print("TESTE auto invocacoes=", player.summons.keys(), " vida_jogador=", int(player.hp), "/", int(player.max_hp))
+	var sm = player.summons.values()[0]
+	var shp: float = sm.hp
+	await get_tree().create_timer(4.0).timeout
+	print("TESTE boneco bate jogador_perdeu=", int(hp0 - player.hp), " (1%=", int(ceil(player.max_hp * 0.01)), ") invocacao_perdeu=", int(shp - sm.hp), " (1%=", int(ceil(sm.max_hp * 0.01)), ")")
+	sm._die()
+	player.cds.clear()
+	player.mp = player.max_mp
+	await get_tree().create_timer(2.0).timeout
+	print("TESTE reinvoca depois de morrer=", player.summons.keys(), " boneco_no_lugar=", dm.global_position == dm.home)
+	Settings.auto.summon_auto = false

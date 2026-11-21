@@ -169,7 +169,8 @@ func take_damage(n: int, src: String) -> void:
 	if immortal_t > 0.0:
 		CombatText.add(global_position + Vector2(0, -88), "imune", Color(1, 0.95, 0.6))
 		return
-	n = maxi(1, int(round(n / (1.0 + 0.04 * int(skills.defesa[0])) * (0.8 if buff_t > 0.0 else 1.0))))
+	if src != "Boneco de Treino":
+		n = maxi(1, int(round(n / (1.0 + 0.04 * int(skills.defesa[0])) * (0.8 if buff_t > 0.0 else 1.0))))
 	if shield_hp > 0.0:
 		var ab := minf(shield_hp, n)
 		shield_hp -= ab
@@ -178,6 +179,7 @@ func take_damage(n: int, src: String) -> void:
 		if n <= 0:
 			return
 	hp -= n
+	SpellArt.blood(get_parent(), global_position, float(n) / max_hp)
 	skill_gain("defesa", 1.0)
 	CombatText.add(global_position + Vector2(0, -88), str(n), Color(1, 0.15, 0.1))
 	visual.modulate = Color(1, 0.5, 0.45)
@@ -516,6 +518,12 @@ func cast_spell(id: String, world_pos = null) -> void:
 		"summon":
 			ok = _summon(id, s)
 		"shield":
+			if els.size() == 1 and els[0] != "luz" and elem_level(elem_a()) == elem_level(elem_b()) and elem_level(elem_a()) >= 3:
+				# os dois elementos no mesmo nível: os escudos se fundem e ficam mais fortes
+				els = [elem_a(), elem_b()]
+				pw = spell_power(Spells.get_spell("fus:3", classe))
+				col = (Spellbook.ELEMENTS[elem_a()].cor as Color).lerp(Spellbook.ELEMENTS[elem_b()].cor, 0.5)
+				_msg("Escudos fundidos: %s" % Spellbook.FUSOES[classe][0], col)
 			shield_hp = pw * 1.5
 			shield_t = float(s.dur)
 			shield_col = col
@@ -631,6 +639,28 @@ func receive_ally(e: Dictionary) -> void:
 		"buff":
 			buff_t = maxf(buff_t, clampf(float(e.get("d", 0)), 0, 300))
 			_msg("Aura de Bravura de %s" % de, Color(1, 0.95, 0.6))
+
+
+## Invocação automática: se a invocação está na barra e não está viva (ou morreu), invoca de novo.
+## Se a fundida está na barra e liberada, só ela (para não ficar trocando com as separadas).
+func _auto_summon() -> void:
+	var ids := []
+	for id in bar:
+		var s := Spells.get_spell(str(id), classe)
+		if not s.is_empty() and s.type == "summon" and spell_unlocked(str(id)):
+			ids.append(str(id))
+	if ids.has("fus:5"):
+		ids = ["fus:5"]
+	for id in ids:
+		var s2 := Spells.get_spell(id, classe)
+		var key := "fus" if id.begins_with("fus:") else str(s2.els[0])
+		var cur = summons.get(key)
+		if cur != null and is_instance_valid(cur) and not cur.dead:
+			continue
+		if float(cds.get(id, 0.0)) > 0.0 or mp < float(s2.mana):
+			continue
+		cast_spell(id)
+		return
 
 
 func summon_died(sm: Summon) -> void:
@@ -802,6 +832,8 @@ func _auto_play(delta: float) -> void:
 		if near and near != foe:
 			if not _alive_foe() or Rules.gdist(global_position, near.global_position) + 0.6 < Rules.gdist(global_position, foe.global_position):
 				foe = near
+	if A.get("summon_auto", true):
+		_auto_summon()
 	if not A.ataque or not _alive_foe() or _action_time > 0.0:
 		return
 	var dd := Rules.gdist(global_position, foe.global_position)

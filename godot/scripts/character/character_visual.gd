@@ -128,10 +128,12 @@ func _depth(slot: int, f: Vector2) -> float:
 		return -1.0 - f.y * 5.0
 	if slot == CAPE_FRONT:
 		return 0.6
+	# mão direita = lado r; esquerda = lado -r. O item fica na frente do corpo quando o lado dele
+	# está virado para a câmera, e atrás quando o personagem está de costas (o item fica do outro lado).
 	if slot == S.MAIN_HAND:
-		return 1.0 if r.y >= -0.05 else -2.0
+		return 1.0 if r.y * 0.8 + f.y * 0.6 >= -0.1 else -2.0
 	if slot == S.OFF_HAND:
-		return 1.1 if r.y <= 0.05 else -2.1
+		return 1.1 if -r.y * 0.8 + f.y * 0.6 >= -0.1 else -2.1
 	return BASE_DEPTH.get(slot, 0.0)
 
 

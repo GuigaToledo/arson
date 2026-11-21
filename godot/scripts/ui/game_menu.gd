@@ -274,6 +274,7 @@ func _page_auto() -> Control:
 		_pct("pocao_vida", "Poção de vida automática", "quando a vida chegar a", Color(1, 0.42, 0.35)),
 		_pct("pocao_mana", "Poção de mana automática", "quando a mana chegar a", Color(0.42, 0.66, 1)),
 		_toggle("infinitas", "Poções infinitas", "As poções não acabam (pensado para celular e controle).", Color(0.91, 0.86, 0.8)),
+		_toggle("summon_auto", "Invocação automática", "Se a invocação está na barra, invoca sozinha e invoca de novo quando ela morre.", Color(1, 0.8, 0.5)),
 		_toggle("summon_agressivo", "Invocação agressiva", "Ligado: ataca sozinha o seu alvo e os inimigos perto. Desligado: só revida.", Color(1, 0.7, 0.4)),
 	]:
 		w.custom_minimum_size = Vector2(340, 0)

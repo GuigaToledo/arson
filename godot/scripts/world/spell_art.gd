@@ -619,6 +619,34 @@ static func _fall(parent: Node, p: Vector2, col: Color, dur: float, el: String) 
 			impact(parent, p, el))
 
 
+# ------------------------------------------------------------ sangue
+## Sangue ao levar dano: gotas com gravidade e uma mancha no chão que some devagar.
+## kind: "sangue", "osso" (esqueleto: lascas), "pedra" (golem), "palha" (boneco) ou um elemento (invocação).
+static func blood(parent: Node, pos: Vector2, dmg_frac: float, kind := "sangue", h := 44.0) -> void:
+	var n := int(clampf(6 + dmg_frac * 60.0, 6, 26))
+	match kind:
+		"sangue":
+			parts(parent, pos + Vector2(0, -h), n, 130.0, 0.7, 0.035, Color(0.6, 0.02, 0.02), Color(0.3, 0.0, 0.0), 620.0, 70.0, Vector2.UP, false)
+			var sd := randi()
+			var big := clampf(dmg_frac * 3.0, 0.4, 1.4)
+			fxg(parent, pos + Vector2(randf_range(-6, 6), randf_range(-2, 2)), 7.0, func(nn: DrawFx, k: float):
+				var a := (1.0 - maxf(0.0, k - 0.6) / 0.4) * 0.75
+				var g := minf(1.0, k * 12.0)
+				for i in 5:
+					var hh := fposmod(sin(float(sd) * 1.7 + i * 3.1) * 999.0, 1.0)
+					var p := Vector2(cos(i * 2.4 + sd) * 7.0, sin(i * 2.4 + sd) * 3.0) * hh * big
+					ellipse(nn, p, (3.0 + hh * 5.0) * big * g, Color(0.32, 0.01, 0.01, a)))
+		"osso":
+			parts(parent, pos + Vector2(0, -h), n, 120.0, 0.6, 0.03, Color(0.85, 0.82, 0.72), Color(0.5, 0.48, 0.4), 600.0, 70.0, Vector2.UP, false)
+		"pedra":
+			parts(parent, pos + Vector2(0, -h), n, 120.0, 0.6, 0.04, Color(0.5, 0.45, 0.4), Color(0.3, 0.28, 0.25), 600.0, 70.0, Vector2.UP, false)
+		"palha":
+			parts(parent, pos + Vector2(0, -h), n, 90.0, 0.9, 0.035, Color(0.85, 0.72, 0.4), Color(0.6, 0.48, 0.25), 260.0, 80.0, Vector2.UP, false)
+		_:
+			var c := cor(kind)
+			parts(parent, pos + Vector2(0, -h), n, 110.0, 0.5, 0.04, c.lightened(0.4), c, 200.0)
+
+
 # ------------------------------------------------------------ Luz
 static func light(parent: Node, kind: String, pos: Vector2) -> void:
 	var gold := Color(1, 0.92, 0.55)

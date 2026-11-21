@@ -120,9 +120,10 @@ func take_damage(n: int, src) -> void:
 		tw.tween_property(visual, "position:y", -26.0, 0.15)
 		tw.tween_property(visual, "position:y", 0.0, 0.2)
 		return
-	n = maxi(1, int(round(n * 0.85)))
+	n = maxi(1, int(round(n * (1.0 if str(src) == "Boneco de Treino" else 0.85))))
 	hp -= n
 	_hurt = 0.25
+	SpellArt.blood(get_parent(), global_position, float(n) / max_hp, str(els[0]))
 	CombatText.add(global_position + Vector2(0, -80), str(n), Color(1, 0.5, 0.3))
 	if src is Node2D and is_instance_valid(src):
 		last_attacker = src
