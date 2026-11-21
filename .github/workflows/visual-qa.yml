@@ -1,0 +1,51 @@
+name: Visual QA - screenshots
+
+# Visual Factory, inspeção: roda o jogo com tela virtual (xvfb + OpenGL por software),
+# visita cenas fixas de dia e de noite e guarda os PNG como artefato "fotos".
+# Não bloqueia a publicação do jogo.
+on:
+  push:
+    branches: [main]
+    paths: ["godot/**", "ferramentas/**", ".github/workflows/visual-qa.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: visual-qa
+  cancel-in-progress: true
+
+jobs:
+  fotos:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: "4.4.1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Peças de cenário
+        run: |
+          pip install --quiet pillow numpy
+          python3 ferramentas/desenhar_pecas.py
+          python3 ferramentas/processar_objetos.py arte/objetos godot/assets/objetos
+      - name: Godot e tela virtual
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 mesa-utils libxcursor1 libxinerama1 libxrandr2 libxi6 > /dev/null
+          base=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
+          wget -q $base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -q Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 $HOME/godot
+          $HOME/godot --headless --path godot --import > /dev/null 2>&1 || true
+      - name: Fotografar as cenas
+        run: |
+          mkdir -p fotos
+          export LIBGL_ALWAYS_SOFTWARE=1
+          timeout 600 xvfb-run -a -s "-screen 0 1280x720x24" $HOME/godot --path godot --rendering-driver opengl3 \
+            --resolution 1280x720 -- --teste-fotos=$GITHUB_WORKSPACE/fotos 2>&1 | tee fotos.log || true
+          ls -la fotos
+          python3 ferramentas/vf/folha_contato.py fotos fotos/_folha.png || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fotos
+          path: |
+            fotos/
+            fotos.log
+          retention-days: 14

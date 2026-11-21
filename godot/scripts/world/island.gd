@@ -187,6 +187,9 @@ func start_game(slot: int) -> void:
 		DayNight.force = 0.85
 	if "--teste-ui" in OS.get_cmdline_user_args():
 		_teste_ui(ui, dlg, gm)
+	for arg in OS.get_cmdline_user_args():
+		if str(arg).begins_with("--teste-fotos="):
+			_fotos(str(arg).split("=")[1], hud)
 	for arg in _test_args():
 		if str(arg).begins_with("--teste-vermagia="):
 			for k in player.skills:
@@ -737,6 +740,39 @@ func _spawn_characters(classe: String) -> void:
 
 
 ## Casa de chão livre mais perto de um ponto da grade (procura em volta).
+## Inspeção visual (Visual Factory): leva o jogador a cenas fixas, de dia e de noite,
+## e salva um PNG de cada uma (com e sem a interface) na pasta pedida.
+const FOTO_CENAS := [["vila", Vector2(27, 26)], ["vila_casas", Vector2(22, 22)], ["floresta_ilha", Vector2(12, 36)],
+	["campos", Vector2(82, 30)], ["cemiterio", Vector2(86, 12)], ["caverna", Vector2(116, 22)],
+	["selva", Vector2(96, 84)], ["acampamento_orc", Vector2(124, 77)], ["ciclopes_lava", Vector2(104, 100)]]
+
+
+func _fotos(dir: String, hud: Node) -> void:
+	DirAccess.make_dir_recursive_absolute(dir)
+	player.immortal_t = 99999.0
+	for k in Settings.auto:
+		if typeof(Settings.auto[k]) == TYPE_BOOL:
+			Settings.auto[k] = false
+	for hora in [["dia", 0.3], ["noite", 0.86]]:
+		DayNight.force = float(hora[1])
+		for c in FOTO_CENAS:
+			player.global_position = Iso.to_screen(c[1])
+			player.joy = Vector2.ZERO
+			for f in 45:
+				await get_tree().process_frame
+			var nome := "%s/%s_%s" % [dir, c[0], hora[0]]
+			get_viewport().get_texture().get_image().save_png(nome + ".png")
+			if hora[0] == "dia":
+				hud.visible = false
+				for f in 3:
+					await get_tree().process_frame
+				get_viewport().get_texture().get_image().save_png(nome + "_limpa.png")
+				hud.visible = true
+			print("FOTO ", nome)
+	print("FOTOS ok")
+	get_tree().quit()
+
+
 ## Teste automático do inventário, da loja (venda do saque) e do saque dos chefes.
 func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 	for id in ["gosma_verde", "osso", "pele_lobo", "coroa_goblin"]:
