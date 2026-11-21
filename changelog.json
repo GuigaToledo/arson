@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.9.4",
+  "data": "2026-11-21",
+  "titulo": "Vida e mana em pontos",
+  "itens": [
+   "Barras mostram a vida e a mana em pontos (ex.: Vida 180 / 230)",
+   "Inventário avisa o nível que falta quando você tem colar, anel ou outro item mas ainda não pode usar"
+  ]
+ },
+ {
   "versao": "0.9.3",
   "data": "2026-11-21",
   "titulo": "Perseguição, magias limpas e barra que cresce",
