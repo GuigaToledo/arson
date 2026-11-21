@@ -1,5 +1,21 @@
 [
  {
+  "versao": "0.10.0",
+  "data": "2026-11-21",
+  "titulo": "Efeitos de todos os elementos refeitos",
+  "itens": [
+   "Água: respingos em coroa com gotas de tamanhos diferentes caindo, redemoinho de fitas de água com espuma, parede de onda com crista e espuma, chuva com pingos e respingos",
+   "Gelo: cristais facetados de vários tamanhos brotando aos poucos, névoa fria, flocos de neve girando, lascas que voam no impacto",
+   "Vento: fitas de vento curvas de comprimentos variados, tornado em funil girando com folhas e pedrinhas subindo, poeira",
+   "Raio: raios com galhos e três camadas de brilho, tremendo; tempestade com nuvem escura",
+   "Terra: rachaduras fundas, estacas de pedra subindo uma atrás da outra, pedras facetadas voando, nuvens de poeira",
+   "Natureza: cipós com folhas e espinhos crescendo e balançando, folhas voando, chuva de espinhos variados",
+   "Luz: raios de luz descendo, colunas e brilhos subindo, penas de luz",
+   "Monstros: habilidades com a cara do tema (fogo, gelo, raio, pedra, gosma, teia, trevas, urro), facas, flechas, lanças, teias e gosmas voando, dreno como fio de vida",
+   "Jogador: veneno com bolhas e pingos verdes, lentidão escorrendo nas pernas, teia e raízes prendendo, estrelas no atordoado"
+  ]
+ },
+ {
   "versao": "0.9.8",
   "data": "2026-11-21",
   "titulo": "Fogo novo, bonecos e botões",
