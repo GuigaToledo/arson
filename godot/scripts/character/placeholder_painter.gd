@@ -184,7 +184,24 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 		for k in 5:
 			var a := TAU * k / 5.0 + 0.4
 			ci.draw_line(cc + Vector2(cos(a), sin(a) * 0.6) * 4.0, cc + Vector2(cos(a), sin(a) * 0.6) * 9.5, Color(ccol.darkened(0.1), 0.8), 1.0)
-	eyes(ci, p, c.get("eyes", Color(1, 0.62, 0.15)), c.get("glow_eyes", false))
+	# traços de monstro: orelhas pontudas (goblin/orc), presas (orc/troll), olho único (ciclope)
+	if c.get("orelhas", false):
+		for s in [-1.0, 1.0]:
+			var ear: Vector2 = p.head + lat(p, s * 5.0) + Vector2(0, -1)
+			ci.draw_colored_polygon(PackedVector2Array([ear + Vector2(0, -2), ear + Vector2(0, 2), ear + lat(p, s * 6.0) + Vector2(0, -5)]), skin.darkened(0.1))
+	if c.get("olho_unico", false):
+		if p.toward:
+			var e1: Vector2 = p.head + fwd(p, 3.4) + Vector2(0, -0.4)
+			ci.draw_circle(e1, 2.8, Color(0.95, 0.92, 0.85))
+			ci.draw_circle(e1, 1.5, c.get("eyes", Color(0.8, 0.2, 0.1)))
+			ci.draw_circle(e1, 0.6, Color.BLACK)
+	else:
+		eyes(ci, p, c.get("eyes", Color(1, 0.62, 0.15)), c.get("glow_eyes", false))
+	if c.get("presas", false) and p.toward:
+		var m0: Vector2 = p.head + fwd(p, 3.6) + Vector2(0, 3.2)
+		for s in [-1.0, 1.0]:
+			var t0: Vector2 = m0 + lat(p, s * 1.8)
+			ci.draw_colored_polygon(PackedVector2Array([t0 + Vector2(-0.8, 0), t0 + Vector2(0.8, 0), t0 + Vector2(0, -3)]), Color(0.92, 0.88, 0.75))
 
 
 ## Membro com duas partes (braço: ombro-cotovelo-mão), afinando na ponta, juntas redondas.

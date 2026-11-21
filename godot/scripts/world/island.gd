@@ -426,9 +426,9 @@ func _spawn_monsters() -> void:
 			var r2 := map.tile_rand(x, y, 12)
 			var t := ""
 			if ch == "f" and r < 0.035:
-				t = "bandido" if r2 < 0.6 else "esqueleto"
-			elif ch == "." and r < 0.014:
-				t = "carnical" if r2 < 0.45 else "esqueleto"
+				t = ["bandido", "goblin", "goblin_xama", "troll_jovem", "esqueleto"][int(r2 * 5.0)]
+			elif ch == "." and r < 0.016:
+				t = ["slime_verde", "slime_verde", "slime_agua", "goblin", "esqueleto", "esqueleto_arqueiro"][int(r2 * 6.0)]
 			elif ch == "r" and r < 0.03:
 				t = "golem" if r2 < 0.25 else "cultista"
 			elif ch == ":" and r < 0.01 and gp.distance_to(map.spawn) > 14.0:

@@ -241,6 +241,52 @@ func gain_xp(n: int, g: int, _src: String) -> void:
 		save()
 
 
+# ------------------------------------------------------------ efeitos dos monstros no jogador
+## tipo -> [tempo restante, força]. veneno (dano por segundo), lento, preso, atordoado.
+var debuffs := {}
+var _poison_acc := 0.0
+var _tinted := false
+const DEBUFF_TXT := {"veneno": ["envenenado", Color(0.5, 0.95, 0.3)], "lento": ["lento", Color(0.6, 0.8, 1.0)],
+	"preso": ["preso", Color(0.85, 0.85, 0.8)], "atordoado": ["atordoado", Color(1, 0.9, 0.4)]}
+
+
+func apply_debuff(tipo: String, dur: float, power: float, src: String) -> void:
+	if dead or Rules.is_safe(global_position) or immortal_t > 0.0:
+		return
+	var cur: Array = debuffs.get(tipo, [0.0, 0.0])
+	debuffs[tipo] = [maxf(cur[0], dur), maxf(cur[1], power), src]
+	var t: Array = DEBUFF_TXT.get(tipo, [tipo, Color.WHITE])
+	CombatText.add(global_position + Vector2(0, -104), t[0], t[1])
+
+
+func _tick_debuffs(delta: float) -> void:
+	for k in debuffs.keys():
+		debuffs[k][0] -= delta
+		if debuffs[k][0] <= 0.0:
+			debuffs.erase(k)
+	if debuffs.has("veneno"):
+		_poison_acc += delta
+		if _poison_acc >= 1.0:
+			_poison_acc = 0.0
+			var n := maxi(1, int(debuffs.veneno[1]))
+			hp -= n
+			CombatText.add(global_position + Vector2(0, -88), str(n), Color(0.5, 0.95, 0.3))
+			if hp <= 0.0:
+				_die(str(debuffs.veneno[2]))
+	var tint := Color.WHITE
+	if debuffs.has("veneno"):
+		tint = Color(0.75, 1.0, 0.65)
+	elif debuffs.has("lento"):
+		tint = Color(0.75, 0.85, 1.0)
+	if dead:
+		return
+	if tint != Color.WHITE:
+		visual.modulate = tint
+	elif _tinted:
+		visual.modulate = Color.WHITE
+	_tinted = tint != Color.WHITE
+
+
 func take_damage(n: int, src: String) -> void:
 	if dead or Rules.is_safe(global_position):
 		return
@@ -1071,7 +1117,17 @@ func _physics_process(delta: float) -> void:
 			d = to
 			if get_slide_collision_count() > 0 and get_real_velocity().length() < 5.0:
 				target = null
+	_tick_debuffs(delta)
+	if debuffs.has("preso") or debuffs.has("atordoado"):
+		d = Vector2.ZERO
+	var ws := walk_speed
+	var rs := run_speed
+	if debuffs.has("lento"):
+		walk_speed *= 0.55
+		run_speed *= 0.55
 	move(d, run_toggle or Input.is_physical_key_pressed(KEY_SHIFT), delta)
+	walk_speed = ws
+	run_speed = rs
 	if target != null and velocity == Vector2.ZERO:
 		target = null
 

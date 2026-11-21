@@ -25,7 +25,7 @@
   "items": [
    "elmo_ferro"
   ],
-  "regiao": "Ilha inicial",
+  "regiao": "Campos de Brumavale",
   "desc": "Ossos animados por magia antiga. Lentos e frágeis, mas aparecem em bando."
  },
  "carnical": {
@@ -176,5 +176,1344 @@
   "items": [],
   "regiao": "Morros de Pedra",
   "desc": "Pedra viva com um núcleo de fogo. Muito forte para iniciantes."
+ },
+ "slime_verde": {
+  "name": "Slime Verde",
+  "regiao": "Campos de Brumavale",
+  "desc": "Geleia viva que pula atrás de qualquer coisa que se mexa. O primeiro desafio de todo mago.",
+  "hp": 24,
+  "atk": 4,
+  "def": 0,
+  "xp": 8,
+  "gold": [
+   0,
+   3
+  ],
+  "speed": 55,
+  "range": 0.9,
+  "aspd": 1.5,
+  "aggro": 4.5,
+  "scale": 0.9,
+  "colors": {
+   "main": "#5fbf4a",
+   "dark": "#2f6b25",
+   "belly": "#9fe08a",
+   "eyes": "#101010"
+  },
+  "body": "slime",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "salto",
+    "nome": "Pulo Grudento",
+    "desc": "Salta em cima do alvo.",
+    "cd": 5,
+    "alcance": 3.5,
+    "poder": 1.4,
+    "cor": "#9fe08a"
+   }
+  ]
+ },
+ "slime_agua": {
+  "name": "Slime d'Água",
+  "regiao": "Campos de Brumavale",
+  "desc": "Slime azulado que cospe jatos d'água de longe.",
+  "hp": 34,
+  "atk": 5,
+  "def": 0,
+  "xp": 12,
+  "gold": [
+   1,
+   4
+  ],
+  "speed": 50,
+  "range": 4.5,
+  "aspd": 1.8,
+  "aggro": 6,
+  "scale": 1.0,
+  "colors": {
+   "main": "#4a8fd6",
+   "dark": "#244b7a",
+   "belly": "#9cc9f5",
+   "eyes": "#101010"
+  },
+  "body": "slime",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "disparo",
+    "nome": "Jato Gelado",
+    "desc": "Jato que deixa o alvo lento.",
+    "cd": 7,
+    "alcance": 5,
+    "poder": 1.1,
+    "cor": "#9cc9f5",
+    "efeito": {
+     "tipo": "lento",
+     "dur": 3
+    }
+   }
+  ],
+  "proj": "#7fb8ff",
+  "el": "agua"
+ },
+ "slime_magma": {
+  "name": "Slime de Magma",
+  "regiao": "Campos de Brumavale",
+  "desc": "Slime quente que brilha no escuro. Explode em ondas de calor.",
+  "hp": 60,
+  "atk": 8,
+  "def": 1,
+  "xp": 22,
+  "gold": [
+   2,
+   8
+  ],
+  "speed": 48,
+  "range": 0.9,
+  "aspd": 1.6,
+  "aggro": 5,
+  "scale": 1.15,
+  "colors": {
+   "main": "#c8461a",
+   "dark": "#5a1a0a",
+   "belly": "#ff9a40",
+   "eyes": "#1a0a05",
+   "glow": true,
+   "glow_col": "#ff7a20"
+  },
+  "body": "slime",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "onda",
+    "nome": "Onda de Calor",
+    "desc": "Explode em calor ao redor e queima.",
+    "cd": 7,
+    "raio": 2.2,
+    "poder": 1.3,
+    "cor": "#ff8a30",
+    "efeito": {
+     "tipo": "veneno",
+     "dur": 3,
+     "poder": 3
+    }
+   }
+  ],
+  "el": "fogo"
+ },
+ "goblin": {
+  "name": "Goblin",
+  "regiao": "Acampamento Goblin",
+  "desc": "Pequeno, rápido e covarde em bando. Ataca com facas e foge quando fica sozinho.",
+  "hp": 36,
+  "atk": 6,
+  "def": 0,
+  "xp": 12,
+  "gold": [
+   2,
+   8
+  ],
+  "speed": 110,
+  "range": 0.9,
+  "aspd": 1.0,
+  "aggro": 6,
+  "scale": 0.74,
+  "colors": {
+   "skin": "#6f8f3a",
+   "under": "#4a3520",
+   "hair": "#2a2010",
+   "eyes": "#ffcc33",
+   "orelhas": true
+  },
+  "body": "humano",
+  "items": [
+   "gibao_verde",
+   "calca_tecido"
+  ],
+  "habilidades": [
+   {
+    "tipo": "salto",
+    "nome": "Investida",
+    "desc": "Corre e golpeia de surpresa.",
+    "cd": 6,
+    "alcance": 4,
+    "poder": 1.3,
+    "cor": "#cfe07a"
+   }
+  ]
+ },
+ "goblin_xama": {
+  "name": "Goblin Xamã",
+  "regiao": "Acampamento Goblin",
+  "desc": "Feiticeiro goblin que cura os aliados e envenena de longe.",
+  "hp": 44,
+  "atk": 7,
+  "def": 0,
+  "xp": 18,
+  "gold": [
+   4,
+   12
+  ],
+  "speed": 90,
+  "range": 5,
+  "aspd": 1.9,
+  "aggro": 7,
+  "scale": 0.76,
+  "colors": {
+   "skin": "#5f7f36",
+   "under": "#3a2a5a",
+   "hair": "#2a2010",
+   "eyes": "#a8ff5a",
+   "orelhas": true,
+   "glow_eyes": true
+  },
+  "body": "humano",
+  "items": [
+   "capuz_aprendiz",
+   "tunica_aprendiz"
+  ],
+  "habilidades": [
+   {
+    "tipo": "cura",
+    "nome": "Cura Tribal",
+    "desc": "Cura um aliado ferido.",
+    "cd": 8,
+    "poder": 0.3,
+    "cor": "#7dff6a"
+   },
+   {
+    "tipo": "disparo",
+    "nome": "Dardo Venenoso",
+    "desc": "Dardo que envenena.",
+    "cd": 6,
+    "alcance": 6,
+    "poder": 0.9,
+    "cor": "#9cff5a",
+    "efeito": {
+     "tipo": "veneno",
+     "dur": 4,
+     "poder": 3
+    }
+   }
+  ],
+  "proj": "#9cff5a"
+ },
+ "troll_jovem": {
+  "name": "Troll Jovem",
+  "regiao": "Campos de Brumavale",
+  "desc": "Troll ainda novo. Bate forte e se regenera, mas é lento.",
+  "hp": 95,
+  "atk": 11,
+  "def": 1,
+  "xp": 34,
+  "gold": [
+   4,
+   12
+  ],
+  "speed": 60,
+  "range": 1.0,
+  "aspd": 1.9,
+  "aggro": 5,
+  "scale": 1.2,
+  "colors": {
+   "skin": "#6f7a5a",
+   "under": "#3a2e22",
+   "hair": "#2a2f1f",
+   "eyes": "#ff8a2a",
+   "presas": true
+  },
+  "body": "humano",
+  "items": [
+   "calca_tecido"
+  ],
+  "habilidades": [
+   {
+    "tipo": "onda",
+    "nome": "Pancada no Chão",
+    "desc": "Bate no chão e atordoa quem estiver perto.",
+    "cd": 9,
+    "raio": 1.8,
+    "poder": 1.2,
+    "cor": "#d8c08a",
+    "efeito": {
+     "tipo": "atordoado",
+     "dur": 1.2
+    }
+   }
+  ],
+  "regen": 0.012
+ },
+ "esqueleto_arqueiro": {
+  "name": "Esqueleto Arqueiro",
+  "regiao": "Campos de Brumavale",
+  "desc": "Esqueleto que atira flechas de osso de longe.",
+  "hp": 34,
+  "atk": 6,
+  "def": 0,
+  "xp": 16,
+  "gold": [
+   1,
+   6
+  ],
+  "speed": 70,
+  "range": 5.5,
+  "aspd": 1.8,
+  "aggro": 7,
+  "scale": 1.0,
+  "colors": {
+   "skin": "#c7bda3",
+   "under": "#524a40",
+   "hair": "#c7bda3",
+   "eyes": "#ff4019",
+   "glow_eyes": true
+  },
+  "body": "humano",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "disparo",
+    "nome": "Flecha Perfurante",
+    "desc": "Flecha forte de longe.",
+    "cd": 6,
+    "alcance": 6,
+    "poder": 1.5,
+    "cor": "#f0e6cc",
+    "vel": 520
+   }
+  ],
+  "sangue": "osso",
+  "proj": "#e8dcc0"
+ },
+ "zumbi": {
+  "name": "Zumbi",
+  "regiao": "Cemitério Esquecido",
+  "desc": "Corpo podre que anda devagar. A mordida envenena.",
+  "hp": 80,
+  "atk": 10,
+  "def": 1,
+  "xp": 30,
+  "gold": [
+   2,
+   10
+  ],
+  "speed": 42,
+  "range": 0.9,
+  "aspd": 1.7,
+  "aggro": 5,
+  "scale": 1.0,
+  "colors": {
+   "skin": "#6b7d58",
+   "under": "#3b3328",
+   "hair": "#2a241c",
+   "eyes": "#e8e070",
+   "glow_eyes": true
+  },
+  "body": "humano",
+  "items": [
+   "calca_tecido"
+  ],
+  "habilidades": [],
+  "efeito_ataque": {
+   "tipo": "veneno",
+   "dur": 4,
+   "poder": 2,
+   "chance": 0.4
+  }
+ },
+ "esqueleto_guerreiro": {
+  "name": "Esqueleto Guerreiro",
+  "regiao": "Cemitério Esquecido",
+  "desc": "Antigo soldado de elmo e armadura. Gira a espada em volta.",
+  "hp": 120,
+  "atk": 14,
+  "def": 3,
+  "xp": 55,
+  "gold": [
+   6,
+   18
+  ],
+  "speed": 72,
+  "range": 0.9,
+  "aspd": 1.4,
+  "aggro": 6,
+  "scale": 1.08,
+  "colors": {
+   "skin": "#d2c8ad",
+   "under": "#3a3a40",
+   "hair": "#d2c8ad",
+   "eyes": "#ff3b19",
+   "glow_eyes": true
+  },
+  "body": "humano",
+  "items": [
+   "elmo_ferro",
+   "ombreiras_ferro",
+   "peitoral_couro"
+  ],
+  "habilidades": [
+   {
+    "tipo": "onda",
+    "nome": "Giro da Lâmina",
+    "desc": "Gira a espada e acerta todos em volta.",
+    "cd": 8,
+    "raio": 1.6,
+    "poder": 1.3,
+    "cor": "#e8e2d0"
+   }
+  ],
+  "sangue": "osso"
+ },
+ "fantasma": {
+  "name": "Fantasma",
+  "regiao": "Cemitério Esquecido",
+  "desc": "Alma presa ao cemitério. Atravessa a névoa e suga a vida de longe.",
+  "hp": 70,
+  "atk": 9,
+  "def": 0,
+  "xp": 42,
+  "gold": [
+   3,
+   14
+  ],
+  "speed": 85,
+  "range": 4,
+  "aspd": 1.8,
+  "aggro": 7,
+  "scale": 1.0,
+  "colors": {
+   "main": "#9fc6d8",
+   "dark": "#2a3a48",
+   "belly": "#d8f0ff",
+   "eyes": "#9fe0ff"
+  },
+  "body": "fantasma",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "dreno",
+    "nome": "Toque Gélido",
+    "desc": "Suga a vida do alvo e se cura.",
+    "cd": 6,
+    "alcance": 4,
+    "poder": 1.2,
+    "cor": "#9fe0ff"
+   },
+   {
+    "tipo": "disparo",
+    "nome": "Lamento",
+    "desc": "Grito que deixa o alvo lento.",
+    "cd": 9,
+    "alcance": 5,
+    "poder": 0.8,
+    "cor": "#c8e8ff",
+    "efeito": {
+     "tipo": "lento",
+     "dur": 3
+    }
+   }
+  ],
+  "proj": "#9fe0ff"
+ },
+ "necromante": {
+  "name": "Necromante",
+  "regiao": "Cemitério Esquecido",
+  "desc": "Mago das trevas que comanda o cemitério. Cura os mortos e drena a vida dos vivos.",
+  "hp": 220,
+  "atk": 16,
+  "def": 2,
+  "xp": 140,
+  "gold": [
+   20,
+   50
+  ],
+  "speed": 70,
+  "range": 5.5,
+  "aspd": 2.0,
+  "aggro": 8,
+  "scale": 1.05,
+  "colors": {
+   "skin": "#a8a090",
+   "under": "#2a1a3a",
+   "hair": "#1a1a1a",
+   "eyes": "#b07aff",
+   "glow_eyes": true
+  },
+  "body": "humano",
+  "items": [
+   "capuz_aprendiz",
+   "manto_mistico",
+   "cajado_raiz"
+  ],
+  "habilidades": [
+   {
+    "tipo": "cura",
+    "nome": "Ritual Profano",
+    "desc": "Cura os mortos-vivos feridos em volta.",
+    "cd": 7,
+    "poder": 0.35,
+    "cor": "#b07aff"
+   },
+   {
+    "tipo": "dreno",
+    "nome": "Dreno de Vida",
+    "desc": "Suga a vida do alvo.",
+    "cd": 6,
+    "alcance": 5,
+    "poder": 1.4,
+    "cor": "#c08aff"
+   },
+   {
+    "tipo": "disparo",
+    "nome": "Esfera Sombria",
+    "desc": "Esfera que explode em área.",
+    "cd": 8,
+    "alcance": 6,
+    "poder": 1.4,
+    "area": 1.6,
+    "tamanho": 1.6,
+    "cor": "#8a4aff"
+   }
+  ],
+  "proj": "#a86aff"
+ },
+ "morcego": {
+  "name": "Morcego",
+  "regiao": "Caverna Uivante",
+  "desc": "Voa em bando no escuro das cavernas. Mergulha e morde.",
+  "hp": 28,
+  "atk": 6,
+  "def": 0,
+  "xp": 14,
+  "gold": [
+   0,
+   4
+  ],
+  "speed": 130,
+  "range": 0.9,
+  "aspd": 1.1,
+  "aggro": 6,
+  "scale": 1.0,
+  "colors": {
+   "main": "#3a3036",
+   "dark": "#1a1418",
+   "belly": "#5a4a50",
+   "eyes": "#ff3020"
+  },
+  "body": "morcego",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "salto",
+    "nome": "Mergulho",
+    "desc": "Mergulha em cima do alvo.",
+    "cd": 5,
+    "alcance": 4,
+    "poder": 1.3,
+    "cor": "#a07a80"
+   }
+  ]
+ },
+ "morcego_vampiro": {
+  "name": "Morcego Vampiro",
+  "regiao": "Caverna Uivante",
+  "desc": "Morcego grande que suga sangue para se curar.",
+  "hp": 60,
+  "atk": 10,
+  "def": 0,
+  "xp": 30,
+  "gold": [
+   2,
+   8
+  ],
+  "speed": 120,
+  "range": 0.9,
+  "aspd": 1.3,
+  "aggro": 7,
+  "scale": 1.4,
+  "colors": {
+   "main": "#4a2028",
+   "dark": "#1e0a0e",
+   "belly": "#7a3a44",
+   "eyes": "#ff2030"
+  },
+  "body": "morcego",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "dreno",
+    "nome": "Mordida Vampírica",
+    "desc": "Suga a vida do alvo.",
+    "cd": 6,
+    "alcance": 2.5,
+    "poder": 1.2,
+    "cor": "#ff3040"
+   }
+  ]
+ },
+ "lobo": {
+  "name": "Lobo",
+  "regiao": "Caverna Uivante",
+  "desc": "Caça em matilha. Uiva para chamar os outros e salta no pescoço.",
+  "hp": 55,
+  "atk": 9,
+  "def": 1,
+  "xp": 24,
+  "gold": [
+   1,
+   6
+  ],
+  "speed": 115,
+  "range": 0.9,
+  "aspd": 1.2,
+  "aggro": 7,
+  "scale": 1.0,
+  "colors": {
+   "main": "#6a655e",
+   "dark": "#3a3632",
+   "belly": "#a8a298",
+   "eyes": "#ffcc40"
+  },
+  "body": "quadrupede",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "uivo",
+    "nome": "Uivo da Matilha",
+    "desc": "A matilha fica mais rápida e mais forte.",
+    "cd": 14,
+    "dur": 8,
+    "cor": "#e8d8a0"
+   },
+   {
+    "tipo": "salto",
+    "nome": "Bote",
+    "desc": "Salta de longe em cima do alvo.",
+    "cd": 5,
+    "alcance": 4.5,
+    "poder": 1.4,
+    "cor": "#d8c8a0"
+   }
+  ],
+  "variant": "lobo"
+ },
+ "lobo_caverna": {
+  "name": "Lobo das Cavernas",
+  "regiao": "Caverna Uivante",
+  "desc": "Lobo negro maior, de olhos vermelhos. Lidera as matilhas.",
+  "hp": 95,
+  "atk": 14,
+  "def": 2,
+  "xp": 48,
+  "gold": [
+   4,
+   12
+  ],
+  "speed": 120,
+  "range": 0.9,
+  "aspd": 1.2,
+  "aggro": 8,
+  "scale": 1.25,
+  "colors": {
+   "main": "#2a2628",
+   "dark": "#121012",
+   "belly": "#4a4446",
+   "eyes": "#ff3020"
+  },
+  "body": "quadrupede",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "uivo",
+    "nome": "Uivo Sombrio",
+    "desc": "A matilha fica mais rápida e mais forte.",
+    "cd": 12,
+    "dur": 10,
+    "cor": "#ff6a50"
+   },
+   {
+    "tipo": "salto",
+    "nome": "Bote Feroz",
+    "desc": "Salta e morde com força.",
+    "cd": 5,
+    "alcance": 5,
+    "poder": 1.6,
+    "cor": "#ff8a70",
+    "efeito": {
+     "tipo": "lento",
+     "dur": 2
+    }
+   }
+  ],
+  "variant": "lobo"
+ },
+ "troll_caverna": {
+  "name": "Troll das Cavernas",
+  "regiao": "Caverna Uivante",
+  "desc": "Enorme e quase sem luz nos olhos. Arranca pedras da parede e atira.",
+  "hp": 240,
+  "atk": 20,
+  "def": 4,
+  "xp": 125,
+  "gold": [
+   15,
+   40
+  ],
+  "speed": 55,
+  "range": 1.1,
+  "aspd": 2.2,
+  "aggro": 6,
+  "scale": 1.55,
+  "colors": {
+   "skin": "#5a6656",
+   "under": "#2a2620",
+   "hair": "#1f241a",
+   "eyes": "#ff6a1a",
+   "presas": true,
+   "glow_eyes": true
+  },
+  "body": "humano",
+  "items": [
+   "calca_tecido"
+  ],
+  "habilidades": [
+   {
+    "tipo": "onda",
+    "nome": "Terremoto",
+    "desc": "Bate no chão e atordoa todos em volta.",
+    "cd": 9,
+    "raio": 2.4,
+    "poder": 1.3,
+    "cor": "#c8a878",
+    "efeito": {
+     "tipo": "atordoado",
+     "dur": 1.5
+    }
+   },
+   {
+    "tipo": "disparo",
+    "nome": "Pedrada",
+    "desc": "Atira uma pedra que acerta em área.",
+    "cd": 8,
+    "alcance": 6,
+    "poder": 1.4,
+    "area": 1.4,
+    "tamanho": 1.8,
+    "vel": 300,
+    "cor": "#8a7a66"
+   }
+  ],
+  "regen": 0.01
+ },
+ "urso": {
+  "name": "Urso Pardo",
+  "regiao": "Selva Rubra",
+  "desc": "Dono da selva. Ruge para atordoar e dá patadas pesadas.",
+  "hp": 190,
+  "atk": 18,
+  "def": 3,
+  "xp": 95,
+  "gold": [
+   6,
+   20
+  ],
+  "speed": 70,
+  "range": 1.0,
+  "aspd": 1.8,
+  "aggro": 6,
+  "scale": 1.3,
+  "colors": {
+   "main": "#5a3e28",
+   "dark": "#2e1e12",
+   "belly": "#8a6a4a",
+   "eyes": "#1a0e08"
+  },
+  "body": "quadrupede",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "onda",
+    "nome": "Rugido",
+    "desc": "Ruge e atordoa quem estiver perto.",
+    "cd": 10,
+    "raio": 2.2,
+    "poder": 0.9,
+    "cor": "#e0c090",
+    "efeito": {
+     "tipo": "atordoado",
+     "dur": 1.4
+    }
+   },
+   {
+    "tipo": "salto",
+    "nome": "Investida",
+    "desc": "Corre e derruba o alvo.",
+    "cd": 7,
+    "alcance": 4,
+    "poder": 1.5,
+    "cor": "#c8a070"
+   }
+  ],
+  "variant": "urso"
+ },
+ "pantera": {
+  "name": "Pantera",
+  "regiao": "Selva Rubra",
+  "desc": "Felino negro e silencioso. Salta de muito longe.",
+  "hp": 90,
+  "atk": 15,
+  "def": 1,
+  "xp": 60,
+  "gold": [
+   4,
+   14
+  ],
+  "speed": 140,
+  "range": 0.9,
+  "aspd": 1.1,
+  "aggro": 8,
+  "scale": 1.1,
+  "colors": {
+   "main": "#1e1c22",
+   "dark": "#0e0c10",
+   "belly": "#3a3640",
+   "eyes": "#9fff3a"
+  },
+  "body": "quadrupede",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "salto",
+    "nome": "Bote Silencioso",
+    "desc": "Salta de longe e fere com força.",
+    "cd": 5,
+    "alcance": 6,
+    "poder": 1.8,
+    "cor": "#8aff5a"
+   }
+  ],
+  "variant": "felino"
+ },
+ "onca": {
+  "name": "Onça-pintada",
+  "regiao": "Selva Rubra",
+  "desc": "Felino pintado da selva. Arranha e deixa o alvo sangrando.",
+  "hp": 110,
+  "atk": 16,
+  "def": 2,
+  "xp": 70,
+  "gold": [
+   5,
+   16
+  ],
+  "speed": 130,
+  "range": 0.9,
+  "aspd": 1.2,
+  "aggro": 7,
+  "scale": 1.15,
+  "colors": {
+   "main": "#c8902e",
+   "dark": "#5a3a12",
+   "belly": "#e8c890",
+   "eyes": "#ffe040"
+  },
+  "body": "quadrupede",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "salto",
+    "nome": "Bote",
+    "desc": "Salta e fere com as garras.",
+    "cd": 6,
+    "alcance": 5,
+    "poder": 1.6,
+    "cor": "#ffd060"
+   }
+  ],
+  "variant": "onca",
+  "efeito_ataque": {
+   "tipo": "veneno",
+   "dur": 3,
+   "poder": 3,
+   "chance": 0.35
+  }
+ },
+ "aranha": {
+  "name": "Aranha da Selva",
+  "regiao": "Selva Rubra",
+  "desc": "Aranha do tamanho de um cão. Prende com teia e morde com veneno.",
+  "hp": 70,
+  "atk": 11,
+  "def": 1,
+  "xp": 40,
+  "gold": [
+   2,
+   10
+  ],
+  "speed": 95,
+  "range": 0.9,
+  "aspd": 1.4,
+  "aggro": 6,
+  "scale": 1.0,
+  "colors": {
+   "main": "#3a2e22",
+   "dark": "#1a140e",
+   "belly": "#5a4a3a",
+   "eyes": "#ff2a1a",
+   "mark": "#c83a10"
+  },
+  "body": "aranha",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "disparo",
+    "nome": "Teia",
+    "desc": "Teia que prende o alvo no lugar.",
+    "cd": 8,
+    "alcance": 5,
+    "poder": 0.5,
+    "cor": "#e8e8e0",
+    "efeito": {
+     "tipo": "preso",
+     "dur": 2.2
+    }
+   }
+  ],
+  "efeito_ataque": {
+   "tipo": "veneno",
+   "dur": 4,
+   "poder": 3,
+   "chance": 0.5
+  }
+ },
+ "aranha_gigante": {
+  "name": "Aranha Gigante",
+  "regiao": "Selva Rubra",
+  "desc": "Mãe das aranhas da selva. Teia grossa e veneno forte.",
+  "hp": 210,
+  "atk": 19,
+  "def": 3,
+  "xp": 130,
+  "gold": [
+   10,
+   30
+  ],
+  "speed": 85,
+  "range": 0.9,
+  "aspd": 1.5,
+  "aggro": 7,
+  "scale": 1.7,
+  "colors": {
+   "main": "#2a1e2e",
+   "dark": "#120a14",
+   "belly": "#4a3a50",
+   "eyes": "#ff3a2a",
+   "mark": "#ff5a1a"
+  },
+  "body": "aranha",
+  "items": [],
+  "habilidades": [
+   {
+    "tipo": "disparo",
+    "nome": "Teia Grossa",
+    "desc": "Teia em área que prende.",
+    "cd": 9,
+    "alcance": 6,
+    "poder": 0.6,
+    "area": 1.4,
+    "cor": "#f0f0e8",
+    "efeito": {
+     "tipo": "preso",
+     "dur": 2.5
+    }
+   },
+   {
+    "tipo": "onda",
+    "nome": "Nuvem de Veneno",
+    "desc": "Solta veneno em volta.",
+    "cd": 11,
+    "raio": 2.0,
+    "poder": 0.8,
+    "cor": "#8aff4a",
+    "efeito": {
+     "tipo": "veneno",
+     "dur": 5,
+     "poder": 5
+    }
+   }
+  ],
+  "efeito_ataque": {
+   "tipo": "veneno",
+   "dur": 5,
+   "poder": 6,
+   "chance": 0.6
+  }
+ },
+ "goblin_lanceiro": {
+  "name": "Goblin Lanceiro",
+  "regiao": "Acampamento Goblin",
+  "desc": "Goblin com lança que ataca de um pouco mais longe.",
+  "hp": 50,
+  "atk": 8,
+  "def": 1,
+  "xp": 20,
+  "gold": [
+   3,
+   10
+  ],
+  "speed": 100,
+  "range": 1.4,
+  "aspd": 1.2,
+  "aggro": 6,
+  "scale": 0.78,
+  "colors": {
+   "skin": "#7a9440",
+   "under": "#5a3a1e",
+   "hair": "#2a2010",
+   "eyes": "#ffcc33",
+   "orelhas": true
+  },
+  "body": "humano",
+  "items": [
+   "elmo_ferro",
+   "calca_tecido"
+  ],
+  "habilidades": [
+   {
+    "tipo": "salto",
+    "nome": "Estocada",
+    "desc": "Avança com a lança.",
+    "cd": 5,
+    "alcance": 4,
+    "poder": 1.5,
+    "cor": "#e0d0a0"
+   }
+  ]
+ },
+ "rei_goblin": {
+  "name": "Rei Goblin",
+  "regiao": "Acampamento Goblin",
+  "desc": "Gordo, barulhento e cheio de ouro. Grita e o bando fica furioso.",
+  "hp": 280,
+  "atk": 18,
+  "def": 3,
+  "xp": 170,
+  "gold": [
+   40,
+   90
+  ],
+  "speed": 80,
+  "range": 1.0,
+  "aspd": 1.6,
+  "aggro": 7,
+  "scale": 1.0,
+  "colors": {
+   "skin": "#80a048",
+   "under": "#7a1a1a",
+   "hair": "#2a2010",
+   "eyes": "#ffd23a",
+   "orelhas": true,
+   "presas": true
+  },
+  "body": "humano",
+  "items": [
+   "elmo_ferro",
+   "manto_estudioso",
+   "botas_couro"
+  ],
+  "habilidades": [
+   {
+    "tipo": "uivo",
+    "nome": "Grito de Guerra",
+    "desc": "Os goblins em volta ficam mais rápidos e mais fortes.",
+    "cd": 12,
+    "dur": 10,
+    "cor": "#ffd23a"
+   },
+   {
+    "tipo": "onda",
+    "nome": "Pisão",
+    "desc": "Pisa forte e atordoa.",
+    "cd": 9,
+    "raio": 1.8,
+    "poder": 1.4,
+    "cor": "#e0c080",
+    "efeito": {
+     "tipo": "atordoado",
+     "dur": 1.2
+    }
+   }
+  ]
+ },
+ "orc": {
+  "name": "Orc Guerreiro",
+  "regiao": "Acampamento Orc",
+  "desc": "Guerreiro forte de pele verde-escura e presas. Avança gritando.",
+  "hp": 130,
+  "atk": 16,
+  "def": 3,
+  "xp": 70,
+  "gold": [
+   6,
+   18
+  ],
+  "speed": 90,
+  "range": 0.9,
+  "aspd": 1.4,
+  "aggro": 7,
+  "scale": 1.12,
+  "colors": {
+   "skin": "#56682e",
+   "under": "#3a2a1a",
+   "hair": "#1a1a10",
+   "eyes": "#ff5a1a",
+   "orelhas": true,
+   "presas": true
+  },
+  "body": "humano",
+  "items": [
+   "ombreiras_ferro",
+   "peitoral_couro",
+   "calca_tecido",
+   "botas_couro"
+  ],
+  "habilidades": [
+   {
+    "tipo": "salto",
+    "nome": "Investida",
+    "desc": "Avança e golpeia com força.",
+    "cd": 7,
+    "alcance": 5,
+    "poder": 1.6,
+    "cor": "#e09060"
+   }
+  ]
+ },
+ "orc_xama": {
+  "name": "Orc Xamã",
+  "regiao": "Acampamento Orc",
+  "desc": "Xamã que cura os guerreiros e lança fogo.",
+  "hp": 110,
+  "atk": 14,
+  "def": 2,
+  "xp": 80,
+  "gold": [
+   8,
+   22
+  ],
+  "speed": 80,
+  "range": 5.5,
+  "aspd": 2.0,
+  "aggro": 8,
+  "scale": 1.08,
+  "colors": {
+   "skin": "#4e6028",
+   "under": "#5a1a0a",
+   "hair": "#1a1a10",
+   "eyes": "#ff8a1a",
+   "orelhas": true,
+   "presas": true,
+   "glow_eyes": true
+  },
+  "body": "humano",
+  "items": [
+   "capuz_aprendiz",
+   "tunica_aprendiz",
+   "cajado_brasa"
+  ],
+  "habilidades": [
+   {
+    "tipo": "cura",
+    "nome": "Cura Tribal",
+    "desc": "Cura um orc ferido.",
+    "cd": 8,
+    "poder": 0.3,
+    "cor": "#7dff6a"
+   },
+   {
+    "tipo": "disparo",
+    "nome": "Bola de Fogo",
+    "desc": "Bola de fogo que explode e queima.",
+    "cd": 7,
+    "alcance": 6,
+    "poder": 1.4,
+    "area": 1.3,
+    "tamanho": 1.4,
+    "cor": "#ff6a1a",
+    "efeito": {
+     "tipo": "veneno",
+     "dur": 3,
+     "poder": 4
+    }
+   }
+  ],
+  "proj": "#ff7a1a",
+  "el": "fogo"
+ },
+ "chefe_orc": {
+  "name": "Chefe Orc",
+  "regiao": "Acampamento Orc",
+  "desc": "Chefe do acampamento. Enorme, com cicatrizes e uma fúria que contagia.",
+  "hp": 420,
+  "atk": 26,
+  "def": 5,
+  "xp": 260,
+  "gold": [
+   50,
+   120
+  ],
+  "speed": 85,
+  "range": 1.1,
+  "aspd": 1.6,
+  "aggro": 8,
+  "scale": 1.35,
+  "colors": {
+   "skin": "#4a5a26",
+   "under": "#5a1a10",
+   "hair": "#141410",
+   "eyes": "#ff3a1a",
+   "orelhas": true,
+   "presas": true,
+   "glow_eyes": true
+  },
+  "body": "humano",
+  "items": [
+   "elmo_ferro",
+   "ombreiras_ferro",
+   "peitoral_couro",
+   "botas_couro"
+  ],
+  "habilidades": [
+   {
+    "tipo": "uivo",
+    "nome": "Fúria Orc",
+    "desc": "Os orcs em volta ficam mais rápidos e mais fortes.",
+    "cd": 14,
+    "dur": 10,
+    "cor": "#ff5a3a"
+   },
+   {
+    "tipo": "onda",
+    "nome": "Golpe Sísmico",
+    "desc": "Golpe no chão que atordoa.",
+    "cd": 9,
+    "raio": 2.4,
+    "poder": 1.5,
+    "cor": "#e0a070",
+    "efeito": {
+     "tipo": "atordoado",
+     "dur": 1.5
+    }
+   },
+   {
+    "tipo": "salto",
+    "nome": "Investida",
+    "desc": "Avança e golpeia com força.",
+    "cd": 7,
+    "alcance": 5,
+    "poder": 1.7,
+    "cor": "#ff8a60"
+   }
+  ]
+ },
+ "ciclope_jovem": {
+  "name": "Ciclope Jovem",
+  "regiao": "Acampamento dos Ciclopes",
+  "desc": "Gigante de um olho só, ainda aprendendo a atirar pedras.",
+  "hp": 200,
+  "atk": 20,
+  "def": 3,
+  "xp": 120,
+  "gold": [
+   10,
+   30
+  ],
+  "speed": 60,
+  "range": 1.1,
+  "aspd": 2.0,
+  "aggro": 6,
+  "scale": 1.45,
+  "colors": {
+   "skin": "#9a8a6a",
+   "under": "#4a3a2a",
+   "hair": "#3a2a1a",
+   "eyes": "#3a7aff",
+   "olho_unico": true
+  },
+  "body": "humano",
+  "items": [
+   "calca_tecido"
+  ],
+  "habilidades": [
+   {
+    "tipo": "disparo",
+    "nome": "Pedregulho",
+    "desc": "Atira uma pedra que acerta em área.",
+    "cd": 8,
+    "alcance": 6,
+    "poder": 1.4,
+    "area": 1.5,
+    "tamanho": 2.0,
+    "vel": 280,
+    "cor": "#8a7a66"
+   }
+  ]
+ },
+ "ciclope": {
+  "name": "Ciclope",
+  "regiao": "Acampamento dos Ciclopes",
+  "desc": "Gigante antigo. Atira pedregulhos e faz a terra tremer quando pisa.",
+  "hp": 400,
+  "atk": 28,
+  "def": 5,
+  "xp": 250,
+  "gold": [
+   30,
+   80
+  ],
+  "speed": 55,
+  "range": 1.2,
+  "aspd": 2.2,
+  "aggro": 7,
+  "scale": 1.9,
+  "colors": {
+   "skin": "#8a7a5c",
+   "under": "#3a2e20",
+   "hair": "#2a2016",
+   "eyes": "#ff3a1a",
+   "olho_unico": true
+  },
+  "body": "humano",
+  "items": [
+   "calca_tecido",
+   "botas_couro"
+  ],
+  "habilidades": [
+   {
+    "tipo": "disparo",
+    "nome": "Pedregulho",
+    "desc": "Atira um pedregulho que acerta em área.",
+    "cd": 7,
+    "alcance": 7,
+    "poder": 1.6,
+    "area": 1.8,
+    "tamanho": 2.4,
+    "vel": 260,
+    "cor": "#7a6a56"
+   },
+   {
+    "tipo": "onda",
+    "nome": "Pisada Gigante",
+    "desc": "A terra treme e atordoa todos em volta.",
+    "cd": 10,
+    "raio": 2.8,
+    "poder": 1.4,
+    "cor": "#c8a878",
+    "efeito": {
+     "tipo": "atordoado",
+     "dur": 1.6
+    }
+   }
+  ]
  }
 }

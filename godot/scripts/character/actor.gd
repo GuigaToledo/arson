@@ -36,13 +36,18 @@ func _ready() -> void:
 	shape.radius = 11.0
 	col.shape = shape
 	add_child(col)
-	visual = CharacterVisual.new()
+	visual = _make_visual()
 	visual.name = "Visual"
 	visual.body_colors = body_colors
 	if body_path != "" and ResourceLoader.exists(body_path):
 		visual.body_item = load(body_path)
 	add_child(visual)
 	visual.setup(equipment)
+
+
+## Corpo visual (criaturas trocam por outro desenho).
+func _make_visual() -> CharacterVisual:
+	return CharacterVisual.new()
 
 
 ## d = direção desejada na tela (não precisa ser normalizada).

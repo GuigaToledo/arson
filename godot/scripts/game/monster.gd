@@ -44,6 +44,10 @@ var _scan := 0.0
 var _wander := Vector2.ZERO
 var _wander_t := 0.0
 var _col: CollisionShape2D
+## Habilidades (data/monstros.json): tempo de recarga de cada uma, ação em andamento e bônus de grito/uivo.
+var _scd := {}
+var _busy := 0.0
+var _buff_t := 0.0
 
 
 func configure(t: String, at: Vector2) -> Monster:
@@ -62,9 +66,24 @@ func configure(t: String, at: Vector2) -> Monster:
 	return self
 
 
+const CREATURES := ["slime", "quadrupede", "morcego", "aranha", "fantasma"]
+
+
+func _make_visual() -> CharacterVisual:
+	var b := str(info.get("body", "humano"))
+	if b in CREATURES:
+		var v := CreatureVisual.new()
+		v.body = b
+		v.variant = str(info.get("variant", ""))
+		return v
+	return CharacterVisual.new()
+
+
 func _ready() -> void:
 	super()
 	add_to_group("monsters")
+	for i in info.get("habilidades", []).size():
+		_scd[i] = randf() * float(info.habilidades[i].get("cd", 6.0)) * 0.6
 	visual.scale = Vector2.ONE * float(info.scale)
 	for c in get_children():
 		if c is CollisionShape2D:
@@ -108,6 +127,15 @@ func _physics_process(delta: float) -> void:
 		global_position = home  # nada empurra o boneco
 	if _tick_status(delta):
 		return
+	for k in _scd:
+		_scd[k] -= delta
+	_buff_t -= delta
+	if info.has("regen") and hp < max_hp:
+		hp = minf(max_hp, hp + max_hp * float(info.regen) * delta)
+	if _busy > 0.0:
+		_busy -= delta
+		visual.tick(delta, facing, anim, 0.0)
+		return
 	if foe != null and (not _valid_foe(foe) or Rules.gdist(global_position, foe.global_position) > 12.0):
 		foe = null
 	if foe == null and _scan <= 0.0:
@@ -125,7 +153,9 @@ func _physics_process(delta: float) -> void:
 			if dist > 9.0:
 				foe = null
 				return
-		if _root_t > 0.0 and dist > reach:
+		if not info.get("dummy", false) and _root_t <= 0.0 and _skill(dist):
+			pass
+		elif _root_t > 0.0 and dist > reach:
 			pass  # preso nas raízes: não anda, só ataca se alcançar
 		elif dist <= reach:
 			facing = Iso.dir_from_vector(foe.global_position - global_position)
@@ -153,7 +183,13 @@ func _physics_process(delta: float) -> void:
 					d = to
 	if _root_t > 0.0:
 		d = Vector2.ZERO
+	var ws := walk_speed
+	if _buff_t > 0.0:
+		walk_speed *= 1.3
+		run_speed = walk_speed * 1.5
 	move(d, running, delta)
+	walk_speed = ws
+	run_speed = ws * 1.5
 	if foe != null and d == Vector2.ZERO:
 		facing = Iso.dir_from_vector(foe.global_position - global_position)
 
@@ -191,13 +227,151 @@ func _attack() -> void:
 		_hit(tgt)
 
 
-func _hit(tgt) -> void:
+func _hit(tgt, mult := 1.0, sk: Dictionary = {}) -> void:
 	if dead or not _valid_foe(tgt):
 		return
-	if randf() < 0.12:
+	if sk.is_empty() and randf() < 0.12:
 		CombatText.add(tgt.global_position + Vector2(0, -80), "errou", Color(0.75, 0.75, 0.75))
 		return
-	tgt.take_damage(Rules.roll(float(info.atk)), display_name)
+	var bonus := 1.25 if _buff_t > 0.0 else 1.0
+	tgt.take_damage(Rules.roll(float(info.atk) * mult * bonus), display_name)
+	var ef: Dictionary = sk.get("efeito", {}) if not sk.is_empty() else info.get("efeito_ataque", {})
+	if not ef.is_empty() and tgt.has_method("apply_debuff") and randf() < float(ef.get("chance", 1.0)):
+		tgt.apply_debuff(str(ef.tipo), float(ef.get("dur", 3.0)), float(ef.get("poder", 0.0)), display_name)
+
+
+# ------------------------------------------------------------ habilidades dos monstros
+func _skill(dist: float) -> bool:
+	var list: Array = info.get("habilidades", [])
+	for i in list.size():
+		if _scd.get(i, 0.0) > 0.0:
+			continue
+		var s: Dictionary = list[i]
+		var ok := false
+		match str(s.tipo):
+			"salto":
+				ok = dist >= 1.6 and dist <= float(s.get("alcance", 4.0))
+			"onda":
+				ok = dist <= float(s.get("raio", 2.0))
+			"disparo":
+				ok = dist <= float(s.get("alcance", 6.0)) and dist >= 1.0
+			"dreno":
+				ok = dist <= float(s.get("alcance", 4.0))
+			"cura":
+				ok = _hurt_ally() != null
+			"uivo":
+				ok = _buff_t <= 0.0
+		if not ok:
+			continue
+		_scd[i] = float(s.get("cd", 6.0))
+		_do_skill(s)
+		return true
+	return false
+
+
+func _foes_near(at: Vector2, r: float) -> Array:
+	var out := []
+	for p in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("remote_players") + get_tree().get_nodes_in_group("summons"):
+		if _valid_foe(p) and Rules.gdist(at, p.global_position) <= r:
+			out.append(p)
+	return out
+
+
+func _hurt_ally() -> Monster:
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if m.dead or m.info.get("dummy", false) or Rules.gdist(global_position, m.global_position) > 6.0:
+			continue
+		if m.hp < m.max_hp * 0.7:
+			return m
+	return null
+
+
+func _do_skill(s: Dictionary) -> void:
+	var col := Color.html(str(s.get("cor", "#ffd27a")))
+	var tgt := foe
+	var sc := float(info.scale)
+	if tgt != null:
+		facing = Iso.dir_from_vector(tgt.global_position - global_position)
+	CombatText.add(global_position + Vector2(0, -96 * sc), str(s.get("nome", "")), col)
+	match str(s.tipo):
+		"salto":
+			play_action("attack", 0.5)
+			_busy = 0.5
+			var to: Vector2 = tgt.global_position - global_position
+			var end: Vector2 = tgt.global_position - to.normalized() * 20.0
+			if Actor.walkable.is_valid() and not Actor.walkable.call(end):
+				end = global_position
+			var tw := create_tween()
+			tw.tween_property(self, "global_position", end, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tw.tween_callback(_land.bind(s, col))
+		"onda":
+			play_action("attack", 0.6)
+			_busy = 0.55
+			get_tree().create_timer(0.3).timeout.connect(_wave.bind(s, col))
+		"disparo":
+			play_action("attack", 0.45)
+			_busy = 0.35
+			var b := Bolt.new()
+			b.color = col
+			b.speed = float(s.get("vel", 360.0))
+			b.size = float(s.get("tamanho", 1.0))
+			b.target = tgt
+			b.global_position = global_position
+			b.on_hit = _bolt_hit.bind(tgt, s, col)
+			get_parent().add_child(b)
+		"dreno":
+			play_action("attack", 0.5)
+			_busy = 0.45
+			MonsterFx.beam(get_parent(), self, tgt, col, 0.55)
+			_hit(tgt, float(s.get("poder", 1.0)), s)
+			var heal := float(info.atk) * float(s.get("poder", 1.0)) * 0.7
+			hp = minf(max_hp, hp + heal)
+			CombatText.add(global_position + Vector2(0, -80 * sc), "+%d" % int(heal), Color(0.4, 1, 0.4))
+		"cura":
+			var al := _hurt_ally()
+			play_action("cast", 0.6)
+			_busy = 0.5
+			if al != null:
+				var n := al.max_hp * float(s.get("poder", 0.25))
+				al.hp = minf(al.max_hp, al.hp + n)
+				MonsterFx.ring(get_parent(), al.global_position, 1.0, col, 0.6)
+				CombatText.add(al.global_position + Vector2(0, -80), "+%d" % int(n), Color(0.4, 1, 0.4))
+		"uivo":
+			play_action("cast", 0.7)
+			_busy = 0.6
+			MonsterFx.ring(get_parent(), global_position, 3.5, col, 0.7)
+			for m in get_tree().get_nodes_in_group("monsters"):
+				if not m.dead and m.mtype == mtype and Rules.gdist(global_position, m.global_position) <= 7.0:
+					m._buff_t = float(s.get("dur", 8.0))
+
+
+func _land(s: Dictionary, col: Color) -> void:
+	if dead:
+		return
+	MonsterFx.ring(get_parent(), global_position, 0.8, col, 0.35)
+	if foe != null and _valid_foe(foe) and Rules.gdist(global_position, foe.global_position) <= 1.6:
+		_hit(foe, float(s.get("poder", 1.5)), s)
+
+
+func _wave(s: Dictionary, col: Color) -> void:
+	if dead:
+		return
+	var r := float(s.get("raio", 2.0))
+	MonsterFx.ring(get_parent(), global_position, r, col, 0.5)
+	for p in _foes_near(global_position, r):
+		_hit(p, float(s.get("poder", 1.3)), s)
+
+
+func _bolt_hit(tgt, s: Dictionary, col: Color) -> void:
+	if dead or tgt == null or not is_instance_valid(tgt):
+		return
+	var area := float(s.get("area", 0.0))
+	if area > 0.0:
+		MonsterFx.ring(get_parent(), tgt.global_position, area, col, 0.45)
+		for p in _foes_near(tgt.global_position, area):
+			_hit(p, float(s.get("poder", 1.2)), s)
+	else:
+		_hit(tgt, float(s.get("poder", 1.2)), s)
 
 
 ## Estado vindo do anfitrião: [idx, x, y, direção, animação, vida %, morto].
