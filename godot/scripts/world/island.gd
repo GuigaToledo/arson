@@ -84,7 +84,7 @@ var anchors := {}
 
 
 ## Peça desenhada por código: a origem da imagem vai no ponto `og` da grade.
-func piece(nm: String, og: Vector2, fpos: Vector2, fsize: Vector2, flip := false, shadow := true) -> Prop:
+func piece(nm: String, og: Vector2, fpos: Vector2, fsize: Vector2, flip := false, shadow := true, sc := 1.0) -> Prop:
 	if anchors.is_empty():
 		var txt := FileAccess.get_file_as_string(OBJ + "ancoras.json")
 		var parsed = JSON.parse_string(txt) if txt != "" else null
@@ -93,7 +93,8 @@ func piece(nm: String, og: Vector2, fpos: Vector2, fsize: Vector2, flip := false
 	var a = anchors.get(nm)
 	var an := Vector2(a[0], a[1]) if a is Array else Vector2(-1, -1)
 	var center := Iso.to_screen(fpos + fsize * 0.5)
-	p.with_image(OBJ + nm + ".png", 1.0, Iso.to_screen(og) - center, flip, an)
+	# imagens desenhadas em resolução dupla: escala 0.5 no jogo
+	p.with_image(OBJ + nm + ".png", 0.5 * sc, Iso.to_screen(og) - center, flip, an)
 	p.casts_shadow = shadow
 	entities.add_child(p)
 	return p
@@ -129,42 +130,48 @@ func _build_details() -> void:
 
 
 func _build_buildings() -> void:
-	# casas (peça recortada da imagem da vila)
+	# casas (desenhadas por código), alternando modelo e lado
+	var k := 0
 	for r: Rect2 in map.blocks("H"):
-		var p := Prop.new().setup("house", r.position + Vector2(0.1, 0.1), r.size - Vector2(0.2, 0.2), 150.0, Color(0.42, 0.36, 0.3))
-		var front := Iso.to_screen(r.position + r.size) - Iso.to_screen(r.position + r.size * 0.5)
-		p.with_image(OBJ + "casa.png", 0.62, front + Vector2(18, 10), int(r.position.x) % 2 == 0)
-		entities.add_child(p)
-	# templo: santuário com estátua no centro da área do templo
+		var og := r.position + Vector2(0.15, 0.15)
+		var p := piece("casa" if k % 2 == 0 else "casa2", og, r.position + Vector2(0.1, 0.1), r.size - Vector2(0.2, 0.2), k % 3 == 1)
+		var door := LightKit.make(Color(1.0, 0.6, 0.25), 0.7, 1.1, false, 0.1)
+		door.position = Iso.to_screen(r.end) - p.position + Vector2(0, -30)
+		p.add_child(door)
+		k += 1
+	# templo de pedra com torre do sino
 	for r: Rect2 in map.blocks("T"):
-		var c := r.position + r.size * 0.5
-		var p := Prop.new().setup("box", c - Vector2(1.0, 0.6), Vector2(2.0, 1.4), 200.0, Color(0.5, 0.48, 0.45))
-		p.with_image(OBJ + "estatua.png", 0.95, Vector2(0, 40))
-		p.name = "Templo"
-		entities.add_child(p)
-	# árvores nas florestas (e algumas soltas na grama)
+		var t := piece("templo", r.position, r.position + Vector2(0.05, 0.05), Vector2(5.8, 2.85))
+		t.name = "Templo"
+		var tower := StaticBody2D.new()
+		var cp := CollisionPolygon2D.new()
+		var t0 := r.position + Vector2(5.75, 0.58)
+		cp.polygon = PackedVector2Array([Iso.to_screen(t0), Iso.to_screen(t0 + Vector2(1.55, 0)), Iso.to_screen(t0 + Vector2(1.55, 1.55)), Iso.to_screen(t0 + Vector2(0, 1.55))])
+		tower.add_child(cp)
+		add_child(tower)
+	# árvores, pinheiros e pedras espalhados conforme o terreno
+	var kinds := ["arvore", "arvore_outono", "arvore_escura"]
 	for y in map.h:
 		for x in map.w:
 			var ch := map.at(x, y)
-			if not ResourceLoader.exists(OBJ + "arvore.png"):
-				break
-			var chance := 0.24 if ch == "f" else (0.025 if ch == "." else 0.0)
-			if chance == 0.0 or map.tile_rand(x, y) > chance:
-				continue
+			var r1 := map.tile_rand(x, y)
 			var j := Vector2(map.tile_rand(x, y, 1), map.tile_rand(x, y, 2)) * 0.6 + Vector2(0.2, 0.2)
-			var t := Prop.new().setup("box", Vector2(x, y) + j - Vector2(0.18, 0.18), Vector2(0.36, 0.36), 200.0, Color(0.3, 0.2, 0.1))
-			t.with_image(OBJ + "arvore.png", 0.5 + map.tile_rand(x, y, 3) * 0.25, Vector2(0, 6), map.tile_rand(x, y, 4) > 0.5)
-			t.casts_shadow = false
-			entities.add_child(t)
-	# carroças na estrada do sul
-	if not ResourceLoader.exists(OBJ + "carroca.png"):
-		return
-	var c1 := Prop.new().setup("box", Vector2(24.2, 37.2), Vector2(1.2, 0.8), 60.0, Color(0.3, 0.2, 0.1))
-	c1.with_image(OBJ + "carroca.png", 0.75, Vector2(0, 14))
-	entities.add_child(c1)
-	var c2 := Prop.new().setup("box", Vector2(30.6, 40.0), Vector2(1.0, 0.8), 60.0, Color(0.3, 0.2, 0.1))
-	c2.with_image(OBJ + "carroca_coberta.png", 0.8, Vector2(0, 14))
-	entities.add_child(c2)
+			var og := Vector2(x, y) + j
+			var flip := map.tile_rand(x, y, 4) > 0.5
+			var sc := 0.85 + map.tile_rand(x, y, 3) * 0.35
+			if (ch == "f" and r1 < 0.26) or (ch == "." and r1 < 0.025):
+				var nm: String = kinds[int(map.tile_rand(x, y, 5) * 3) % 3] if map.tile_rand(x, y, 6) > 0.25 else "pinheiro"
+				var tr := piece(nm, og, og - Vector2(0.17, 0.17), Vector2(0.34, 0.34), flip, false, sc)
+				tr.fade_when_behind = true
+			elif ch == "r" and r1 < 0.12:
+				piece("pinheiro" if map.tile_rand(x, y, 7) > 0.6 else ("pedra" if flip else "pedra2"), og, og - Vector2(0.3, 0.3), Vector2(0.6, 0.6), flip, false, sc)
+			elif ch == "." and r1 > 0.985:
+				piece("pedra2", og, og - Vector2(0.25, 0.25), Vector2(0.5, 0.5), flip, false, 0.7)
+	# carroças na estrada do sul e tendas na praça
+	piece("carroca", Vector2(24.0, 37.4), Vector2(24.0, 37.4), Vector2(1.45, 0.72))
+	piece("carroca", Vector2(31.2, 39.6), Vector2(31.2, 39.6), Vector2(0.72, 1.45), true)
+	piece("tenda", Vector2(24.4, 31.6), Vector2(24.4, 31.6), Vector2(1.5, 1.1))
+	piece("tenda", Vector2(29.4, 31.6), Vector2(29.4, 31.6), Vector2(1.1, 1.5), true)
 
 
 func _build_lights() -> void:
@@ -173,15 +180,11 @@ func _build_lights() -> void:
 		var l := LightKit.make(Color(1.0, 0.65, 0.3), 1.1, 1.9, false, 0.12)
 		l.position = post.tex_foot + Vector2(23, -96)
 		post.add_child(l)
-	var camp := Prop.new().setup("box", Vector2(30.6, 35.6), Vector2(0.8, 0.8), 40.0, Color(0.3, 0.2, 0.1))
-	camp.with_image(OBJ + "fogueira.png", 1.0, Vector2(0, 6))
+	var camp := piece("fogueira", Vector2(31.0, 36.0), Vector2(30.6, 35.6), Vector2(0.8, 0.8), false, false)
 	camp.fade_when_behind = false
-	if camp.tex == null:
-		camp.kind = "campfire"
-	entities.add_child(camp)
-	Fx.fire(camp, Vector2(0, -8), 0.45)
+	Fx.fire(camp, camp.tex_foot + Vector2(0, -6), 0.5)
 	var fl := LightKit.make(Color(1.0, 0.55, 0.2), 1.3, 2.4, true, 0.2)
-	fl.position = Vector2(0, -10)
+	fl.position = camp.tex_foot + Vector2(0, -12)
 	camp.add_child(fl)
 
 
