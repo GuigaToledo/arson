@@ -161,6 +161,8 @@ func _load() -> void:
 	var c := ConfigFile.new()
 	if c.load(Chars.path()) == OK:
 		xp = int(c.get_value("jogador", "xp", 0))
+		if int(c.get_value("jogador", "xp_v", 1)) < 2:
+			xp = Rules.convert_xp_v1(xp)  # curva nova: mantém o nível de quem já jogava
 		gold = int(c.get_value("jogador", "ouro", 0))
 		hp_pot = int(c.get_value("jogador", "pocao_vida", 5))
 		mp_pot = int(c.get_value("jogador", "pocao_mana", 5))
@@ -207,6 +209,7 @@ func save() -> void:
 	c.set_value("jogador", "classe", classe)
 	c.set_value("jogador", "nome", Chars.nome)
 	c.set_value("jogador", "xp", xp)
+	c.set_value("jogador", "xp_v", 2)
 	c.set_value("jogador", "ouro", gold)
 	c.set_value("jogador", "nivel", level)
 	c.set_value("jogador", "pocao_vida", hp_pot)
@@ -378,13 +381,25 @@ func _respawn() -> void:
 
 # ------------------------------------------------------------ alvo e ataques
 func _alive_foe() -> bool:
-	return foe != null and is_instance_valid(foe) and not foe.dead
+	return foe != null and is_instance_valid(foe) and not foe.dead and on_screen(foe)
+
+
+## Retângulo do mundo que aparece na tela (as magias só miram e atiram em quem está aparecendo).
+func view_world_rect() -> Rect2:
+	var ct := get_viewport().get_canvas_transform()
+	var vr := get_viewport().get_visible_rect()
+	var sc := ct.get_scale()
+	return Rect2(ct.affine_inverse() * vr.position, vr.size / sc)
+
+
+func on_screen(n: Node2D) -> bool:
+	return view_world_rect().grow(-12.0).has_point(n.global_position + Vector2(0, -24))
 
 
 func target_nearest() -> void:
 	var list := []
 	for m in get_tree().get_nodes_in_group("monsters"):
-		if not m.dead:
+		if not m.dead and on_screen(m):
 			var d := Rules.gdist(global_position, m.global_position)
 			if d < 10.0:
 				list.append([d, m])
@@ -556,7 +571,7 @@ func spell_power(s: Dictionary) -> float:
 	for e in s.els:
 		el_lv += elem_level(e)
 	el_lv /= maxf(1, s.els.size())
-	var p := (float(s.get("base", 0.0)) + float(s.get("perL", 0.0)) * level) * (1.0 + 0.06 * el_lv)
+	var p := (float(s.get("base", 0.0)) + float(s.get("perL", 0.0)) * level) * (1.0 + 0.035 * el_lv)
 	# nível da própria magia (+2% por nível) e melhorias (+8% cada)
 	var sid := str(s.get("id", ""))
 	p *= (1.0 + 0.02 * (spell_lvl(sid) - 1)) * (1.0 + 0.08 * spell_up(sid))
@@ -940,8 +955,9 @@ func _monsters() -> Array:
 func _nearest_to(p: Vector2, r_tiles: float, skip: Dictionary) -> Node2D:
 	var best: Node2D = null
 	var bd := r_tiles
+	var vr := view_world_rect().grow(-12.0)
 	for m in _monsters():
-		if skip.has(m):
+		if skip.has(m) or not vr.has_point(m.global_position + Vector2(0, -24)):
 			continue
 		var d := Rules.gdist(p, m.global_position)
 		if d <= bd:
@@ -995,7 +1011,7 @@ func _auto_attack(delta: float) -> void:
 	b.global_position = global_position + Vector2(0, -2)
 	b.on_hit = func():
 		if is_instance_valid(tgt) and not tgt.dead:
-			tgt.take_damage(Rules.roll((9.0 + 1.3 * level + float(gear().get("ataque", 0))) * (1.0 + 0.06 * elem_level(elem_a())) * (1.25 if buff_t > 0.0 else 1.0), float(tgt.info.def)), self)
+			tgt.take_damage(Rules.roll((9.0 + 1.3 * level + float(gear().get("ataque", 0))) * (1.0 + 0.035 * elem_level(elem_a())) * (1.25 if buff_t > 0.0 else 1.0), float(tgt.info.def)), self)
 	get_parent().add_child(b)
 
 

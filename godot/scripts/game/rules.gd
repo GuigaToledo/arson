@@ -3,8 +3,42 @@ extends RefCounted
 ## Regras do jogo: níveis, experiência, dano. Distâncias de jogo em tiles (grade).
 
 
+## Curva de experiência (v2, mais lenta): do 1 ao 2 são 120 xp, do 10 ao 11 uns 8.800, do 30 ao 31 uns 48.000.
 static func xp_to_reach(lvl: int) -> int:
+	return 0 if lvl <= 1 else int(round(120.0 * pow(lvl - 1, 2.5)))
+
+
+## Curva antiga (saves de antes da v2 são convertidos mantendo o nível).
+static func xp_to_reach_v1(lvl: int) -> int:
 	return 0 if lvl <= 1 else int(round(60.0 * pow(lvl - 1, 2.2)))
+
+
+static func convert_xp_v1(xp: int) -> int:
+	var l := 1
+	while xp_to_reach_v1(l + 1) <= xp:
+		l += 1
+	var a := xp_to_reach_v1(l)
+	var b := xp_to_reach_v1(l + 1)
+	var f := float(xp - a) / maxf(1.0, float(b - a))
+	return xp_to_reach(l) + int(f * float(xp_to_reach(l + 1) - xp_to_reach(l)))
+
+
+## Diferença de nível monstro - jogador: 10+ vermelho (bate 50x, xp 2x), 5-9 laranja (20x, xp 1,5x), resto verde.
+static func danger(mlvl: int, plvl: int) -> int:
+	var d := mlvl - plvl
+	return 2 if d >= 10 else (1 if d >= 5 else 0)
+
+
+static func danger_color(g: int) -> Color:
+	return [Color(0.45, 1.0, 0.45), Color(1.0, 0.6, 0.15), Color(1.0, 0.22, 0.18)][g]
+
+
+static func danger_dmg(g: int) -> float:
+	return [1.0, 20.0, 50.0][g]
+
+
+static func danger_xp(g: int) -> float:
+	return [1.0, 1.5, 2.0][g]
 
 
 static func level_for(xp: int) -> int:

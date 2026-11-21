@@ -307,6 +307,7 @@ func _process(_d: float) -> void:
 	else:
 		task_lbl.text = "Tarefa: %d/%d %s" % [tk.count, tk.need, Monster.TYPES[tk.type].name]
 	names.foe = player.foe
+	names.player = player
 	spellbar.queue_redraw()
 	skill_panel.queue_redraw()
 	bars.queue_redraw()
@@ -674,6 +675,7 @@ class StatusBars:
 class NameTags:
 	extends Control
 	var foe: Node2D = null
+	var player: Node2D = null
 
 	func _draw() -> void:
 		var font := ThemeDB.fallback_font
@@ -698,17 +700,21 @@ class NameTags:
 			var pos := actor.get_global_transform_with_canvas() * Vector2(0, -h)
 			var col := Color(0.92, 0.88, 0.78) if actor is Npc else Color(0.35, 0.95, 0.35)
 			var fs := 13
+			var txt := actor.display_name
+			var edge := col
 			if mon:
-				col = Color(1, 0.55, 0.45) if mon == foe else Color(0.9, 0.78, 0.7)
+				# cor pelo nível: verde (até 4 acima), laranja (5 a 9 acima), vermelho (10 ou mais)
+				var dg := 0 if mon.info.get("dummy", false) else Rules.danger(mon.level, int(player.level) if player else 1)
+				col = Rules.danger_color(dg)
+				if not mon.info.get("dummy", false):
+					txt = "%s  Nv %d" % [actor.display_name, mon.level]
+				edge = Color(1, 0.35, 0.25) if mon.boss else (Color(1, 0.82, 0.3) if mon.elite else col)
 				if mon.boss:
-					col = Color(1, 0.35, 0.25)
 					fs = 15
-				elif mon.elite:
-					col = Color(1, 0.82, 0.3)
-			var w := font.get_string_size(actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			var at := pos + Vector2(-w * 0.5, 0)
-			draw_string_outline(font, at, actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.9))
-			draw_string(font, at, actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+			draw_string_outline(font, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.9))
+			draw_string(font, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 			if mon:
 				var f := clampf(mon.hp / mon.max_hp, 0, 1)
 				var bc := Color(0.25, 0.85, 0.25) if f > 0.6 else (Color(0.9, 0.75, 0.2) if f > 0.3 else Color(0.9, 0.2, 0.15))
@@ -716,7 +722,7 @@ class NameTags:
 				draw_rect(Rect2(pos + Vector2(-bw * 0.5, 4), Vector2(bw, 5)), Color(0, 0, 0, 0.8))
 				draw_rect(Rect2(pos + Vector2(-bw * 0.5 + 1, 5), Vector2((bw - 2) * f, 3)), bc)
 				if mon.boss or mon.elite:
-					draw_rect(Rect2(pos + Vector2(-bw * 0.5, 4), Vector2(bw, 5)), col, false, 1.0)
+					draw_rect(Rect2(pos + Vector2(-bw * 0.5, 4), Vector2(bw, 5)), edge, false, 1.0)
 		# números de dano, cura e experiência
 		for it in CombatText.items:
 			var life := 1.6 if it.big else 1.0

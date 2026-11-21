@@ -2,10 +2,10 @@
  "esqueleto": {
   "name": "Esqueleto",
   "sangue": "osso",
-  "hp": 40,
-  "atk": 6.0,
-  "def": 0.0,
-  "xp": 14,
+  "hp": 109,
+  "atk": 8.5,
+  "def": 0.8,
+  "xp": 28,
   "gold": [
    1,
    6
@@ -36,14 +36,17 @@
     "cranio",
     0.08
    ]
-  ]
+  ],
+  "nivel": 3,
+  "hp_base": 40,
+  "atk_base": 6.0
  },
  "carnical": {
   "name": "Carniçal",
-  "hp": 70,
-  "atk": 9.0,
-  "def": 1.0,
-  "xp": 25,
+  "hp": 230,
+  "atk": 12.9,
+  "def": 2.0,
+  "xp": 78,
   "gold": [
    2,
    10
@@ -74,14 +77,17 @@
     "osso",
     0.25
    ]
-  ]
+  ],
+  "nivel": 8,
+  "hp_base": 70,
+  "atk_base": 9.0
  },
  "bandido": {
   "name": "Bandido",
-  "hp": 90,
-  "atk": 12.0,
-  "def": 2.0,
-  "xp": 35,
+  "hp": 307,
+  "atk": 17.3,
+  "def": 2.2,
+  "xp": 94,
   "gold": [
    5,
    20
@@ -115,14 +121,17 @@
     "bolsa_moedas",
     0.12
    ]
-  ]
+  ],
+  "nivel": 9,
+  "hp_base": 90,
+  "atk_base": 12.0
  },
  "cultista": {
   "name": "Cultista das Chamas",
-  "hp": 80,
-  "atk": 11.0,
-  "def": 1.0,
-  "xp": 40,
+  "hp": 292,
+  "atk": 15.9,
+  "def": 2.8,
+  "xp": 120,
   "gold": [
    8,
    25
@@ -157,7 +166,10 @@
     "bolsa_moedas",
     0.05
    ]
-  ]
+  ],
+  "nivel": 11,
+  "hp_base": 80,
+  "atk_base": 11.0
  },
  "boneco": {
   "name": "Boneco de Treino",
@@ -191,10 +203,10 @@
  "golem": {
   "name": "Golem de Pedra",
   "sangue": "pedra",
-  "hp": 320,
-  "atk": 24.0,
-  "def": 6.0,
-  "xp": 160,
+  "hp": 1668,
+  "atk": 34.9,
+  "def": 7.0,
+  "xp": 488,
   "gold": [
    30,
    70
@@ -225,16 +237,19 @@
     "nucleo_magma",
     0.12
    ]
-  ]
+  ],
+  "nivel": 24,
+  "hp_base": 320,
+  "atk_base": 24.0
  },
  "slime_verde": {
   "name": "Slime Verde",
   "regiao": "Campos de Brumavale",
   "desc": "Geleia viva que pula atrás de qualquer coisa que se mexa. O primeiro desafio de todo mago.",
-  "hp": 24,
-  "atk": 4,
-  "def": 0,
-  "xp": 8,
+  "hp": 61,
+  "atk": 6.1,
+  "def": 0.2,
+  "xp": 15,
   "gold": [
    0,
    3
@@ -268,16 +283,19 @@
     "gosma_verde",
     0.6
    ]
-  ]
+  ],
+  "nivel": 1,
+  "hp_base": 24,
+  "atk_base": 4
  },
  "slime_agua": {
   "name": "Slime d'Água",
   "regiao": "Campos de Brumavale",
   "desc": "Slime azulado que cospe jatos d'água de longe.",
-  "hp": 34,
-  "atk": 5,
-  "def": 0,
-  "xp": 12,
+  "hp": 89,
+  "atk": 7.1,
+  "def": 0.5,
+  "xp": 21,
   "gold": [
    1,
    4
@@ -317,16 +335,19 @@
     "gosma_azul",
     0.6
    ]
-  ]
+  ],
+  "nivel": 2,
+  "hp_base": 34,
+  "atk_base": 5
  },
  "slime_magma": {
   "name": "Slime de Magma",
   "regiao": "Campos de Brumavale",
   "desc": "Slime quente que brilha no escuro. Explode em ondas de calor.",
-  "hp": 60,
-  "atk": 8,
-  "def": 1,
-  "xp": 22,
+  "hp": 183,
+  "atk": 11.5,
+  "def": 1.5,
+  "xp": 55,
   "gold": [
    2,
    8
@@ -372,16 +393,19 @@
     "nucleo_magma",
     0.06
    ]
-  ]
+  ],
+  "nivel": 6,
+  "hp_base": 60,
+  "atk_base": 8
  },
  "goblin": {
   "name": "Goblin",
   "regiao": "Acampamento Goblin",
   "desc": "Pequeno, rápido e covarde em bando. Ataca com facas e foge quando fica sozinho.",
-  "hp": 36,
-  "atk": 6,
-  "def": 0,
-  "xp": 12,
+  "hp": 98,
+  "atk": 8.5,
+  "def": 0.8,
+  "xp": 27,
   "gold": [
    2,
    8
@@ -419,16 +443,19 @@
     "orelha_goblin",
     0.5
    ]
-  ]
+  ],
+  "nivel": 3,
+  "hp_base": 36,
+  "atk_base": 6
  },
  "goblin_xama": {
   "name": "Goblin Xamã",
   "regiao": "Acampamento Goblin",
   "desc": "Feiticeiro goblin que cura os aliados e envenena de longe.",
-  "hp": 44,
-  "atk": 7,
-  "def": 0,
-  "xp": 18,
+  "hp": 129,
+  "atk": 10.0,
+  "def": 1.2,
+  "xp": 43,
   "gold": [
    4,
    12
@@ -485,16 +512,19 @@
     "penas_xama",
     0.25
    ]
-  ]
+  ],
+  "nivel": 5,
+  "hp_base": 44,
+  "atk_base": 7
  },
  "troll_jovem": {
   "name": "Troll Jovem",
   "regiao": "Campos de Brumavale",
   "desc": "Troll ainda novo. Bate forte e se regenera, mas é lento.",
-  "hp": 95,
-  "atk": 11,
-  "def": 1,
-  "xp": 34,
+  "hp": 313,
+  "atk": 15.8,
+  "def": 2.0,
+  "xp": 83,
   "gold": [
    4,
    12
@@ -540,16 +570,19 @@
     "dente_troll",
     0.2
    ]
-  ]
+  ],
+  "nivel": 8,
+  "hp_base": 95,
+  "atk_base": 11
  },
  "esqueleto_arqueiro": {
   "name": "Esqueleto Arqueiro",
   "regiao": "Campos de Brumavale",
   "desc": "Esqueleto que atira flechas de osso de longe.",
-  "hp": 34,
-  "atk": 6,
-  "def": 0,
-  "xp": 16,
+  "hp": 96,
+  "atk": 8.6,
+  "def": 1.0,
+  "xp": 34,
   "gold": [
    1,
    6
@@ -591,16 +624,19 @@
     "cranio",
     0.1
    ]
-  ]
+  ],
+  "nivel": 4,
+  "hp_base": 34,
+  "atk_base": 6
  },
  "zumbi": {
   "name": "Zumbi",
   "regiao": "Cemitério Esquecido",
   "desc": "Corpo podre que anda devagar. A mordida envenena.",
-  "hp": 80,
-  "atk": 10,
-  "def": 1,
-  "xp": 30,
+  "hp": 273,
+  "atk": 14.4,
+  "def": 2.2,
+  "xp": 92,
   "gold": [
    2,
    10
@@ -637,16 +673,19 @@
     "pano_rasgado",
     0.25
    ]
-  ]
+  ],
+  "nivel": 9,
+  "hp_base": 80,
+  "atk_base": 10
  },
  "esqueleto_guerreiro": {
   "name": "Esqueleto Guerreiro",
   "regiao": "Cemitério Esquecido",
   "desc": "Antigo soldado de elmo e armadura. Gira a espada em volta.",
-  "hp": 120,
-  "atk": 14,
-  "def": 3,
-  "xp": 55,
+  "hp": 496,
+  "atk": 20.2,
+  "def": 3.8,
+  "xp": 197,
   "gold": [
    6,
    18
@@ -690,16 +729,19 @@
     "cranio",
     0.15
    ]
-  ]
+  ],
+  "nivel": 15,
+  "hp_base": 120,
+  "atk_base": 14
  },
  "fantasma": {
   "name": "Fantasma",
   "regiao": "Cemitério Esquecido",
   "desc": "Alma presa ao cemitério. Atravessa a névoa e suga a vida de longe.",
-  "hp": 70,
-  "atk": 9,
-  "def": 0,
-  "xp": 42,
+  "hp": 351,
+  "atk": 16.0,
+  "def": 3.2,
+  "xp": 154,
   "gold": [
    3,
    14
@@ -747,16 +789,19 @@
     "ectoplasma",
     0.45
    ]
-  ]
+  ],
+  "nivel": 13,
+  "hp_base": 70,
+  "atk_base": 9
  },
  "necromante": {
   "name": "Necromante",
   "regiao": "Cemitério Esquecido",
   "desc": "Mago das trevas que comanda o cemitério. Cura os mortos e drena a vida dos vivos.",
-  "hp": 220,
-  "atk": 16,
-  "def": 2,
-  "xp": 140,
+  "hp": 1203,
+  "atk": 26.7,
+  "def": 6.5,
+  "xp": 509,
   "gold": [
    20,
    50
@@ -819,16 +864,19 @@
     "cranio",
     0.25
    ]
-  ]
+  ],
+  "nivel": 26,
+  "hp_base": 220,
+  "atk_base": 16
  },
  "morcego": {
   "name": "Morcego",
   "regiao": "Caverna Uivante",
   "desc": "Voa em bando no escuro das cavernas. Mergulha e morde.",
-  "hp": 28,
-  "atk": 6,
-  "def": 0,
-  "xp": 14,
+  "hp": 95,
+  "atk": 8.6,
+  "def": 1.0,
+  "xp": 33,
   "gold": [
    0,
    4
@@ -862,16 +910,19 @@
     "asa_morcego",
     0.5
    ]
-  ]
+  ],
+  "nivel": 4,
+  "hp_base": 28,
+  "atk_base": 6
  },
  "morcego_vampiro": {
   "name": "Morcego Vampiro",
   "regiao": "Caverna Uivante",
   "desc": "Morcego grande que suga sangue para se curar.",
-  "hp": 60,
-  "atk": 10,
-  "def": 0,
-  "xp": 30,
+  "hp": 252,
+  "atk": 14.4,
+  "def": 2.5,
+  "xp": 103,
   "gold": [
    2,
    8
@@ -909,16 +960,19 @@
     "presa_vampiro",
     0.2
    ]
-  ]
+  ],
+  "nivel": 10,
+  "hp_base": 60,
+  "atk_base": 10
  },
  "lobo": {
   "name": "Lobo",
   "regiao": "Caverna Uivante",
   "desc": "Caça em matilha. Uiva para chamar os outros e salta no pescoço.",
-  "hp": 55,
-  "atk": 9,
-  "def": 1,
-  "xp": 24,
+  "hp": 174,
+  "atk": 12.9,
+  "def": 1.8,
+  "xp": 64,
   "gold": [
    1,
    6
@@ -965,16 +1019,19 @@
     "presa_lobo",
     0.25
    ]
-  ]
+  ],
+  "nivel": 7,
+  "hp_base": 55,
+  "atk_base": 9
  },
  "lobo_caverna": {
   "name": "Lobo das Cavernas",
   "regiao": "Caverna Uivante",
   "desc": "Lobo negro maior, de olhos vermelhos. Lidera as matilhas.",
-  "hp": 95,
-  "atk": 14,
-  "def": 2,
-  "xp": 48,
+  "hp": 465,
+  "atk": 20.3,
+  "def": 4.0,
+  "xp": 214,
   "gold": [
    4,
    12
@@ -1025,16 +1082,19 @@
     "presa_lobo",
     0.35
    ]
-  ]
+  ],
+  "nivel": 16,
+  "hp_base": 95,
+  "atk_base": 14
  },
  "troll_caverna": {
   "name": "Troll das Cavernas",
   "regiao": "Caverna Uivante",
   "desc": "Enorme e quase sem luz nos olhos. Arranca pedras da parede e atira.",
-  "hp": 240,
-  "atk": 20,
-  "def": 4,
-  "xp": 125,
+  "hp": 1371,
+  "atk": 29.1,
+  "def": 7.0,
+  "xp": 582,
   "gold": [
    15,
    40
@@ -1093,16 +1153,19 @@
     "dente_troll",
     0.35
    ]
-  ]
+  ],
+  "nivel": 28,
+  "hp_base": 240,
+  "atk_base": 20
  },
  "urso": {
   "name": "Urso Pardo",
   "regiao": "Selva Rubra",
   "desc": "Dono da selva. Ruge para atordoar e dá patadas pesadas.",
-  "hp": 190,
-  "atk": 18,
-  "def": 3,
-  "xp": 95,
+  "hp": 1016,
+  "atk": 26.1,
+  "def": 6.2,
+  "xp": 466,
   "gold": [
    6,
    20
@@ -1154,16 +1217,19 @@
     "garra_urso",
     0.25
    ]
-  ]
+  ],
+  "nivel": 25,
+  "hp_base": 190,
+  "atk_base": 18
  },
  "pantera": {
   "name": "Pantera",
   "regiao": "Selva Rubra",
   "desc": "Felino negro e silencioso. Salta de muito longe.",
-  "hp": 90,
-  "atk": 15,
-  "def": 1,
-  "xp": 60,
+  "hp": 548,
+  "atk": 21.7,
+  "def": 4.5,
+  "xp": 260,
   "gold": [
    4,
    14
@@ -1202,16 +1268,19 @@
     "garra_felina",
     0.25
    ]
-  ]
+  ],
+  "nivel": 18,
+  "hp_base": 90,
+  "atk_base": 15
  },
  "onca": {
   "name": "Onça-pintada",
   "regiao": "Selva Rubra",
   "desc": "Felino pintado da selva. Arranha e deixa o alvo sangrando.",
-  "hp": 110,
-  "atk": 16,
-  "def": 2,
-  "xp": 70,
+  "hp": 637,
+  "atk": 23.2,
+  "def": 5.0,
+  "xp": 310,
   "gold": [
    5,
    16
@@ -1256,16 +1325,19 @@
     "garra_felina",
     0.25
    ]
-  ]
+  ],
+  "nivel": 20,
+  "hp_base": 110,
+  "atk_base": 16
  },
  "aranha": {
   "name": "Aranha da Selva",
   "regiao": "Selva Rubra",
   "desc": "Aranha do tamanho de um cão. Prende com teia e morde com veneno.",
-  "hp": 70,
-  "atk": 11,
-  "def": 1,
-  "xp": 40,
+  "hp": 388,
+  "atk": 16.8,
+  "def": 3.5,
+  "xp": 173,
   "gold": [
    2,
    10
@@ -1314,16 +1386,19 @@
     "glandula_veneno",
     0.15
    ]
-  ]
+  ],
+  "nivel": 14,
+  "hp_base": 70,
+  "atk_base": 11
  },
  "aranha_gigante": {
   "name": "Aranha Gigante",
   "regiao": "Selva Rubra",
   "desc": "Mãe das aranhas da selva. Teia grossa e veneno forte.",
-  "hp": 210,
-  "atk": 19,
-  "def": 3,
-  "xp": 130,
+  "hp": 1251,
+  "atk": 30.0,
+  "def": 7.5,
+  "xp": 636,
   "gold": [
    10,
    30
@@ -1391,16 +1466,19 @@
     "olho_aranha",
     0.2
    ]
-  ]
+  ],
+  "nivel": 30,
+  "hp_base": 210,
+  "atk_base": 19
  },
  "goblin_lanceiro": {
   "name": "Goblin Lanceiro",
   "regiao": "Acampamento Goblin",
   "desc": "Goblin com lança que ataca de um pouco mais longe.",
-  "hp": 50,
-  "atk": 8,
-  "def": 1,
-  "xp": 20,
+  "hp": 153,
+  "atk": 11.5,
+  "def": 1.5,
+  "xp": 53,
   "gold": [
    3,
    10
@@ -1442,16 +1520,19 @@
     "ponta_lanca",
     0.2
    ]
-  ]
+  ],
+  "nivel": 6,
+  "hp_base": 50,
+  "atk_base": 8
  },
  "rei_goblin": {
   "name": "Rei Goblin",
   "regiao": "Acampamento Goblin",
   "desc": "Gordo, barulhento e cheio de ouro. Grita e o bando fica furioso.",
-  "hp": 600,
-  "atk": 18,
-  "def": 3,
-  "xp": 380,
+  "hp": 3875,
+  "atk": 35.8,
+  "def": 4.5,
+  "xp": 2203,
   "gold": [
    40,
    90
@@ -1515,16 +1596,19 @@
   "chefe": true,
   "respawn": 200,
   "drop": "chefe_botas_rei_goblin",
-  "drop_chance": 0.3
+  "drop_chance": 0.3,
+  "nivel": 14,
+  "hp_base": 600,
+  "atk_base": 18
  },
  "orc": {
   "name": "Orc Guerreiro",
   "regiao": "Acampamento Orc",
   "desc": "Guerreiro forte de pele verde-escura e presas. Avança gritando.",
-  "hp": 130,
-  "atk": 16,
-  "def": 3,
-  "xp": 70,
+  "hp": 732,
+  "atk": 23.4,
+  "def": 5.5,
+  "xp": 365,
   "gold": [
    6,
    18
@@ -1569,16 +1653,19 @@
     "pano_rasgado",
     0.2
    ]
-  ]
+  ],
+  "nivel": 22,
+  "hp_base": 130,
+  "atk_base": 16
  },
  "orc_xama": {
   "name": "Orc Xamã",
   "regiao": "Acampamento Orc",
   "desc": "Xamã que cura os guerreiros e lança fogo.",
-  "hp": 110,
-  "atk": 14,
-  "def": 2,
-  "xp": 80,
+  "hp": 783,
+  "atk": 24.2,
+  "def": 5.8,
+  "xp": 394,
   "gold": [
    8,
    22
@@ -1640,16 +1727,19 @@
     "penas_xama",
     0.3
    ]
-  ]
+  ],
+  "nivel": 23,
+  "hp_base": 110,
+  "atk_base": 14
  },
  "chefe_orc": {
   "name": "Chefe Orc",
   "regiao": "Acampamento Orc",
   "desc": "Chefe do acampamento. Enorme, com cicatrizes e uma fúria que contagia.",
-  "hp": 1100,
-  "atk": 26,
-  "def": 5,
-  "xp": 780,
+  "hp": 14347,
+  "atk": 71.0,
+  "def": 9.5,
+  "xp": 10075,
   "gold": [
    50,
    120
@@ -1720,16 +1810,19 @@
   "chefe": true,
   "respawn": 240,
   "drop": "chefe_peitoral_orc",
-  "drop_chance": 0.3
+  "drop_chance": 0.3,
+  "nivel": 34,
+  "hp_base": 1100,
+  "atk_base": 26
  },
  "ciclope_jovem": {
   "name": "Ciclope Jovem",
   "regiao": "Acampamento dos Ciclopes",
   "desc": "Gigante de um olho só, ainda aprendendo a atirar pedras.",
-  "hp": 200,
-  "atk": 20,
-  "def": 3,
-  "xp": 120,
+  "hp": 1191,
+  "atk": 30.0,
+  "def": 7.5,
+  "xp": 631,
   "gold": [
    10,
    30
@@ -1773,16 +1866,19 @@
     "olho_ciclope",
     0.05
    ]
-  ]
+  ],
+  "nivel": 30,
+  "hp_base": 200,
+  "atk_base": 20
  },
  "ciclope": {
   "name": "Ciclope",
   "regiao": "Acampamento dos Ciclopes",
   "desc": "Gigante antigo. Atira pedregulhos e faz a terra tremer quando pisa.",
-  "hp": 400,
-  "atk": 28,
-  "def": 5,
-  "xp": 250,
+  "hp": 2627,
+  "atk": 40.8,
+  "def": 9.8,
+  "xp": 925,
   "gold": [
    30,
    80
@@ -1840,14 +1936,17 @@
     "olho_ciclope",
     0.15
    ]
-  ]
+  ],
+  "nivel": 35,
+  "hp_base": 400,
+  "atk_base": 28
  },
  "capitao_korvo": {
   "name": "Capitão Korvo",
-  "hp": 650,
-  "atk": 20,
-  "def": 0,
-  "xp": 420,
+  "hp": 4252,
+  "atk": 37.6,
+  "def": 4.8,
+  "xp": 2460,
   "gold": [
    60,
    140
@@ -1910,15 +2009,18 @@
   "drop": "chefe_capuz_korvo",
   "chefe": true,
   "respawn": 240,
-  "drop_chance": 0.3
+  "drop_chance": 0.3,
+  "nivel": 15,
+  "hp_base": 650,
+  "atk_base": 20
  },
  "golem_ancestral": {
   "name": "Golem Ancestral",
   "sangue": "pedra",
-  "hp": 1300,
-  "atk": 30,
-  "def": 6.0,
-  "xp": 800,
+  "hp": 11760,
+  "atk": 64.0,
+  "def": 8.5,
+  "xp": 8040,
   "gold": [
    120,
    260
@@ -1985,16 +2087,19 @@
   "drop": "chefe_ombreiras_granito",
   "chefe": true,
   "respawn": 240,
-  "drop_chance": 0.3
+  "drop_chance": 0.3,
+  "nivel": 30,
+  "hp_base": 1300,
+  "atk_base": 30
  },
  "slime_rei": {
   "name": "Slime Rei",
   "regiao": "Campos de Brumavale",
   "desc": "Slime gigante com uma coroa engolida no meio da gosma. Pula esmagando tudo e solta filhotes de gosma.",
-  "hp": 520,
-  "atk": 14,
-  "def": 0,
-  "xp": 360,
+  "hp": 2520,
+  "atk": 28.8,
+  "def": 3.5,
+  "xp": 1320,
   "gold": [
    40,
    100
@@ -2062,16 +2167,19 @@
   "drop": "chefe_amuleto_gelatinoso",
   "chefe": true,
   "respawn": 240,
-  "drop_chance": 0.3
+  "drop_chance": 0.3,
+  "nivel": 10,
+  "hp_base": 520,
+  "atk_base": 14
  },
  "lich_mortecinza": {
   "name": "Lich Mortecinza",
   "regiao": "Cemitério Esquecido",
   "desc": "O antigo senhor do cemitério, morto há séculos e ainda conjurando. Guarda a cripta.",
-  "hp": 950,
-  "atk": 22,
-  "def": 2,
-  "xp": 700,
+  "hp": 13023,
+  "atk": 67.5,
+  "def": 9.0,
+  "xp": 9029,
   "gold": [
    90,
    200
@@ -2160,16 +2268,19 @@
   "drop": "chefe_cajado_lich",
   "chefe": true,
   "respawn": 240,
-  "drop_chance": 0.3
+  "drop_chance": 0.3,
+  "nivel": 32,
+  "hp_base": 950,
+  "atk_base": 22
  },
  "matriarca_uivante": {
   "name": "Matriarca Uivante",
   "regiao": "Caverna Uivante",
   "desc": "Loba branca enorme que governa a caverna. O uivo dela chama a matilha inteira.",
-  "hp": 950,
-  "atk": 26,
-  "def": 2,
-  "xp": 720,
+  "hp": 11760,
+  "atk": 64.0,
+  "def": 8.5,
+  "xp": 8040,
   "gold": [
    80,
    180
@@ -2243,16 +2354,19 @@
   "drop": "chefe_manto_matriarca",
   "chefe": true,
   "respawn": 240,
-  "drop_chance": 0.3
+  "drop_chance": 0.3,
+  "nivel": 30,
+  "hp_base": 950,
+  "atk_base": 26
  },
  "rainha_aracnidea": {
   "name": "Rainha Aracnídea",
   "regiao": "Selva Rubra",
   "desc": "A rainha de todas as aranhas da selva, com a marca vermelha brilhando nas costas.",
-  "hp": 1150,
-  "atk": 27,
-  "def": 3,
-  "xp": 850,
+  "hp": 15733,
+  "atk": 74.6,
+  "def": 10.0,
+  "xp": 11179,
   "gold": [
    100,
    220
@@ -2333,16 +2447,19 @@
   "drop": "chefe_anel_aracnideo",
   "chefe": true,
   "respawn": 240,
-  "drop_chance": 0.3
+  "drop_chance": 0.3,
+  "nivel": 36,
+  "hp_base": 1150,
+  "atk_base": 27
  },
  "polifemo": {
   "name": "Polifemo, o Ancião",
   "regiao": "Acampamento dos Ciclopes",
   "desc": "O ciclope mais velho e maior de todos. Cada pisada derruba quem estiver perto.",
-  "hp": 1600,
-  "atk": 36,
-  "def": 5,
-  "xp": 1100,
+  "hp": 20261,
+  "atk": 85.1,
+  "def": 11.5,
+  "xp": 14837,
   "gold": [
    150,
    320
@@ -2417,6 +2534,9 @@
   "drop": "chefe_olho_polifemo",
   "chefe": true,
   "respawn": 240,
-  "drop_chance": 0.3
+  "drop_chance": 0.3,
+  "nivel": 42,
+  "hp_base": 1600,
+  "atk_base": 36
  }
 }

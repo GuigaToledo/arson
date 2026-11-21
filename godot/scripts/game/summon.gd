@@ -96,7 +96,7 @@ func power() -> float:
 	var el_lv := 1.0
 	if is_instance_valid(owner_p) and owner_p.has_method("elem_level"):
 		el_lv = owner_p.elem_level(els[0])
-	return (9.0 + 2.4 * lv) * (1.0 + 0.06 * el_lv) * (1.6 if fused else 1.0)
+	return (9.0 + 2.4 * lv) * (1.0 + 0.035 * el_lv) * (1.6 if fused else 1.0)
 
 
 func heal(v: float) -> void:

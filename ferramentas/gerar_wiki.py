@@ -60,10 +60,10 @@ for k, m in mons_raw.items():
                      'hp': m['hp'], 'atk': m['atk'], 'def': m.get('def', 0), 'xp': m['xp'], 'gold': '%d–%d' % tuple(m['gold']),
                      'distancia': float(m.get('range', 1)) > 2.0, 'elemento': m.get('el', ''), 'cor': cor,
                      'habilidades': [{'nome': s.get('nome', s['tipo']), 'desc': s.get('desc', '')} for s in m.get('habilidades', [])],
-                     'chefe': bool(m.get('chefe')),
+                     'chefe': bool(m.get('chefe')), 'nivel': m.get('nivel', 1),
                      'saque': ['%s (%d ouro, %d%%)' % (saque_db[i]['nome'], saque_db[i]['preco'], round(c * 100)) for i, c in m.get('saque', []) if i in saque_db],
                      'drop': m.get('drop', ''), 'drop_chance': m.get('drop_chance', 0)})
-monstros.sort(key=lambda x: (x['chefe'], x['xp']))
+monstros.sort(key=lambda x: (x['chefe'], x['nivel'], x['xp']))
 _nomes = {i['id']: i['nome'] for i in itens}
 for m in monstros:
     m['drop'] = ('%s (%d%%)' % (_nomes.get(m['drop'], m['drop']), round(m['drop_chance'] * 100))) if m['drop'] else ''
@@ -83,6 +83,7 @@ regras = [
     'O alvo é escolhido sozinho: o inimigo mais próximo. As magias ficam na barra (1 a 8 no PC).',
     'Cada elemento sobe de nível com o uso. A Defesa sobe quando você leva golpes.',
     'Monstros dão experiência e ouro e podem deixar itens. Cada região tem os seus monstros.',
+    'Cada monstro tem um nível. Nome verde: até 4 níveis acima do seu (normal). Laranja: 5 a 9 acima, bate 20x mais e dá 50% mais experiência. Vermelho: 10 ou mais acima, bate 50x mais e dá o dobro de experiência.',
     'Qualquer monstro comum pode nascer Elite (aura dourada): 2,6x vida, mais dano, 3x experiência e ouro e mais saque.',
     'Cada região tem um chefe (aura vermelha). Ele demora alguns minutos para voltar, deixa um troféu valioso e pode deixar um equipamento único.',
     'O saque das criaturas (peles, ossos, gosmas...) vai para a bolsa de saque e é vendido ao Brann, na vila.',

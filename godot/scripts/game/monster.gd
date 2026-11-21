@@ -55,6 +55,17 @@ var _buff_t := 0.0
 const ELITE_CHANCE := 0.07
 var elite := false
 var boss := false
+## Nível do monstro (data/monstros.json "nivel"; elite +3).
+var level := 1
+
+
+## Nível de quem bate/apanha (jogador, amigo, ou o dono da invocação).
+static func level_of(n) -> int:
+	if n == null or not is_instance_valid(n):
+		return 1
+	if n.get("owner_p") != null and is_instance_valid(n.owner_p):
+		return int(n.owner_p.get("level")) if n.owner_p.get("level") != null else 1
+	return int(n.get("level")) if n.get("level") != null else 1
 
 
 ## Acha o tipo pelo nome mostrado (o saque e as tarefas chegam pelo nome, inclusive pela rede).
@@ -88,6 +99,8 @@ func configure(t: String, at: Vector2, is_elite := false) -> Monster:
 		info["scale"] = float(info.scale) * 1.2
 		info["aggro"] = float(info.aggro) + 1.0
 		info["speed"] = float(info.speed) * 1.08
+		info["nivel"] = int(info.get("nivel", 1)) + 3
+	level = int(info.get("nivel", 1))
 	display_name = info.name
 	body_colors = info.colors
 	start_items = info.items
@@ -278,7 +291,8 @@ func _hit(tgt, mult := 1.0, sk: Dictionary = {}) -> void:
 		CombatText.add(tgt.global_position + Vector2(0, -80), "errou", Color(0.75, 0.75, 0.75))
 		return
 	var bonus := 1.25 if _buff_t > 0.0 else 1.0
-	tgt.take_damage(Rules.roll(float(info.atk) * mult * bonus), display_name)
+	var dg := Rules.danger(level, level_of(tgt)) if not info.get("dummy", false) else 0
+	tgt.take_damage(Rules.roll(float(info.atk) * mult * bonus * Rules.danger_dmg(dg)), display_name)
 	var ef: Dictionary = sk.get("efeito", {}) if not sk.is_empty() else info.get("efeito_ataque", {})
 	if not ef.is_empty() and tgt.has_method("apply_debuff") and randf() < float(ef.get("chance", 1.0)):
 		tgt.apply_debuff(str(ef.tipo), float(ef.get("dur", 3.0)), float(ef.get("poder", 0.0)), display_name)
@@ -597,7 +611,8 @@ func _die(by: Node2D) -> void:
 	_die_visual()
 	if by != null and is_instance_valid(by) and by.has_method("gain_xp"):
 		var g: Array = info.gold
-		by.gain_xp(int(info.xp), randi_range(int(g[0]), int(g[1])), display_name)
+		var xm := Rules.danger_xp(Rules.danger(level, level_of(by)))
+		by.gain_xp(int(round(float(info.xp) * xm)), randi_range(int(g[0]), int(g[1])), display_name)
 
 
 func _die_visual() -> void:
