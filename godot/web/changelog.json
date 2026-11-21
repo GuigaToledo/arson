@@ -1,5 +1,17 @@
 [
  {
+  "versao": "0.9.7",
+  "data": "2026-11-21",
+  "titulo": "Treino de magia e efeitos no corpo",
+  "itens": [
+   "Treino de magia (menu → Automação): escolha uma magia e ela é lançada sozinha sempre que a mana enche, até na vila",
+   "Queimadura de verdade: chamas saindo de várias partes do corpo do monstro (cabeça, ombros, braços, costas, pernas) em ritmos diferentes, com fumaça e brasas",
+   "Gelo: geada grudada no corpo e, ao congelar, um bloco de gelo facetado",
+   "Raio: arcos elétricos pulando entre partes do corpo; água: gotas escorrendo; raízes subindo pelas pernas",
+   "A cor do monstro muda bem menos (antes parecia um disco colorido por cima)"
+  ]
+ },
+ {
   "versao": "0.9.6",
   "data": "2026-11-21",
   "titulo": "Escudo novo",

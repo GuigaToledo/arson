@@ -1152,6 +1152,13 @@ func _auto_play(delta: float) -> void:
 			break
 	if A.pocao_vida and hp_pct <= float(A.pocao_vida_pct) and _pot_cd <= 0.0:
 		use_pot("hp")
+	# treino de magia: mana cheia -> lança a magia escolhida
+	if A.get("treino", false) and _action_time <= 0.0 and mp >= max_mp - 0.5:
+		var tid := str(A.get("treino_id", ""))
+		var ts := Spells.get_spell(tid, classe)
+		if not ts.is_empty() and spell_unlocked(tid) and float(cds.get(tid, 0.0)) <= 0.0 and (not Spells.is_attack(ts) or _alive_foe()):
+			cast_spell(tid)
+			return
 	# escudo na barra: ativa sozinho e de novo sempre que quebra ou acaba
 	if A.get("escudo_auto", true) and shield_hp <= 0.0 and _action_time <= 0.0:
 		for id in bar:

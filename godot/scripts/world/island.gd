@@ -754,6 +754,21 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 	player.shield_els = [player.elem_a()]
 	player._break_shield()
 	print("TESTE escudo quebrado: ", player.shield_hp)
+	Settings.auto["treino"] = true
+	Settings.auto["treino_id"] = "luz:1"
+	player._action_time = 0.0
+	player.cds.erase("luz:1")
+	player.mp = player.max_mp
+	player._auto_t = 0.0
+	var mpa := player.mp
+	player._auto_play(0.2)
+	print("TESTE treino gastou=", mpa - player.mp)
+	Settings.auto["treino"] = false
+	for mq in get_tree().get_nodes_in_group("monsters"):
+		if not mq.info.get("dummy", false):
+			mq.apply_effect("fogo", 30.0, player, false)
+			mq._sfx.queue_redraw()
+			break
 	player._roll_drop("Slime Rei")
 	player._roll_drop("Goblin Elite")
 	for n in get_tree().get_nodes_in_group("actors"):

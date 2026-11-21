@@ -49,6 +49,7 @@ func toggle() -> void:
 		perf.apply()
 	if visible:
 		_fit()
+		_fill_trainer()
 		_show(_cur)
 		_zoom_slider.set_value_no_signal(Settings.zoom)
 
@@ -301,11 +302,54 @@ func _page_auto() -> Control:
 		_toggle("escudo_auto", "Escudo automático", "Se o escudo está na barra, ativa sozinho e ativa de novo quando quebra ou acaba.", Color(0.6, 0.85, 1)),
 		_toggle("summon_auto", "Invocação automática", "Se a invocação está na barra, invoca sozinha e invoca de novo quando ela morre.", Color(1, 0.8, 0.5)),
 		_toggle("summon_agressivo", "Invocação agressiva", "Ligado: ataca sozinha o seu alvo e os inimigos perto. Desligado: só revida.", Color(1, 0.7, 0.4)),
+		_trainer(),
 	]:
 		w.custom_minimum_size = Vector2(340, 0)
 		w.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_child(w)
 	return v
+
+
+## Treino de magia: com a mana cheia, lança sozinho a magia escolhida (bom para subir a Luz curando).
+var _train_opt: OptionButton
+
+
+func _trainer() -> Control:
+	var v := _vbox(4)
+	v.add_child(_check("treino", "Treino de magia", Color(1, 0.93, 0.6)))
+	_train_opt = OptionButton.new()
+	_train_opt.focus_mode = Control.FOCUS_NONE
+	_train_opt.add_theme_font_size_override("font_size", 15)
+	_train_opt.custom_minimum_size = Vector2(0, 38)
+	_train_opt.item_selected.connect(func(i):
+		Settings.auto["treino_id"] = str(_train_opt.get_item_metadata(i))
+		Settings.save())
+	v.add_child(_train_opt)
+	v.add_child(_lbl("Com a mana cheia, lança a magia escolhida (funciona até na vila).", 13, DIM))
+	_fill_trainer()
+	return v
+
+
+func _fill_trainer() -> void:
+	if _train_opt == null or player == null:
+		return
+	_train_opt.clear()
+	var cur := str(Settings.auto.get("treino_id", "luz:1"))
+	var els := Spellbook.elements_of(player.classe) + ["luz"]
+	var ids := []
+	for e in els:
+		for t in range(1, 9):
+			ids.append("%s:%d" % [e, t])
+	for t in [3, 5, 7, 8]:
+		ids.append("fus:%d" % t)
+	for id in ids:
+		var sp := Spells.get_spell(id, player.classe)
+		if sp.is_empty() or not player.spell_unlocked(id) or sp.type == "summon":
+			continue
+		_train_opt.add_item("%s  (%d mana)" % [sp.nome, int(sp.mana)])
+		_train_opt.set_item_metadata(_train_opt.item_count - 1, id)
+		if id == cur:
+			_train_opt.select(_train_opt.item_count - 1)
 
 
 func _check(key: String, name: String, col: Color) -> CheckBox:

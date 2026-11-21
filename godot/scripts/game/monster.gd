@@ -582,7 +582,13 @@ func _tint(delta: float) -> void:
 		return
 	_st_t -= delta
 	if hurt_t <= 0.0:
-		visual.modulate = Color.WHITE.lerp(_st_col, 0.5 if _st_t > 0.0 else 0.0)
+		var tk := 0.0
+		if _st_t > 0.0:
+			tk = 0.14
+			if _st_el == "gelo":
+				tk = 0.35
+		var tc := Color(0.55, 0.3, 0.22) if _st_el == "fogo" or _st_el == "lava" else _st_col
+		visual.modulate = Color.WHITE.lerp(tc, tk)
 
 
 ## Conta os efeitos. Devolve true se o monstro não pode agir neste quadro (atordoado/afastado).
@@ -669,49 +675,156 @@ func _revive() -> void:
 	_revive_visual()
 
 
-## Desenho do estado do monstro: bloco de gelo (congelado), raízes (preso), chamas (queimando),
-## faíscas (paralisado/eletrizado), pedras rodando (atordoado).
+## Estado do monstro desenhado no próprio corpo: chamas saindo de várias partes (cabeça,
+## ombros, braços, costas, pernas) com fumaça e brasas; geada grudada em pedaços do corpo e
+## bloco de gelo facetado quando congela; arcos elétricos pulando entre partes; gotas d'água
+## escorrendo; raízes subindo pelas pernas; estrelas/pedrinhas no atordoado.
 class StatusFx:
 	extends Node2D
 	var m: Node
 	var _t := 0.0
+	var glow: StatusGlow
+	var _smoke := []  # [pos, vel, vida, tam]
 
 	func _ready() -> void:
 		z_index = 2
+		glow = StatusGlow.new()
+		glow.fx = self
+		add_child(glow)
 
 	func _process(d: float) -> void:
 		_t += d
-		visible = m._st_t > 0.0 or m._root_t > 0.0 or m._stun_t > 0.0
-		if visible:
-			queue_redraw()
+		visible = m._st_t > 0.0 or m._root_t > 0.0 or m._stun_t > 0.0 or m._dot_t > 0.0 or not _smoke.is_empty()
+		if not visible:
+			return
+		var el: String = m._st_el
+		var burning: bool = m._dot_t > 0.0 and (el == "fogo" or el == "lava")
+		if burning and randf() < d * 9.0:
+			var an := anchors()
+			var p: Vector2 = an[randi() % an.size()]
+			_smoke.append([p + Vector2(randf_range(-3, 3), -6), Vector2(randf_range(-8, 8), randf_range(-38, -22)), 1.2, randf_range(4, 7)])
+		for sm in _smoke:
+			sm[2] -= d
+			sm[0] += sm[1] * d
+		_smoke = _smoke.filter(func(sm): return sm[2] > 0.0)
+		queue_redraw()
+		glow.queue_redraw()
+
+	## Pontos do corpo (já na escala do monstro), pelo tipo de corpo.
+	func anchors() -> Array:
+		var s := float(m.info.scale)
+		var pts: Array
+		match str(m.info.get("body", "humano")):
+			"quadrupede":
+				pts = [Vector2(-20, -24), Vector2(-8, -30), Vector2(6, -30), Vector2(18, -26), Vector2(26, -36), Vector2(-16, -10), Vector2(14, -10), Vector2(-26, -26)]
+			"slime":
+				pts = [Vector2(-12, -10), Vector2(0, -22), Vector2(12, -10), Vector2(-6, -16), Vector2(8, -18)]
+			"aranha":
+				pts = [Vector2(-10, -16), Vector2(8, -18), Vector2(0, -22), Vector2(-22, -8), Vector2(22, -8), Vector2(-16, -4), Vector2(16, -4)]
+			"morcego":
+				pts = [Vector2(0, -52), Vector2(-20, -56), Vector2(20, -56), Vector2(-10, -50), Vector2(10, -50)]
+			"fantasma":
+				pts = [Vector2(0, -70), Vector2(-10, -56), Vector2(10, -56), Vector2(-6, -36), Vector2(6, -36)]
+			_:
+				pts = [Vector2(0, -80), Vector2(-11, -64), Vector2(11, -64), Vector2(-16, -46), Vector2(16, -46), Vector2(0, -52), Vector2(-6, -30), Vector2(6, -30), Vector2(-6, -12), Vector2(6, -12)]
+		var out := []
+		for p in pts:
+			out.append(p * s)
+		return out
 
 	func _draw() -> void:
 		var s := float(m.info.scale)
 		var el: String = m._st_el
+		var an := anchors()
+		# fumaça das partes queimando (por baixo das chamas)
+		for sm in _smoke:
+			var k: float = 1.0 - float(sm[2]) / 1.2
+			draw_circle(sm[0], float(sm[3]) * (1.0 + k * 1.6) * s, Color(0.18, 0.16, 0.15, 0.32 * (1.0 - k)))
 		if m._stun_t > 0.0 and el == "gelo":
-			draw_rect(Rect2(Vector2(-18, -86) * s, Vector2(36, 88) * s), Color(0.7, 0.9, 1, 0.35))
-			draw_rect(Rect2(Vector2(-18, -86) * s, Vector2(36, 88) * s), Color(0.9, 1, 1, 0.7), false, 1.5)
-			draw_line(Vector2(-12, -80) * s, Vector2(-4, -20) * s, Color(1, 1, 1, 0.6), 1.5)
-		elif m._stun_t > 0.0:
+			# bloco de gelo facetado em volta do corpo
+			var h := 92.0 * s
+			var w := 24.0 * s
+			var outl := PackedVector2Array([Vector2(-w, 0), Vector2(-w * 1.1, -h * 0.45), Vector2(-w * 0.8, -h), Vector2(w * 0.3, -h * 1.05), Vector2(w * 1.05, -h * 0.7), Vector2(w, 0)])
+			draw_colored_polygon(outl, Color(0.72, 0.9, 1.0, 0.38))
+			draw_colored_polygon(PackedVector2Array([Vector2(-w * 0.8, -h), Vector2(w * 0.3, -h * 1.05), Vector2(w * 0.1, -h * 0.6), Vector2(-w * 0.5, -h * 0.55)]), Color(0.9, 0.97, 1.0, 0.35))
+			var o2 := outl.duplicate()
+			o2.append(outl[0])
+			draw_polyline(o2, Color(0.92, 1, 1, 0.8), 1.5)
+			draw_line(Vector2(-w * 0.6, -h * 0.9), Vector2(-w * 0.2, -h * 0.2), Color(1, 1, 1, 0.55), 1.5)
+			draw_line(Vector2(w * 0.5, -h * 0.75), Vector2(w * 0.7, -h * 0.35), Color(1, 1, 1, 0.4), 1.2)
+		elif m._slow_t > 0.0 and el == "gelo":
+			# geada grudada em partes do corpo
+			for i in an.size():
+				if i % 2 == 0:
+					var p: Vector2 = an[i]
+					for j in 3:
+						var a := j * 2.1 + i
+						var d := Vector2(cos(a), sin(a) - 0.6).normalized() * 6.0 * s
+						draw_colored_polygon(PackedVector2Array([p, p + d.rotated(0.4) * 0.5, p + d, p + d.rotated(-0.4) * 0.5]), Color(0.85, 0.96, 1, 0.75))
+		elif el == "agua" and m._st_t > 0.0:
+			for i in an.size():
+				var p: Vector2 = an[i]
+				var f := fmod(_t * 1.4 + i * 0.37, 1.0)
+				var q := p + Vector2(0, f * 22.0 * s)
+				draw_colored_polygon(PackedVector2Array([q + Vector2(0, -3.5), q + Vector2(2, 1), q + Vector2(0, 2.5), q + Vector2(-2, 1)]), Color(0.55, 0.8, 1, 0.8 * (1.0 - f)))
+		elif m._stun_t > 0.0 and el != "raio":
 			for i in 3:
 				var a := _t * 5.0 + TAU * i / 3.0
-				var p := Vector2(cos(a) * 12, -92 + sin(a) * 4) * s
-				if el == "raio":
-					SpellArt.jag(self, p, p + Vector2(6, 8), Color(0.85, 0.85, 1), 1.2, 3, 3.0)
+				var p := Vector2(cos(a) * 12, -96 + sin(a) * 4) * s
+				if el == "terra":
+					SpellArt.rock(self, p, 3.0, Color(0.5, 0.42, 0.32), i, _t * 6.0)
 				else:
-					draw_circle(p, 3, Color(1, 0.9, 0.4))
+					var st := PackedVector2Array()
+					for j in 10:
+						var r := 4.0 if j % 2 == 0 else 1.8
+						st.append(p + Vector2.from_angle(j * TAU / 10.0 - PI / 2 + _t * 3.0) * r)
+					draw_colored_polygon(st, Color(1, 0.9, 0.4))
 		if m._root_t > 0.0:
+			# raízes subindo pelas pernas e prendendo no chão
+			for i in 6:
+				var a := TAU * i / 6.0
+				SpellArt.root(self, Vector2(cos(a) * 12, sin(a) * 5) * s, (26 + (i % 3) * 8) * s, (i % 2 * 2 - 1) * 9, 1.0, Color(0.33, 0.25, 0.12), 3.0)
+			for i in 4:
+				var p2 := Vector2((i - 1.5) * 6, -14 - i * 3) * s
+				draw_colored_polygon(PackedVector2Array([p2, p2 + Vector2(5, -3), p2 + Vector2(1, -6)]), Color(0.35, 0.65, 0.2))
+
+## Camada que brilha (chamas, brasas, faíscas), somada à cor do monstro.
+class StatusGlow:
+	extends Node2D
+	var fx
+
+	func _ready() -> void:
+		material = SpellFx._add_mat()
+
+	func _draw() -> void:
+		var m = fx.m
+		var el: String = m._st_el
+		var t: float = fx._t
+		var s := float(m.info.scale)
+		var an: Array = fx.anchors()
+		if m._dot_t > 0.0 and (el == "fogo" or el == "lava"):
+			# cada parte do corpo pega fogo num ritmo diferente (umas crescem, outras diminuem)
+			for i in an.size():
+				var p: Vector2 = an[i]
+				var life := 0.5 + 0.5 * sin(t * (2.3 + i * 0.37) + i * 1.9)
+				if life < 0.2:
+					continue
+				var hh := (10.0 + 9.0 * life) * s
+				SpellArt.flame(self, p, hh, 4.5 * s, t, i * 2.7, 0.9)
+				if el == "lava":
+					draw_circle(p + Vector2(0, 2), 2.2 * s, Color(1, 0.4, 0.05, 0.8))
 			for i in 5:
-				var a := TAU * i / 5.0
-				SpellArt.root(self, Vector2(cos(a) * 12, sin(a) * 5) * s, 34 * s, (i % 2 * 2 - 1) * 8, 1.0, Color(0.35, 0.27, 0.13), 2.5)
-		if m._dot_t > 0.0:
-			if el == "fogo" or el == "lava":
-				for i in 4:
-					var x := sin(_t * 7 + i * 1.7) * 10 * s
-					var h := (14 + sin(_t * 11 + i) * 6) * s
-					SpellArt.poly(self, PackedVector2Array([Vector2(x - 4, -40 * s), Vector2(x, -40 * s - h), Vector2(x + 4, -40 * s)]), Color(1, 0.55, 0.1, 0.6))
-			elif el == "raio":
-				SpellArt.jag(self, Vector2(randf_range(-12, 12), -80) * s, Vector2(randf_range(-12, 12), -20) * s, Color(0.85, 0.85, 1, 0.8), 1.2, 4, 5.0)
+				var f := fmod(t * 0.9 + i * 0.21, 1.0)
+				var b: Vector2 = an[i % an.size()] + Vector2(sin(t * 3.0 + i) * 6.0, -f * 36.0 * s)
+				draw_circle(b, 1.3, Color(1, 0.7, 0.25, 1.0 - f))
+		elif el == "raio" and (m._dot_t > 0.0 or m._stun_t > 0.0):
+			# arcos pulando de uma parte do corpo para outra
+			for i in 3:
+				var a: Vector2 = an[(int(t * 12.0) + i * 3) % an.size()]
+				var b: Vector2 = an[(int(t * 12.0) + i * 3 + 4) % an.size()]
+				SpellArt.jag(self, a, b, Color(0.85, 0.85, 1, 0.9), 1.3, 5, 6.0 * s)
+			var e: Vector2 = an[int(t * 7.0) % an.size()]
+			SpellArt.jag(self, e, e + Vector2(randf_range(-14, 14), randf_range(8, 18)) * s, Color(0.75, 0.75, 1, 0.7), 1.0, 3, 4.0)
 
 
 ## Aura no chão: dourada no elite, vermelha com runas girando no chefe.
