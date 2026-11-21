@@ -308,8 +308,8 @@ func _page_save() -> Control:
 	v.add_child(h1)
 	var b3 := _btn("Importar (colar código)", _paste)
 	v.add_child(b3)
-	v.add_child(_lbl("Trocar de classe volta para a tela inicial. Seu nível e suas habilidades continuam.", 13, DIM))
-	v.add_child(_btn("Trocar de classe", func():
+	v.add_child(_lbl("Volta para a tela inicial, onde você escolhe ou cria outro personagem (até 4).", 13, DIM))
+	v.add_child(_btn("Trocar de personagem", func():
 		player.save()
 		if OS.has_feature("web"):
 			JavaScriptBridge.eval("location.reload()")
@@ -320,7 +320,7 @@ func _page_save() -> Control:
 
 func _export_code() -> String:
 	player.save()
-	var f := FileAccess.open(Player.SAVE_PATH, FileAccess.READ)
+	var f := FileAccess.open(Chars.path(), FileAccess.READ)
 	if f == null:
 		return ""
 	return "ARSON2:" + Marshalls.utf8_to_base64(f.get_as_text())
@@ -362,7 +362,8 @@ func import_code(code: String) -> void:
 	if c.parse(text) != OK or not c.has_section("jogador"):
 		_alert("Código inválido ou incompleto.")
 		return
-	c.save(Player.SAVE_PATH)
+	c.set_value("jogador", "nome", Chars.nome)
+	c.save(Chars.path())
 	player.reload()
 	_refresh_skills()
 	CombatText.add(player.global_position + Vector2(0, -130), "Progresso importado!", Color(0.5, 1, 0.5), true)

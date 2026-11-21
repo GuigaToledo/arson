@@ -16,7 +16,6 @@ var max_mp := 100.0
 var mp := 100.0
 const CAST_COST := 12.0
 const ATTACK_RANGE := 6.5  # tiles
-const SAVE_PATH := "user://arson_jogador.cfg"
 
 ## Classe de mago (fogo, agua, vento, terra) — escolhida na tela inicial.
 var classe := "fogo"
@@ -77,7 +76,7 @@ func _recalc() -> void:
 
 func _load() -> void:
 	var c := ConfigFile.new()
-	if c.load(SAVE_PATH) == OK:
+	if c.load(Chars.path()) == OK:
 		xp = int(c.get_value("jogador", "xp", 0))
 		gold = int(c.get_value("jogador", "ouro", 0))
 		hp_pot = int(c.get_value("jogador", "pocao_vida", 5))
@@ -100,25 +99,17 @@ func reload() -> void:
 	foe = null
 
 
-## Classe salva no progresso ("" se ainda não escolheu).
-static func saved_class() -> String:
-	var c := ConfigFile.new()
-	if c.load(SAVE_PATH) != OK:
-		return ""
-	var k := str(c.get_value("jogador", "classe", ""))
-	return k if MageClass.valid(k) else ""
-
-
 func save() -> void:
 	var c := ConfigFile.new()
 	c.set_value("jogador", "classe", classe)
+	c.set_value("jogador", "nome", Chars.nome)
 	c.set_value("jogador", "xp", xp)
 	c.set_value("jogador", "ouro", gold)
 	c.set_value("jogador", "nivel", level)
 	c.set_value("jogador", "pocao_vida", hp_pot)
 	c.set_value("jogador", "pocao_mana", mp_pot)
 	c.set_value("jogador", "habilidades", skills)
-	c.save(SAVE_PATH)
+	c.save(Chars.path())
 
 
 func gain_xp(n: int, g: int, _src: String) -> void:

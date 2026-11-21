@@ -273,8 +273,8 @@
     build() { return BUILD; },
     updateReady() { return NEW_BUILD !== ''; },
     // recarrega para a versão nova e, na volta, entra direto no personagem (pula a tela inicial)
-    reloadForUpdate() { try { sessionStorage.setItem('arson-resume', '1'); } catch (e) { } location.reload(); },
-    takeResume() { try { const r = sessionStorage.getItem('arson-resume') === '1'; sessionStorage.removeItem('arson-resume'); return r; } catch (e) { return false; } },
+    reloadForUpdate(slot) { try { sessionStorage.setItem('arson-resume', String(slot || 1)); } catch (e) { } location.reload(); },
+    takeResume() { try { const r = Number(sessionStorage.getItem('arson-resume') || 0); sessionStorage.removeItem('arson-resume'); return r; } catch (e) { return 0; } },
     saveName(n) { try { localStorage.setItem('arson-g-nome', String(n).slice(0, 16)); } catch (e) { } },
   };
 })();

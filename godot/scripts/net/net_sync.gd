@@ -76,7 +76,7 @@ func _check_update(delta: float) -> void:
 		_upd_t = 1e9
 		player.save()
 		CombatText.add(player.global_position + Vector2(0, -140), "Nova versão do jogo — atualizando…", Color(1, 0.85, 0.4), true)
-		get_tree().create_timer(2.0).timeout.connect(func(): _net.reloadForUpdate())
+		get_tree().create_timer(2.0).timeout.connect(func(): _net.reloadForUpdate(Chars.slot))
 
 
 func say(text: String) -> void:

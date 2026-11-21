@@ -58,38 +58,45 @@ func _ready() -> void:
 	intro.zoom = Vector2(1.3, 1.3)
 	add_child(intro)
 	intro.make_current()
-	var saved := Player.saved_class()
+	Chars.migrate()
 	var testing: bool = Array(OS.get_cmdline_user_args()).any(func(a): return str(a).begins_with("--teste")) or DisplayServer.get_name() == "headless"
 	if "--teste-titulo" in OS.get_cmdline_user_args():
 		testing = false
 	if testing:
-		start_game(saved if saved != "" else "fogo", "")
+		if not Chars.info(1).existe:
+			Chars.create(1, "fogo", "Teste")
+		Chars.use(1)
+		start_game(1)
 		return
-	var nome := ""
 	if OS.has_feature("web") and JavaScriptBridge.eval("typeof window.ArsonNet !== 'undefined'", true):
-		var an = JavaScriptBridge.get_interface("ArsonNet")
-		nome = str(an.savedName())
-		# voltou de uma atualização automática: entra direto no personagem
-		if an.takeResume() and saved != "":
-			start_game(saved, "")
+		# voltou de uma atualização automática: entra direto no mesmo personagem
+		var r := int(JavaScriptBridge.get_interface("ArsonNet").takeResume())
+		if r >= 1 and r <= Chars.MAX and Chars.info(r).existe:
+			Chars.use(r)
+			start_game(r)
 			return
 	var ts := TitleScreen.new()
 	add_child(ts)
-	ts.setup(saved, nome)
+	ts.setup()
 	ts.chosen.connect(start_game)
 	if "--teste-titulo" in OS.get_cmdline_user_args():
 		await get_tree().create_timer(0.5).timeout
+		Chars.delete(3)
+		ts._show_create(3)
 		ts._select("agua")
-		ts._go()
+		ts._name.text = "Aguinha"
+		ts._create()
 		await get_tree().create_timer(0.5).timeout
-		print("TESTE titulo classe=", player.classe, " cajado=", player.equipment.get_item(EquipSlot.Slot.MAIN_HAND).id if player.equipment.get_item(EquipSlot.Slot.MAIN_HAND) else "nenhum", " salvo=", Player.saved_class(), " nome=", player.display_name)
+		print("TESTE titulo vaga=", Chars.slot, " classe=", player.classe, " cajado=", player.equipment.get_item(EquipSlot.Slot.MAIN_HAND).id, " salvo=", Chars.info(3), " nome=", player.display_name)
 
 
-## Começa o jogo com a classe escolhida (chamado pela tela inicial).
-func start_game(classe: String, nome: String) -> void:
+## Começa o jogo com o personagem da vaga escolhida (chamado pela tela inicial).
+func start_game(slot: int) -> void:
+	var inf := Chars.info(slot)
+	var nome: String = inf.get("nome", "")
 	if nome != "" and OS.has_feature("web") and JavaScriptBridge.eval("typeof window.ArsonNet !== 'undefined'", true):
 		JavaScriptBridge.get_interface("ArsonNet").saveName(nome)
-	_spawn_characters(classe)
+	_spawn_characters(inf.get("classe", "fogo"))
 	if nome != "":
 		player.display_name = nome
 	_spawn_monsters()
