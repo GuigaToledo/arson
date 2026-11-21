@@ -20,6 +20,7 @@ var chat_log: Label
 var chat_input: LineEdit
 var rotate_msg: Label
 var names: NameTags
+var spellbar: SpellBar
 var _joy_idx := -1
 var _lines: PackedStringArray = PackedStringArray()
 
@@ -117,12 +118,22 @@ func _build() -> void:
 	run_btn.offset_bottom = -26
 	root.add_child(run_btn)
 
+	# barra de magias e poções (teclas 1-6 / Numpad, Q e E; também tocável)
+	spellbar = SpellBar.new()
+	spellbar.player = player
+	spellbar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	spellbar.offset_left = -211
+	spellbar.offset_right = 211
+	spellbar.offset_top = -58
+	spellbar.offset_bottom = -10
+	root.add_child(spellbar)
+
 	chat_log = _label(13, Color(0.95, 0.9, 0.6))
 	chat_log.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	chat_log.offset_left = -220
 	chat_log.offset_right = 220
-	chat_log.offset_top = -170
-	chat_log.offset_bottom = -60
+	chat_log.offset_top = -220
+	chat_log.offset_bottom = -110
 	chat_log.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	chat_log.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(chat_log)
@@ -133,8 +144,8 @@ func _build() -> void:
 	chat_input.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	chat_input.offset_left = -220
 	chat_input.offset_right = 220
-	chat_input.offset_top = -54
-	chat_input.offset_bottom = -16
+	chat_input.offset_top = -104
+	chat_input.offset_bottom = -66
 	chat_input.visible = false
 	chat_input.text_submitted.connect(_on_submit)
 	root.add_child(chat_input)
@@ -188,10 +199,19 @@ func _input(ev: InputEvent) -> void:
 
 
 func _over_controls(pos: Vector2) -> bool:
-	return joystick.hit(pos) or fire_btn.hit(pos) or run_btn.hit(pos)
+	return joystick.hit(pos) or fire_btn.hit(pos) or run_btn.hit(pos) or spellbar.slot_at(pos) >= 0
 
 
 func _start(pos: Vector2, idx: int) -> bool:
+	var si := spellbar.slot_at(pos)
+	if si >= 0:
+		if si < Player.SPELLS.size():
+			player.cast_slot(si)
+		elif si == Player.SPELLS.size():
+			player.use_pot("hp")
+		else:
+			player.use_pot("mp")
+		return true
 	if fire_btn.hit(pos):
 		fire_btn.flash()
 		player.cast_at()
@@ -233,6 +253,7 @@ func _process(_d: float) -> void:
 	bars.sub = "%s %s" % [net.status, online]
 	CombatText.step(get_process_delta_time())
 	names.foe = player.foe
+	spellbar.queue_redraw()
 	bars.queue_redraw()
 	fire_btn.enabled = player.mp >= Player.CAST_COST
 	fire_btn.queue_redraw()
@@ -353,6 +374,73 @@ class RoundButton:
 			var y := c.y + 5 + (i - (lines.size() - 1) * 0.5) * 16
 			draw_string_outline(font, Vector2(c.x - w * 0.5, y), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color.BLACK)
 			draw_string(font, Vector2(c.x - w * 0.5, y), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 0.95, 0.85))
+
+
+## Barra de atalhos: 6 magias + 2 poções. Mostra recarga, nível bloqueado e falta de mana.
+class SpellBar:
+	extends Control
+	const SZ := 46.0
+	const GAP := 6.0
+	var player: Player
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _rect(i: int) -> Rect2:
+		var x := i * (SZ + GAP) + (12.0 if i >= Player.SPELLS.size() else 0.0)
+		return Rect2(Vector2(x, 0), Vector2(SZ, SZ))
+
+	func slot_at(pos: Vector2) -> int:
+		if not visible:
+			return -1
+		var lp := pos - get_global_rect().position
+		for i in Player.SPELLS.size() + 2:
+			if _rect(i).has_point(lp):
+				return i
+		return -1
+
+	func _draw() -> void:
+		if player == null:
+			return
+		var font := ThemeDB.fallback_font
+		var n := Player.SPELLS.size()
+		for i in n + 2:
+			var r := _rect(i)
+			draw_rect(r, Color(0.06, 0.05, 0.04, 0.88))
+			var c := r.get_center() + Vector2(0, -5)
+			var key := ""
+			var label := ""
+			if i < n:
+				var s: Dictionary = Player.SPELLS[i]
+				var col: Color = {"fireball": Color(1, 0.5, 0.15), "cone": Color(1, 0.32, 0.08), "chain": Color(0.55, 0.72, 1), "area": Color(1, 0.62, 0.15), "heal": Color(0.4, 1, 0.5)}[s.type]
+				draw_circle(c, 13, Color(col, 0.3))
+				draw_circle(c, 7, col)
+				draw_circle(c, 3, Color(1, 1, 0.9))
+				key = str(i + 1)
+				label = s.curto
+				var cd := float(player.cds.get(s.k, 0.0))
+				if player.level < int(s.lvl):
+					draw_rect(r, Color(0, 0, 0, 0.72))
+					label = "nv %d" % s.lvl
+				elif cd > 0.0:
+					var f := cd / float(s.cd)
+					draw_rect(Rect2(r.position + Vector2(0, r.size.y * (1.0 - f)), Vector2(r.size.x, r.size.y * f)), Color(0, 0, 0, 0.65))
+				elif player.mp < float(s.mana):
+					draw_rect(r, Color(0, 0, 0.15, 0.5))
+			else:
+				var hpk := i == n
+				var col2 := Color(0.85, 0.15, 0.12) if hpk else Color(0.2, 0.35, 0.95)
+				draw_rect(Rect2(c + Vector2(-3, -12), Vector2(6, 6)), Color(0.6, 0.45, 0.3))
+				draw_circle(c + Vector2(0, 2), 9, col2)
+				draw_circle(c + Vector2(-3, -1), 3, Color(1, 1, 1, 0.5))
+				key = "Q" if hpk else "E"
+				label = str(player.hp_pot if hpk else player.mp_pot)
+			draw_rect(r, Color(0.6, 0.46, 0.27), false, 1.5)
+			draw_string_outline(font, r.position + Vector2(3, 11), key, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, 3, Color.BLACK)
+			draw_string(font, r.position + Vector2(3, 11), key, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 0.9, 0.6))
+			var lw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+			draw_string_outline(font, Vector2(r.get_center().x - lw * 0.5, r.end.y - 3), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, 3, Color.BLACK)
+			draw_string(font, Vector2(r.get_center().x - lw * 0.5, r.end.y - 3), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.95, 0.9, 0.82))
 
 
 ## Retrato + barras de vida e mana.

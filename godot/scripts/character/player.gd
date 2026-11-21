@@ -76,6 +76,8 @@ func _load() -> void:
 	if c.load(SAVE_PATH) == OK:
 		xp = int(c.get_value("jogador", "xp", 0))
 		gold = int(c.get_value("jogador", "ouro", 0))
+		hp_pot = int(c.get_value("jogador", "pocao_vida", 5))
+		mp_pot = int(c.get_value("jogador", "pocao_mana", 5))
 	level = Rules.level_for(xp)
 	_recalc()
 	hp = max_hp
@@ -87,6 +89,8 @@ func save() -> void:
 	c.set_value("jogador", "xp", xp)
 	c.set_value("jogador", "ouro", gold)
 	c.set_value("jogador", "nivel", level)
+	c.set_value("jogador", "pocao_vida", hp_pot)
+	c.set_value("jogador", "pocao_mana", mp_pot)
 	c.save(SAVE_PATH)
 
 
@@ -177,24 +181,168 @@ func monster_at(p: Vector2) -> Node2D:
 	return best
 
 
-## Bola de fogo: gasta mana; vai no alvo se houver, senão na direção indicada (posição no mundo).
+## Magias do mago (como na versão 3D). range/radius em tiles; poder = base + perL × nível.
+const SPELLS := [
+	{"k": "ignis", "nome": "Bola de Fogo", "curto": "Fogo", "lvl": 1, "mana": 12, "cd": 0.8, "type": "fireball", "base": 28.0, "perL": 4.0},
+	{"k": "sopro", "nome": "Sopro de Chamas", "curto": "Sopro", "lvl": 2, "mana": 30, "cd": 3.0, "type": "cone", "range": 4.5, "ang": 0.6, "base": 30.0, "perL": 4.5},
+	{"k": "corrente", "nome": "Corrente Elétrica", "curto": "Raio", "lvl": 4, "mana": 40, "cd": 3.5, "type": "chain", "range": 7.0, "jumps": 6, "jumpR": 3.6, "decay": 0.85, "base": 34.0, "perL": 5.0},
+	{"k": "meteoro", "nome": "Meteoro", "curto": "Meteoro", "lvl": 6, "mana": 65, "cd": 5.0, "type": "area", "at": "aim", "range": 8.0, "radius": 2.3, "delay": 0.7, "base": 48.0, "perL": 6.0},
+	{"k": "nova", "nome": "Nova Flamejante", "curto": "Nova", "lvl": 10, "mana": 90, "cd": 7.0, "type": "area", "at": "self", "radius": 3.4, "delay": 0.0, "base": 52.0, "perL": 6.0},
+	{"k": "cura", "nome": "Cura", "curto": "Cura", "lvl": 1, "mana": 25, "cd": 1.0, "type": "heal", "base": 30.0, "perL": 4.0},
+]
+var cds := {}
+var hp_pot := 5
+var mp_pot := 5
+var _pot_cd := 0.0
+
+
+func _msg(t: String, c := Color(1, 0.8, 0.5)) -> void:
+	CombatText.add(global_position + Vector2(0, -100), t, c)
+
+
+## Bola de fogo (botão do celular, botão direito, tecla 1).
 func cast_at(world_pos = null) -> void:
-	if dead or mp < CAST_COST or _action_time > 0.0:
+	cast_slot(0, world_pos)
+
+
+func spell_power(s: Dictionary) -> float:
+	return float(s.base) + float(s.perL) * level
+
+
+## Lança a magia `i`. Mira: no alvo se houver; senão na posição indicada; senão à frente.
+func cast_slot(i: int, world_pos = null) -> void:
+	if dead or i < 0 or i >= SPELLS.size() or _action_time > 0.0:
 		return
-	mp -= CAST_COST
-	var d := Iso.dir_vector(facing)
-	if world_pos == null and _alive_foe():
-		world_pos = foe.global_position
-	if world_pos != null and (world_pos - global_position).length() > 4.0:
-		d = (world_pos - global_position).normalized()
-		facing = Iso.dir_from_vector(d)
-	play_action("cast", 0.5)
-	var fb := Fireball.new()
-	fb.dir = d
-	fb.power = 28.0 + 4.0 * level
-	fb.caster = self
-	fb.global_position = global_position + Iso.ground_velocity(d, 1.0) * 18.0
-	get_parent().add_child(fb)
+	var s: Dictionary = SPELLS[i]
+	if level < int(s.lvl):
+		_msg("%s: nível %d" % [s.nome, s.lvl])
+		return
+	if float(cds.get(s.k, 0.0)) > 0.0:
+		return
+	if mp < float(s.mana):
+		_msg("Mana insuficiente", Color(0.5, 0.7, 1))
+		return
+	if s.type != "heal" and Rules.is_safe(global_position):
+		_msg("Não dá para atacar na vila")
+		return
+	var aim: Vector2 = global_position + Iso.dir_vector(facing) * 120.0
+	if _alive_foe():
+		aim = foe.global_position
+	elif world_pos != null:
+		aim = world_pos
+	var ok := true
+	match s.type:
+		"fireball":
+			var d := (aim - global_position).normalized() if (aim - global_position).length() > 4.0 else Iso.dir_vector(facing)
+			var fb := Fireball.new()
+			fb.dir = d
+			fb.power = spell_power(s)
+			fb.caster = self
+			fb.global_position = global_position + Iso.ground_velocity(d, 1.0) * 18.0
+			get_parent().add_child(fb)
+		"cone":
+			var gd := Iso.to_grid(aim) - Iso.to_grid(global_position)
+			if gd.length() < 0.01:
+				gd = Iso.to_grid(global_position + Iso.dir_vector(facing)) - Iso.to_grid(global_position)
+			gd = gd.normalized()
+			var screen_dir := (Iso.to_screen(Iso.to_grid(global_position) + gd) - global_position).normalized()
+			SpellFx.cone(get_parent(), global_position, screen_dir, float(s.range) * 64.0, float(s.ang))
+			for m in _monsters():
+				var v := Iso.to_grid(m.global_position) - Iso.to_grid(global_position)
+				if v.length() <= float(s.range) + 0.3 and (v.length() < 0.7 or absf(v.angle_to(gd)) <= float(s.ang) + 0.15):
+					m.take_damage(Rules.roll(spell_power(s), float(m.info.def)), self)
+		"chain":
+			var first: Node2D = foe if _alive_foe() and Rules.gdist(global_position, foe.global_position) <= float(s.range) + 1.0 else _nearest_to(aim, 2.5, {})
+			if first == null or Rules.gdist(global_position, first.global_position) > float(s.range) + 1.0:
+				first = _nearest_to(global_position, float(s.range), {})
+			if first == null:
+				_msg("Nenhum alvo ao alcance")
+				ok = false
+			else:
+				var hit := {}
+				var pts := [global_position]
+				var pw := spell_power(s)
+				var m: Node2D = first
+				for j in int(s.jumps):
+					if m == null:
+						break
+					hit[m] = true
+					pts.append(m.global_position)
+					m.take_damage(Rules.roll(pw, float(m.info.def)), self)
+					pw *= float(s.decay)
+					m = _nearest_to(m.global_position, float(s.jumpR), hit)
+				SpellFx.lightning(get_parent(), pts)
+		"area":
+			var cg := Iso.to_grid(global_position)
+			if s.at == "aim":
+				var tg := Iso.to_grid(aim) - cg
+				if tg.length() > float(s.range):
+					tg = tg.normalized() * float(s.range)
+				cg += tg
+			var center := Iso.to_screen(cg)
+			var pw2 := spell_power(s)
+			var rad := float(s.radius)
+			var boom := func():
+				for m2 in _monsters():
+					if Iso.to_grid(m2.global_position).distance_to(cg) <= rad + 0.3:
+						m2.take_damage(Rules.roll(pw2, float(m2.info.def)), self)
+			if float(s.delay) > 0.0:
+				SpellFx.meteor(get_parent(), center, float(s.delay), rad, boom)
+			else:
+				SpellFx.explosion(get_parent(), center, rad)
+				boom.call()
+		"heal":
+			var v2 := Rules.roll(spell_power(s))
+			hp = minf(max_hp, hp + v2)
+			CombatText.add(global_position + Vector2(0, -92), "+%d" % v2, Color(0.4, 1, 0.5))
+			SpellFx.heal(get_parent(), global_position)
+	if not ok:
+		return
+	mp -= float(s.mana)
+	cds[s.k] = float(s.cd)
+	if s.type != "heal":
+		facing = Iso.dir_from_vector(aim - global_position) if (aim - global_position).length() > 4.0 else facing
+	play_action("cast", 0.45)
+
+
+func _monsters() -> Array:
+	return get_tree().get_nodes_in_group("monsters").filter(func(m): return not m.dead)
+
+
+func _nearest_to(p: Vector2, r_tiles: float, skip: Dictionary) -> Node2D:
+	var best: Node2D = null
+	var bd := r_tiles
+	for m in _monsters():
+		if skip.has(m):
+			continue
+		var d := Rules.gdist(p, m.global_position)
+		if d <= bd:
+			bd = d
+			best = m
+	return best
+
+
+func use_pot(kind: String) -> void:
+	if dead or _pot_cd > 0.0:
+		return
+	if kind == "hp":
+		if hp_pot <= 0:
+			_msg("Sem poções de vida")
+			return
+		hp_pot -= 1
+		var v := 90 + 3 * level
+		hp = minf(max_hp, hp + v)
+		CombatText.add(global_position + Vector2(0, -92), "+%d" % v, Color(0.4, 1, 0.5))
+		SpellFx.heal(get_parent(), global_position)
+	else:
+		if mp_pot <= 0:
+			_msg("Sem poções de mana")
+			return
+		mp_pot -= 1
+		var v2 := 60 + 3 * level
+		mp = minf(max_mp, mp + v2)
+		CombatText.add(global_position + Vector2(0, -92), "+%d mana" % v2, Color(0.45, 0.65, 1))
+	_pot_cd = 1.0
 
 
 func _auto_attack(delta: float) -> void:
@@ -226,6 +374,9 @@ func _process(delta: float) -> void:
 		return
 	mp = minf(max_mp, mp + delta * 4.0)
 	hp = minf(max_hp, hp + delta * (3.0 if Rules.is_safe(global_position) else 1.0))
+	for k in cds:
+		cds[k] = maxf(0.0, float(cds[k]) - delta)
+	_pot_cd -= delta
 	_auto_attack(delta)
 	_save_t -= delta
 	if _save_t <= 0.0:
@@ -251,9 +402,16 @@ func _unhandled_input(ev: InputEvent) -> void:
 		target = get_global_mouse_position()
 	var k := ev as InputEventKey
 	if get_viewport().gui_get_focus_owner() == null and k and k.pressed and not k.echo:
-		if k.physical_keycode == KEY_1:
-			cast_at()
-		elif k.physical_keycode == KEY_SPACE:
+		var kc := k.physical_keycode
+		if kc >= KEY_1 and kc <= KEY_6:
+			cast_slot(kc - KEY_1, get_global_mouse_position())
+		elif kc >= KEY_KP_1 and kc <= KEY_KP_6:
+			cast_slot(kc - KEY_KP_1, get_global_mouse_position())
+		elif kc == KEY_Q:
+			use_pot("hp")
+		elif kc == KEY_E:
+			use_pot("mp")
+		elif kc == KEY_SPACE:
 			target_nearest()
 			get_viewport().set_input_as_handled()
 

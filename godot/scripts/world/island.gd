@@ -238,12 +238,17 @@ func _teste_combate() -> void:
 	if m == null:
 		return
 	player.global_position = m.home + Vector2(120, 40)
+	# nível alto só no teste, para lançar todas as magias
+	player.level = 12
+	player._recalc()
+	player.mp = player.max_mp
 	for i in 30:
 		await get_tree().create_timer(0.25).timeout
 		if not player._alive_foe():
 			player.target_nearest()
 		if i % 4 == 0:
-			player.cast_at()
+			player.mp = player.max_mp
+			player.cast_slot((i / 4) % Player.SPELLS.size())
 	print("TESTE nivel=", player.level, " xp=", player.xp, " ouro=", player.gold, " vida=", int(player.hp), " alvo_vivo=", player._alive_foe())
 
 
