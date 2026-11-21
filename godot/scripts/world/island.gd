@@ -767,7 +767,10 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 	for mq in get_tree().get_nodes_in_group("monsters"):
 		if not mq.info.get("dummy", false):
 			mq.apply_effect("fogo", 30.0, player, false)
+			mq._tint(0.1)
+			mq._sfx._process(0.1)
 			mq._sfx.queue_redraw()
+			print("TESTE queimando partes=", mq._sfx.anchors().size())
 			break
 	player._roll_drop("Slime Rei")
 	player._roll_drop("Goblin Elite")
