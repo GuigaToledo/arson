@@ -25,7 +25,9 @@ jobs:
 
       - name: Peças de cenário (remove fundo)
         run: |
-          pip install --quiet pillow
+          pip install --quiet pillow numpy
+          # peças do cenário desenhadas por código (com acabamento realista)
+          python3 ferramentas/desenhar_pecas.py
           python3 ferramentas/processar_objetos.py arte/objetos godot/assets/objetos
 
       - name: Baixar Godot e modelos de exportação

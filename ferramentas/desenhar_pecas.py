@@ -176,8 +176,40 @@ class Canvas:
         self.rgb = self.rgb + np.array(color)[None, None, :] * g[..., None]
         self.a = np.maximum(self.a, np.clip(g * 1.2, 0, 1) * (d < 1))
 
+    def weather(self, rgb):
+        """Acabamento realista: sujeira em manchas, escorridos de chuva, oclusão de ambiente nas
+        bordas e cantos, luz de contorno no lado da luz (alto à esquerda) e musgo/umidade na base."""
+        a = self.a
+        k = SS * RES
+        big = smooth_noise(self.w, self.h, 22 * k, 11)
+        fine = smooth_noise(self.w, self.h, 2 * k, 12)
+        rgb = rgb * (0.78 + 0.34 * big)[..., None] * (0.9 + 0.2 * fine)[..., None]
+        # escorridos verticais (chuva)
+        st = np.asarray(Image.fromarray((smooth_noise(self.w, 8, 3 * k, 13) * 255).astype(np.uint8)).resize((self.w, self.h), Image.BICUBIC), np.float32) / 255.0
+        rgb = rgb * (0.88 + 0.16 * st)[..., None]
+        # oclusão de ambiente: perto da borda da silhueta fica mais escuro
+        am = Image.fromarray((a * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(5 * k))
+        ab = np.asarray(am, np.float32) / 255.0
+        ao = np.clip((ab - 0.45) / 0.55, 0, 1)
+        rgb = rgb * (0.72 + 0.28 * ao)[..., None]
+        # luz de contorno: pixel cheio com vizinho vazio no lado da luz
+        sh = int(2 * k)
+        nb = np.zeros_like(a)
+        nb[sh:, sh:] = a[:-sh, :-sh]
+        rim = np.clip(a - nb, 0, 1)
+        rim = np.asarray(Image.fromarray((rim * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(k)), np.float32) / 255.0
+        rgb = rgb + np.array([0.16, 0.12, 0.07])[None, None, :] * rim[..., None] * a[..., None]
+        # base úmida com musgo
+        ys = np.nonzero(a.max(1) > 0)[0]
+        if len(ys):
+            y0, y1 = ys.min(), ys.max()
+            t = np.clip((np.arange(self.h) - (y1 - (y1 - y0) * 0.22)) / max(1, (y1 - y0) * 0.22), 0, 1)
+            moss = (t[:, None] * np.clip(big * 1.6 - 0.5, 0, 1))[..., None]
+            rgb = rgb * (1 - 0.25 * moss) + np.array([0.12, 0.16, 0.06]) * moss * 0.6
+        return rgb
+
     def save(self, name, outline=True):
-        rgb = np.clip(self.rgb, 0, 1)
+        rgb = np.clip(self.weather(self.rgb), 0, 1)
         # tom do jogo: dessatura, escurece e escurece mais perto do chão
         gray = rgb.mean(-1, keepdims=True)
         rgb = (gray + (rgb - gray) * 0.6) * 0.82
