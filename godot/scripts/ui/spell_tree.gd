@@ -80,7 +80,7 @@ func _draw() -> void:
 	# cabeçalhos
 	_header(font, Vector2(xa - R, 20), Spellbook.ELEMENTS[ea].nome, la, player.skills[ea], ca, ea)
 	_header(font, Vector2(xb - R, 20), Spellbook.ELEMENTS[eb].nome + ("" if lb > 0 else " (base 31)"), lb, player.skills[eb], cb, eb)
-	_header(font, Vector2(xl - R, 20), "Luz", ll, player.skills.luz, cl, "luz")
+	_header(font, Vector2(xl - R, 20), "Luz", player.elem_level("luz"), player.skills.luz, cl, "luz")
 	draw_string(font, Vector2(xf - 30, 20), "Fusões", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, cf.lightened(0.2))
 
 	# ligações (acendem quando a magia de baixo realmente libera)
