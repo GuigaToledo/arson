@@ -164,6 +164,18 @@ func _build() -> void:
 	for pg in [_page_char(), _page_spells(), _page_equip(), _page_auto(), _page_graphics(), _page_save()]:
 		content.add_child(pg)
 		_pages.append(pg)
+	# X no canto de cima à direita (por cima de tudo, só o botão recebe toque)
+	var over := Control.new()
+	over.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(over)
+	var x := UiKit.button("✕", toggle, 20, true)
+	x.custom_minimum_size = Vector2(46, 42)
+	x.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	x.offset_left = -40
+	x.offset_top = -6
+	x.offset_right = 6
+	x.offset_bottom = 36
+	over.add_child(x)
 	_show(0)
 
 
