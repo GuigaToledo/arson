@@ -486,27 +486,36 @@ func cast_spell(id: String, world_pos = null) -> void:
 			SpellFx.heal(get_parent(), global_position)
 			if s.has("ring"):
 				SpellFx.ring(get_parent(), global_position, float(s.ring), Color(1, 0.95, 0.6), 0.8)
+				for rp in _allies(float(s.ring)):
+					_ally(rp, {"k": "heal", "n": int(Rules.roll(pw))})
 		"chainheal":
 			var pts := [global_position + Vector2(0, -40)]
 			_heal(Rules.roll(pw))
+			# pula de aliado em aliado, do mais ferido ao menos ferido
+			var al := _allies(8.0)
+			al.sort_custom(func(a, b): return a.hp_pct < b.hp_pct)
+			for rp in al:
+				pts.append(rp.global_position + Vector2(0, -40))
+				_ally(rp, {"k": "heal", "n": int(Rules.roll(pw))})
 			for sm in summons.values():
 				if is_instance_valid(sm):
 					sm.heal(pw * 0.8)
 					pts.append(sm.global_position + Vector2(0, -40))
-			for rp in get_tree().get_nodes_in_group("remote_players"):
-				if Rules.gdist(global_position, rp.global_position) < 8.0:
-					pts.append(rp.global_position + Vector2(0, -40))
 			pts.append(global_position + Vector2(0, -40))
 			SpellFx.lightning(get_parent(), pts, Color(1, 0.95, 0.6))
 			get_tree().create_timer(0.5).timeout.connect(func(): if not dead: _heal(Rules.roll(pw * 0.8)))
 		"hot":
 			hot_t = float(s.dur)
+			for rp in _allies(8.0):
+				_ally(rp, {"k": "hot", "d": float(s.dur)})
 			_msg("Bênção: cura contínua por 1 minuto", col)
 		"spirit":
 			spirit_t = float(s.dur)
 			_msg("Espírito de Luz por 5 minutos", col)
 		"buff":
 			buff_t = float(s.dur)
+			for rp in _allies(8.0):
+				_ally(rp, {"k": "buff", "d": float(s.dur)})
 			_msg("Aura de Bravura: +25% ataque e defesa", col)
 		"invis":
 			invis = true
@@ -549,6 +558,38 @@ func _summon(id: String, s: Dictionary) -> bool:
 	return true
 
 
+## Outros jogadores vivos a até r quadrados.
+func _allies(r: float) -> Array:
+	return get_tree().get_nodes_in_group("remote_players").filter(func(rp): return not rp.dead and Rules.gdist(global_position, rp.global_position) <= r)
+
+
+## Manda uma magia de Luz para um amigo (pela rede) e mostra o brilho nele.
+func _ally(rp: Node2D, e: Dictionary) -> void:
+	SpellFx.heal(get_parent(), rp.global_position)
+	if NetSync.inst:
+		e["t"] = "ally"
+		e["to"] = rp.uid
+		e["de"] = display_name
+		NetSync.inst.send(e)
+
+
+## Recebe a magia de Luz de um amigo.
+func receive_ally(e: Dictionary) -> void:
+	if dead:
+		return
+	var de := str(e.get("de", "amigo"))
+	match str(e.get("k", "")):
+		"heal":
+			_heal(clampf(float(e.get("n", 0)), 0, 99999))
+			SpellFx.heal(get_parent(), global_position)
+		"hot":
+			hot_t = maxf(hot_t, clampf(float(e.get("d", 0)), 0, 60))
+			_msg("Bênção de %s" % de, Color(1, 0.95, 0.6))
+		"buff":
+			buff_t = maxf(buff_t, clampf(float(e.get("d", 0)), 0, 300))
+			_msg("Aura de Bravura de %s" % de, Color(1, 0.95, 0.6))
+
+
 func summon_died(sm: Summon) -> void:
 	for k in summons.keys():
 		if summons[k] == sm:
@@ -585,7 +626,14 @@ func _tick_states(delta: float) -> void:
 				if is_instance_valid(sm) and not sm.dead and sm.hp / sm.max_hp < lf:
 					low = sm
 					lf = sm.hp / sm.max_hp
-			if low == self and hp < max_hp:
+			var low_rp: Node2D = null
+			for rp in _allies(8.0):
+				if rp.hp_pct / 100.0 < lf:
+					low_rp = rp
+					lf = rp.hp_pct / 100.0
+			if low_rp != null:
+				_ally(low_rp, {"k": "heal", "n": int(max_hp * 0.04 + 4)})
+			elif low == self and hp < max_hp:
 				_heal(max_hp * 0.04 + 4, Color(1, 0.95, 0.6))
 			elif low != self:
 				low.heal(low.max_hp * 0.05 + 4)
@@ -598,6 +646,7 @@ func _tick_states(delta: float) -> void:
 		_aura.shield_col = shield_col
 		_aura.spirit = spirit_t > 0.0
 		_aura.immortal = immortal_t > 0.0
+		_aura.wing_cols = [Spellbook.ELEMENTS[elem_a()].cor, Spellbook.ELEMENTS[elem_b()].cor]
 		_aura.hot = hot_t > 0.0
 	visual.modulate.a = 0.35 if invis else 1.0
 
@@ -846,6 +895,8 @@ class StatusAura:
 	var shield_col := Color.WHITE
 	var spirit := false
 	var immortal := false
+	## Asas da Ascensão: uma de cada elemento que o mago domina.
+	var wing_cols := [Color(1, 0.95, 0.7), Color(1, 0.95, 0.7)]
 	var hot := false
 	var _t := 0.0
 
@@ -874,6 +925,10 @@ class StatusAura:
 			draw_circle(p, 4, Color(1, 0.98, 0.85))
 		if immortal:
 			var fl := 0.8 + 0.2 * sin(_t * 4.0)
-			for sgn in [-1, 1]:
+			for wi in 2:
+				var sgn := -1 if wi == 0 else 1
+				var wc: Color = wing_cols[wi]
 				var pts := PackedVector2Array([Vector2(0, -52), Vector2(sgn * 38 * fl, -88), Vector2(sgn * 52 * fl, -64), Vector2(sgn * 30 * fl, -48)])
-				draw_colored_polygon(pts, Color(1, 0.95, 0.7, 0.45))
+				draw_colored_polygon(pts, Color(wc, 0.5))
+				for f in 3:
+					draw_line(Vector2(0, -52), Vector2(sgn * (30 + f * 9) * fl, -84 + f * 10), Color(wc.lightened(0.5), 0.7), 1.5)

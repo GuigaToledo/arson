@@ -6,6 +6,8 @@ extends Actor
 var uid := ""
 var dead := false
 var level := 1
+## Vida em % (para as curas de Luz escolherem quem está mais ferido).
+var hp_pct := 100
 var classe := ""
 var _class_aura: ClassAura
 ## Invocações deste jogador (só visual).
@@ -49,6 +51,7 @@ func apply_state(s: Dictionary) -> void:
 	_target = Vector2(float(s.get("x", position.x)), float(s.get("y", position.y)))
 	dead = int(s.get("d", 0)) == 1
 	level = int(s.get("l", 1))
+	hp_pct = int(s.get("hp", 100))
 	var c := str(s.get("c", ""))
 	if MageClass.valid(c) and c != classe:
 		classe = c

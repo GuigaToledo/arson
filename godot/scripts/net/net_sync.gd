@@ -117,7 +117,7 @@ func _process(delta: float) -> void:
 		_net.setMe(JSON.stringify({
 			"x": snappedf(player.global_position.x, 0.1), "y": snappedf(player.global_position.y, 0.1),
 			"f": player.facing, "a": player.anim, "n": player.display_name, "eq": eq,
-			"d": player.dead, "sf": Rules.is_safe(player.global_position), "l": player.level, "c": player.classe, "sm": player.summons_state(),
+			"d": player.dead, "sf": Rules.is_safe(player.global_position), "l": player.level, "c": player.classe, "hp": int(round(player.hp * 100.0 / player.max_hp)), "sm": player.summons_state(),
 		}))
 		if is_host and net_ready:
 			var ms := []
@@ -185,6 +185,9 @@ func _process(delta: float) -> void:
 				if m.idx == int(e.get("i", -1)):
 					m.take_damage(clampi(int(e.get("n", 0)), 0, 99999), who, true)
 					break
+		elif str(e.get("t", "")) == "ally":
+			# magia de Luz de um jogador para outro: o anfitrião repassa
+			send_to(str(e.get("to", "")), e)
 		elif str(e.get("t", "")) == "fx":
 			var who2: Node2D = player if from == uid else remotes.get(from)
 			for m in _monsters():
@@ -202,3 +205,5 @@ func _process(delta: float) -> void:
 			"hit":
 				_dbg.hit += 1
 				player.take_damage(int(e.get("n", 0)), str(e.get("src", "monstro")))
+			"ally":
+				player.receive_ally(e)
