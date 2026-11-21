@@ -51,5 +51,14 @@ static func save() -> void:
 	c.save(PATH)
 
 
+static var _mobile := -1
+
+
+## Celular/tablet? (Android, iPhone, iPad — inclusive o iPad que se diz "Mac").
 static func is_mobile() -> bool:
-	return OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios")
+	if _mobile < 0:
+		var m := OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios")
+		if not m and OS.has_feature("web"):
+			m = bool(JavaScriptBridge.eval("/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent))", true))
+		_mobile = 1 if m else 0
+	return _mobile == 1

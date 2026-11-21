@@ -124,6 +124,8 @@ func start_game(slot: int) -> void:
 	var gm := GameMenu.new()
 	add_child(gm)
 	gm.bind(player, perf)
+	if "--teste-celular" in OS.get_cmdline_user_args():
+		Settings._mobile = 1
 	var hud := Hud.new()
 	add_child(hud)
 	hud.bind(player, net, ui)

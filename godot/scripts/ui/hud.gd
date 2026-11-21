@@ -14,7 +14,9 @@ var net: NetSync
 var panel: EquipmentPanel
 var bars: StatusBars
 var joystick: Joystick
-var fire_btn: RoundButton
+var wheel: SpellWheel
+## Celular (joystick + leque de magias) ou PC (teclado: barra 1-8, Shift corre).
+var mobile := false
 var run_btn: RoundButton
 var chat_log: Label
 var chat_input: LineEdit
@@ -101,24 +103,24 @@ func _build() -> void:
 	joystick.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(joystick)
 
-	fire_btn = RoundButton.new()
-	fire_btn.text = "Bola de\nfogo"
-	fire_btn.color = Color(0.75, 0.22, 0.05)
-	fire_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	fire_btn.offset_left = -128
-	fire_btn.offset_top = -128
-	fire_btn.offset_right = -18
-	fire_btn.offset_bottom = -18
-	root.add_child(fire_btn)
+
+	wheel = SpellWheel.new()
+	wheel.player = player
+	wheel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	wheel.offset_left = -308
+	wheel.offset_top = -308
+	wheel.offset_right = -8
+	wheel.offset_bottom = -8
+	root.add_child(wheel)
 
 	run_btn = RoundButton.new()
 	run_btn.text = "Correr"
 	run_btn.color = Color(0.35, 0.3, 0.22)
-	run_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	run_btn.offset_left = -200
-	run_btn.offset_top = -88
-	run_btn.offset_right = -138
-	run_btn.offset_bottom = -26
+	run_btn.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	run_btn.offset_left = 196
+	run_btn.offset_top = -80
+	run_btn.offset_right = 258
+	run_btn.offset_bottom = -18
 	root.add_child(run_btn)
 
 	skill_panel = SkillPanel.new()
@@ -160,6 +162,8 @@ func _build() -> void:
 	chat_input.text_submitted.connect(_on_submit)
 	root.add_child(chat_input)
 
+	_set_mobile(Settings.is_mobile())
+
 	rotate_msg = _label(26, Color(1, 0.75, 0.4))
 	rotate_msg.text = "Vire o celular\npara a horizontal"
 	rotate_msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -168,11 +172,22 @@ func _build() -> void:
 	root.add_child(rotate_msg)
 
 
+## Troca os controles: celular = joystick, correr e leque de magias; PC = só a barra (teclado).
+func _set_mobile(on: bool) -> void:
+	mobile = on
+	joystick.visible = on
+	run_btn.visible = on
+	wheel.visible = on
+	spellbar.visible = not on
+
+
 # ------------------------------------------------------------ toque e mouse
 func _input(ev: InputEvent) -> void:
 	if player == null:
 		return
 	var st := ev as InputEventScreenTouch
+	if st and not mobile:
+		_set_mobile(true)  # tocou na tela: é celular/tablet
 	if st:
 		if st.pressed:
 			if _start(st.position, st.index):
@@ -209,12 +224,16 @@ func _input(ev: InputEvent) -> void:
 
 
 func _over_controls(pos: Vector2) -> bool:
-	return joystick.hit(pos) or fire_btn.hit(pos) or run_btn.hit(pos) or spellbar.slot_at(pos) >= 0
+	if not mobile:
+		return spellbar.slot_at(pos) >= 0
+	return joystick.hit(pos) or run_btn.hit(pos) or wheel.slot_at(pos) >= 0
 
 
 func _start(pos: Vector2, idx: int) -> bool:
-	var si := spellbar.slot_at(pos)
+	var si := wheel.slot_at(pos) if mobile else spellbar.slot_at(pos)
 	if si >= 0:
+		if mobile:
+			wheel.flash(si)
 		if si < SpellBar.N:
 			player.cast_slot(si)
 		elif si == SpellBar.N:
@@ -222,10 +241,8 @@ func _start(pos: Vector2, idx: int) -> bool:
 		else:
 			player.use_pot("mp")
 		return true
-	if fire_btn.hit(pos):
-		fire_btn.flash()
-		player.cast_at()
-		return true
+	if not mobile:
+		return false
 	if run_btn.hit(pos):
 		player.run_toggle = not player.run_toggle
 		run_btn.active = player.run_toggle
@@ -266,12 +283,10 @@ func _process(_d: float) -> void:
 	spellbar.queue_redraw()
 	skill_panel.queue_redraw()
 	bars.queue_redraw()
-	var s0 := player.bar_spell(0)
-	if not s0.is_empty():
-		fire_btn.text = str(s0.curto)
-		fire_btn.color = (s0.color as Color).darkened(0.35)
-		fire_btn.enabled = player.mp >= float(s0.mana) and player.spell_unlocked(str(player.bar[0]))
-	fire_btn.queue_redraw()
+	if mobile:
+		var jr := joystick.get_global_rect()
+		wheel.pot_pos = [Vector2(jr.position.x + 40, jr.position.y - 36), Vector2(jr.position.x + 104, jr.position.y - 36)]
+		wheel.queue_redraw()
 	var vs := get_viewport().get_visible_rect().size
 	rotate_msg.visible = vs.y > vs.x * 1.1
 	names.queue_redraw()
@@ -389,6 +404,95 @@ class RoundButton:
 			var y := c.y + 5 + (i - (lines.size() - 1) * 0.5) * 16
 			draw_string_outline(font, Vector2(c.x - w * 0.5, y), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color.BLACK)
 			draw_string(font, Vector2(c.x - w * 0.5, y), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 0.95, 0.85))
+
+
+## Celular: magias em leque em volta do botão principal (casa 1), poções no alto do leque.
+class SpellWheel:
+	extends Control
+	var player: Player
+	var _flash := {}
+	const M := Vector2(248, 248)
+	## As poções ficam à esquerda, acima do joystick (posição na tela, preenchida pelo HUD).
+	var pot_pos := [Vector2.ZERO, Vector2.ZERO]
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	## Centro e raio de cada botão: 0 = principal; 1-4 anel de dentro; 5-7 anel de fora; 8/9 poções.
+	func _btn(i: int) -> Array:
+		if i == 0:
+			return [M, 50.0]
+		if i <= 4:
+			return [M + Vector2.RIGHT.rotated(deg_to_rad(180 + (i - 1) * 30)) * 112, 25.0]
+		if i <= 7:
+			return [M + Vector2.RIGHT.rotated(deg_to_rad(190 + (i - 5) * 35)) * 196, 25.0]
+		return [pot_pos[i - 8] - get_global_rect().position, 24.0]
+
+	func slot_at(pos: Vector2) -> int:
+		if not visible:
+			return -1
+		var lp := pos - get_global_rect().position
+		for i in 10:
+			var b := _btn(i)
+			if lp.distance_to(b[0]) <= float(b[1]) + 6:
+				return i
+		return -1
+
+	func flash(i: int) -> void:
+		_flash[i] = 1.0
+
+	func _process(d: float) -> void:
+		for k in _flash.keys():
+			_flash[k] = float(_flash[k]) - d * 4.0
+			if _flash[k] <= 0.0:
+				_flash.erase(k)
+
+	func _draw() -> void:
+		if player == null:
+			return
+		var font := ThemeDB.fallback_font
+		for i in 10:
+			var b := _btn(i)
+			var c: Vector2 = b[0]
+			var r: float = b[1]
+			var label := ""
+			var col := Color(0.4, 0.35, 0.3)
+			var dim := 0.0
+			var cdf := 0.0
+			if i < 8:
+				var s := player.bar_spell(i)
+				if not s.is_empty():
+					col = s.color
+					label = s.curto
+					var id := str(player.bar[i])
+					if not player.spell_unlocked(id):
+						dim = 0.7
+					else:
+						var cd := float(player.cds.get(id, 0.0))
+						if cd > 0.0:
+							cdf = cd / float(s.cd)
+						elif player.mp < float(s.mana):
+							dim = 0.45
+			else:
+				var hpk := i == 8
+				col = Color(0.85, 0.15, 0.12) if hpk else Color(0.2, 0.35, 0.95)
+				label = str(player.hp_pot if hpk else player.mp_pot)
+			draw_circle(c, r + 3, Color(0, 0, 0, 0.5))
+			draw_circle(c, r, col.darkened(0.55).lerp(Color(1, 0.9, 0.6), float(_flash.get(i, 0.0)) * 0.5))
+			draw_circle(c, r * 0.45, col)
+			draw_circle(c, r * 0.18, Color(1, 1, 0.92))
+			if cdf > 0.0:
+				draw_arc(c, r * 0.75, -PI / 2, -PI / 2 + TAU * cdf, 32, Color(0, 0, 0, 0.7), r * 0.5)
+			if dim > 0.0:
+				draw_circle(c, r, Color(0, 0, 0, dim))
+			draw_arc(c, r, 0, TAU, 40, Color(0.95, 0.8, 0.5, 0.9) if i == 0 else Color(col.lightened(0.3), 0.8), 3.0 if i == 0 else 2.0)
+			var fs := 14 if i == 0 else 10
+			var w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			var ly := c.y + (r * 0.5 + 4 if i == 0 else r + 12)
+			if i >= 8:
+				ly = c.y + 4
+			draw_string_outline(font, Vector2(c.x - w * 0.5, ly), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color.BLACK)
+			draw_string(font, Vector2(c.x - w * 0.5, ly), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 0.95, 0.85))
 
 
 ## Barra de atalhos: 6 magias + 2 poções. Mostra recarga, nível bloqueado e falta de mana.
