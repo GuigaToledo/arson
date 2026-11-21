@@ -22,6 +22,10 @@ var world: Node2D
 var remotes: Dictionary = {}
 var _net = null
 var _acc := 0.0
+## Diagnóstico (?debug=1 no endereço): escreve no console do navegador a cada 5 s.
+var debug := false
+var _dbg_t := 0.0
+var _dbg := {"mundo": 0, "dano_env": 0, "dano_rec": 0, "xp": 0, "hit": 0}
 
 
 func _enter_tree() -> void:
@@ -49,6 +53,7 @@ func setup(p: Player, w: Node2D) -> void:
 		return
 	_net = JavaScriptBridge.get_interface("ArsonNet")
 	enabled = true
+	debug = bool(JavaScriptBridge.eval("/[?&]debug=1/.test(location.search)", true))
 	var nm := str(_net.savedName()).strip_edges()
 	if nm == "":
 		nm = str(JavaScriptBridge.eval("(prompt('Nome do seu personagem:', '') || '')", true)).strip_edges().substr(0, 16)
@@ -69,6 +74,7 @@ func say(text: String) -> void:
 ## Evento para o anfitrião (no anfitrião, cai na própria caixa de entrada).
 func send(e: Dictionary) -> void:
 	if enabled:
+		_dbg.dano_env += 1
 		_net.send(JSON.stringify(e))
 
 
@@ -103,6 +109,15 @@ func _process(delta: float) -> void:
 				ms.append([m.idx, snappedf(m.global_position.x, 0.1), snappedf(m.global_position.y, 0.1), m.facing, m.anim,
 					int(round(100.0 * m.hp / m.max_hp)), 1 if m.dead else 0])
 			_net.setWorld(JSON.stringify(ms))
+	if debug:
+		_dbg_t += delta
+		if _dbg_t >= 5.0:
+			_dbg_t = 0.0
+			var alive := 0
+			for m in _monsters():
+				if not m.dead:
+					alive += 1
+			print("ARSONDBG host=%s pronto=%s jogadores=%d monstros_vivos=%d %s" % [is_host, net_ready, online_count, alive, JSON.stringify(_dbg)])
 	var d = JSON.parse_string(str(_net.poll()))
 	if typeof(d) != TYPE_DICTIONARY:
 		return
@@ -132,6 +147,7 @@ func _process(delta: float) -> void:
 	# cliente: espelha os monstros do anfitrião
 	var w = d.get("world")
 	if w is Array:
+		_dbg.mundo += 1
 		var by_idx := {}
 		for m in _monsters():
 			by_idx[m.idx] = m
@@ -147,6 +163,7 @@ func _process(delta: float) -> void:
 			continue
 		var from := str(item.get("from", ""))
 		if str(e.get("t", "")) == "dmg":
+			_dbg.dano_rec += 1
 			var who: Node2D = player if from == uid else remotes.get(from)
 			for m in _monsters():
 				if m.idx == int(e.get("i", -1)):
@@ -158,6 +175,8 @@ func _process(delta: float) -> void:
 			continue
 		match str(e.get("t", "")):
 			"xp":
+				_dbg.xp += 1
 				player.gain_xp(int(e.get("n", 0)), int(e.get("g", 0)), str(e.get("src", "")))
 			"hit":
+				_dbg.hit += 1
 				player.take_damage(int(e.get("n", 0)), str(e.get("src", "monstro")))
