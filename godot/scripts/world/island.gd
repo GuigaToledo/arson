@@ -142,6 +142,11 @@ func start_game(slot: int) -> void:
 		_teste_npc.call_deferred()
 	if "--teste-etapa1" in OS.get_cmdline_user_args():
 		_teste_etapa1.call_deferred()
+	if "--teste-continente" in OS.get_cmdline_user_args():
+		# leva o jogador ao meio dos campos (e depois à caverna) para testar monstros e magias deles
+		player.global_position = Iso.to_screen(Vector2(84.5, 30.5))
+		get_tree().create_timer(4.0).timeout.connect(func(): player.global_position = Iso.to_screen(Vector2(116.5, 22.5)))
+		get_tree().create_timer(8.0).timeout.connect(func(): player.global_position = Iso.to_screen(Vector2(76.5, 62.5)))
 	if "--teste-boneco" in OS.get_cmdline_user_args():
 		_teste_boneco()
 	var net := NetSync.new()
