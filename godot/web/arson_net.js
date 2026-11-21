@@ -33,6 +33,7 @@
     peer: null, isHost: false, ready: false, running: false, gen: 0, timer: 0,
     conns: new Map(), hostConn: null, lastRx: 0, fails: 0, backoff: 0, level: 0, attempt: 0, cdn: 0,
     status: 'desconectado', me: null, name: 'Viajante', players: {}, chat: [], lastSend: 0,
+    world: null, worldIn: null, events: [], inbox: [],
   };
   try { S.level = Math.min(ICE.length - 1, Math.max(0, Number(localStorage.getItem('arson-g-net-level')) || 0)); } catch (e) { }
 
@@ -111,6 +112,8 @@
         if (s) { s.seen = now(); S.players[e.uid] = s; }
       } else if (d.t === 'say' && e.uid) {
         relaySay(e.uid, d.text);
+      } else if (d.t === 'ev' && e.uid && d.e && typeof d.e === 'object') {
+        if (S.inbox.length < 200) S.inbox.push({ from: e.uid, e: d.e });
       }
     });
     const gone = () => {
@@ -148,8 +151,9 @@
       c.on('data', d => {
         if (gen !== S.gen || !d) return;
         S.lastRx = now();
-        if (d.t === 'w' && d.p) S.players = d.p;
+        if (d.t === 'w' && d.p) { S.players = d.p; if (d.m) S.worldIn = d.m; }
         else if (d.t === 'say') pushChat(d.n, d.text);
+        else if (d.t === 'ev2' && d.e && S.events.length < 200) S.events.push(d.e);
       });
       c.on('close', () => { if (gen === S.gen) retry('O anfitrião saiu.', true); });
       c.on('error', () => { if (gen === S.gen) retry('Conexão com o anfitrião perdida.', true); });
@@ -169,6 +173,7 @@
     return {
       x: Math.max(-5000, Math.min(5000, +s.x)), y: Math.max(-5000, Math.min(5000, +s.y)),
       f: String(s.f || 'S').slice(0, 2), a: String(s.a || 'idle').slice(0, 8), n: String(s.n || 'Viajante').slice(0, 16), eq,
+      d: s.d ? 1 : 0, sf: s.sf ? 1 : 0, l: Math.max(1, Math.min(9999, s.l | 0)),
     };
   }
 
@@ -190,7 +195,7 @@
       const t = now();
       for (const k of Object.keys(S.players)) if (k !== uid && t - (S.players[k].seen || 0) > 6000) delete S.players[k];
       if (S.me) S.players[uid] = Object.assign({}, S.me, { seen: t });
-      const msg = { t: 'w', p: S.players };
+      const msg = { t: 'w', p: S.players, m: S.world };
       for (const e of S.conns.values()) if (e.uid && e.c.open) { try { e.c.send(msg); } catch (err) { } }
     } else if (S.ready && now() - S.lastRx > 6000) {
       retry('O anfitrião parou de responder.', true);
@@ -223,7 +228,29 @@
       const others = {};
       for (const k of Object.keys(S.players)) if (k !== uid) others[k] = S.players[k];
       const chat = S.chat; S.chat = [];
-      return JSON.stringify({ status: S.status, host: S.isHost, ready: S.ready, uid, players: others, chat });
+      const events = S.events; S.events = [];
+      const inbox = S.inbox; S.inbox = [];
+      const world = S.isHost ? null : S.worldIn; S.worldIn = null;
+      return JSON.stringify({ status: S.status, host: S.isHost, ready: S.ready, uid, players: others, chat, events, inbox, world });
+    },
+    // anfitrião: estado dos monstros (vai junto com os jogadores, 10x/s)
+    setWorld(json) {
+      if (!S.isHost) return;
+      try { S.world = JSON.parse(json); } catch (e) { }
+    },
+    // qualquer um -> anfitrião (no anfitrião, cai na própria caixa de entrada)
+    send(json) {
+      let e; try { e = JSON.parse(json); } catch (er) { return; }
+      if (!S.ready) return;
+      if (S.isHost) { S.inbox.push({ from: uid, e }); return; }
+      if (S.hostConn && S.hostConn.open) { try { S.hostConn.send({ t: 'ev', e }); } catch (er) { } }
+    },
+    // anfitrião -> um jogador
+    sendTo(to, json) {
+      let e; try { e = JSON.parse(json); } catch (er) { return; }
+      if (!S.isHost) return;
+      if (to === uid) { S.events.push(e); return; }
+      for (const c of S.conns.values()) if (c.uid === to && c.c.open) { try { c.c.send({ t: 'ev2', e }); } catch (er) { } }
     },
     savedName() { try { return localStorage.getItem('arson-g-nome') || ''; } catch (e) { return ''; } },
     saveName(n) { try { localStorage.setItem('arson-g-nome', String(n).slice(0, 16)); } catch (e) { } },

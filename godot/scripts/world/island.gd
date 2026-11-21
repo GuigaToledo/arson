@@ -18,6 +18,13 @@ func g(x: float, y: float) -> Vector2:
 	return Iso.to_screen(Vector2(x, y))
 
 
+func _exit_tree() -> void:
+	# solta referências estáticas para a ilha (evita travar ao fechar o jogo)
+	Rules.safe_check = Callable()
+	Actor.walkable = Callable()
+	CombatText.items.clear()
+
+
 func _ready() -> void:
 	map = WorldMap.load_file(MAP_PATH)
 	Actor.walkable = map.walkable
@@ -220,6 +227,7 @@ func _spawn_monsters() -> void:
 				continue
 			var m := Monster.new().configure(t, Iso.to_screen(gp))
 			m.name = "Monstro_%d" % n
+			m.idx = n
 			entities.add_child(m)
 			n += 1
 

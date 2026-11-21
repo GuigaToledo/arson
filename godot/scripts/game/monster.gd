@@ -38,6 +38,9 @@ const TYPES := {
 }
 
 var mtype := ""
+## Número fixo do monstro (igual em todos os jogadores: o mapa espalha sempre igual).
+var idx := -1
+var _rpos := Vector2.ZERO
 var info: Dictionary = {}
 var hp := 1.0
 var max_hp := 1.0
@@ -78,8 +81,18 @@ func _ready() -> void:
 			_col = c
 
 
+## Jogador mais próximo (o meu e, no anfitrião, os dos amigos).
 func _player() -> Node2D:
-	return get_tree().get_first_node_in_group("player")
+	var best: Node2D = null
+	var bd := 1e9
+	for p in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("remote_players"):
+		if not _valid_foe(p):
+			continue
+		var d := Rules.gdist(global_position, p.global_position)
+		if d < bd:
+			bd = d
+			best = p
+	return best
 
 
 func _valid_foe(p) -> bool:
@@ -87,6 +100,9 @@ func _valid_foe(p) -> bool:
 
 
 func _physics_process(delta: float) -> void:
+	if NetSync.is_puppet():
+		_puppet(delta)
+		return
 	if dead:
 		_respawn -= delta
 		if _respawn <= 0.0:
@@ -162,8 +178,48 @@ func _hit(tgt) -> void:
 	tgt.take_damage(Rules.roll(float(info.atk)), display_name)
 
 
-func take_damage(n: int, by: Node2D) -> void:
+## Estado vindo do anfitrião: [idx, x, y, direção, animação, vida %, morto].
+func apply_remote(row: Array) -> void:
+	_rpos = Vector2(float(row[1]), float(row[2]))
+	var f := str(row[3])
+	if Iso.DIRS.has(f):
+		facing = f
+	anim = str(row[4])
+	hp = max_hp * float(row[5]) / 100.0
+	var now_dead := int(row[6]) == 1
+	if now_dead and not dead:
+		dead = true
+		foe = null
+		_die_visual()
+	elif not now_dead and dead:
+		dead = false
+		global_position = _rpos
+		_revive_visual()
+
+
+func _puppet(delta: float) -> void:
+	if dead or _rpos == Vector2.ZERO:
+		return
+	var to := _rpos - global_position
+	if to.length() > 300.0:
+		global_position = _rpos
+	else:
+		global_position += to * minf(1.0, delta * 10.0)
+	if hurt_t > 0.0:
+		hurt_t -= delta
+		visual.modulate = Color(1, 0.45, 0.4).lerp(Color.WHITE, 1.0 - hurt_t / 0.25)
+	var spd := walk_speed * 1.5 if anim == "run" else (walk_speed if anim == "walk" else 0.0)
+	visual.tick(delta, facing, anim, spd)
+
+
+func take_damage(n: int, by: Node2D, from_net := false) -> void:
 	if dead:
+		return
+	# espelho: mostra o número na hora e manda o dano para quem hospeda
+	if NetSync.is_puppet() and not from_net:
+		hurt_t = 0.25
+		CombatText.add(global_position + Vector2(0, -80 * float(info.scale)), str(n), Color(1, 0.35, 0.25))
+		NetSync.inst.send({"t": "dmg", "i": idx, "n": n})
 		return
 	hp -= n
 	hurt_t = 0.25
@@ -178,21 +234,29 @@ func _die(by: Node2D) -> void:
 	dead = true
 	foe = null
 	_respawn = randf_range(25.0, 40.0)
+	_die_visual()
+	if by != null and is_instance_valid(by) and by.has_method("gain_xp"):
+		var g: Array = info.gold
+		by.gain_xp(int(info.xp), randi_range(int(g[0]), int(g[1])), display_name)
+
+
+func _die_visual() -> void:
 	if _col:
 		_col.set_deferred("disabled", true)
 	var tw := create_tween()
 	tw.tween_property(visual, "modulate", Color(0.2, 0.2, 0.2, 0.0), 0.8)
 	tw.tween_callback(func(): visible = false)
-	if by != null and is_instance_valid(by) and by.has_method("gain_xp"):
-		var g: Array = info.gold
-		by.gain_xp(int(info.xp), randi_range(int(g[0]), int(g[1])), display_name)
+
+
+func _revive_visual() -> void:
+	visible = true
+	visual.modulate = Color.WHITE
+	if _col:
+		_col.set_deferred("disabled", false)
 
 
 func _revive() -> void:
 	dead = false
 	hp = max_hp
 	global_position = home
-	visible = true
-	visual.modulate = Color.WHITE
-	if _col:
-		_col.set_deferred("disabled", false)
+	_revive_visual()

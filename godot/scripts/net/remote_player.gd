@@ -1,6 +1,21 @@
 class_name RemotePlayer
 extends Actor
-## Outro jogador vindo da rede: só mostra posição, direção, animação e equipamentos.
+## Outro jogador vindo da rede: mostra posição, direção, animação e equipamentos.
+## No anfitrião, também é alvo dos monstros: dano e experiência vão pela rede.
+
+var uid := ""
+var dead := false
+var level := 1
+
+
+func take_damage(n: int, src: String) -> void:
+	if NetSync.inst:
+		NetSync.inst.send_to(uid, {"t": "hit", "n": n, "src": src})
+
+
+func gain_xp(n: int, g: int, src: String) -> void:
+	if NetSync.inst:
+		NetSync.inst.send_to(uid, {"t": "xp", "n": n, "g": g, "src": src})
 
 var _target := Vector2.ZERO
 var _eq_key := ""
@@ -23,10 +38,14 @@ func _ready() -> void:
 	collision_layer = 0
 	collision_mask = 0
 	_target = position
+	add_to_group("remote_players")
 
 
 func apply_state(s: Dictionary) -> void:
 	_target = Vector2(float(s.get("x", position.x)), float(s.get("y", position.y)))
+	dead = int(s.get("d", 0)) == 1
+	level = int(s.get("l", 1))
+	visible = not dead
 	facing = str(s.get("f", "S"))
 	if not Iso.DIRS.has(facing):
 		facing = "S"
