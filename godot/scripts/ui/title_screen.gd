@@ -79,12 +79,16 @@ func _build(nome: String) -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 10)
 	col.add_child(row)
-	row.add_child(_lbl("Nome:", 16, GOLD, false))
+	var nl := _lbl("Nome:", 16, GOLD, false)
+	nl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	nl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(nl)
 	_name = LineEdit.new()
 	_name.text = nome
 	_name.placeholder_text = "nome do personagem"
 	_name.max_length = 16
 	_name.custom_minimum_size = Vector2(240, 42)
+	_name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_name.add_theme_font_size_override("font_size", 16)
 	_name.text_submitted.connect(func(_t): _go())
 	row.add_child(_name)
@@ -92,6 +96,7 @@ func _build(nome: String) -> void:
 	go.text = "Entrar no mundo"
 	go.focus_mode = Control.FOCUS_NONE
 	go.custom_minimum_size = Vector2(200, 46)
+	go.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	go.add_theme_font_size_override("font_size", 18)
 	go.add_theme_color_override("font_color", Color(1, 0.9, 0.7))
 	go.add_theme_stylebox_override("normal", _style(Color(0.45, 0.16, 0.04), Color(1, 0.6, 0.25)))
