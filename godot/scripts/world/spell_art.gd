@@ -471,11 +471,16 @@ class Proj:
 			R.append([q - nx * w, q - nx * w * 0.45])
 		for i in n - 1:
 			var f := 1.0 - float(i) / n
-			# pontos repetidos (projétil parado no primeiro quadro) não formam polígono
-			if (L[i][0] as Vector2).distance_to(L[i + 1][0]) < 0.6 or (L[i][0] as Vector2).distance_to(R[i][0]) < 0.6:
-				continue
-			draw_colored_polygon(PackedVector2Array([L[i][0], L[i + 1][0], R[i + 1][0], R[i][0]]), Color(col, col.a * f))
-			draw_colored_polygon(PackedVector2Array([L[i][1], L[i + 1][1], R[i + 1][1], R[i][1]]), Color(col2, col2.a * f))
+			# triângulos direto (sem triangulação: não falha quando a cauda faz curva)
+			for k2 in 2:
+				var cc: Color = Color(col, col.a * f) if k2 == 0 else Color(col2, col2.a * f)
+				var cs := PackedColorArray([cc, cc, cc])
+				var a0: Vector2 = L[i][k2]
+				var a1: Vector2 = L[i + 1][k2]
+				var b0: Vector2 = R[i][k2]
+				var b1: Vector2 = R[i + 1][k2]
+				draw_primitive(PackedVector2Array([a0, a1, b1]), cs, PackedVector2Array())
+				draw_primitive(PackedVector2Array([a0, b1, b0]), cs, PackedVector2Array())
 
 	func _draw() -> void:
 		var c: Vector2 = _trail[0] - global_position if _trail.size() > 0 else Vector2(0, -44)
