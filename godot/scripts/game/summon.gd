@@ -92,11 +92,13 @@ func _recalc() -> void:
 
 
 func power() -> float:
-	var lv := int(owner_p.level) if is_instance_valid(owner_p) else 1
 	var el_lv := 1.0
 	if is_instance_valid(owner_p) and owner_p.has_method("elem_level"):
 		el_lv = owner_p.elem_level(els[0])
-	return (9.0 + 2.4 * lv) * (1.0 + 0.035 * el_lv) * (1.6 if fused else 1.0)
+	# força pelo nível de magia do elemento (a vida acompanha o nível do dono)
+	if fused and is_instance_valid(owner_p) and owner_p.has_method("elem_level"):
+		el_lv = float(owner_p.elem_level(els[0]) + owner_p.elem_level(els[els.size() - 1]))
+	return (9.0 + 2.4 * el_lv) * (1.0 + 0.02 * el_lv) * (1.6 if fused else 1.0)
 
 
 func heal(v: float) -> void:

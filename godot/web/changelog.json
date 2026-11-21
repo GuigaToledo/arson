@@ -1,5 +1,17 @@
 [
  {
+  "versao": "0.9.0",
+  "data": "2026-11-21",
+  "titulo": "Nova progressão das magias",
+  "itens": [
+   "O dano e a cura vêm do nível de magia de cada elemento; o nível do personagem aumenta a vida e a mana",
+   "No nível 1: só a primeira magia de ataque do primeiro elemento e a primeira cura da Luz",
+   "Cada próxima magia libera a cada 5 níveis do elemento (1, 6, 11, 16, 21, 26): no nível 30 o lado está completo",
+   "No nível 31 começa o segundo elemento, do nível 1, com magias mais fortes",
+   "As misturas dos dois elementos são as magias supremas (ultimates), com dano muito maior"
+  ]
+ },
+ {
   "versao": "0.8.1",
   "data": "2026-11-21",
   "titulo": "Níveis pela distância da vila",

@@ -506,6 +506,18 @@ func elem_level(el: String) -> int:
 	return int(skills[el][0]) if skills.has(el) else 0
 
 
+## Progressão das magias: cada elemento tem o próprio nível de magia (sobe com o uso).
+## A magia 1 vem no nível 1; cada próxima pede mais 5 níveis (6, 11, 16, 21, 26): no 30 o lado
+## está completo. No 31 do primeiro elemento começa o segundo, do nível 1, com magias mais fortes.
+## As misturas dos dois (ultimates) vêm conforme o segundo elemento sobe.
+const STEP := 5
+const FUS_REQ := {3: 11, 5: 21, 7: 26, 8: 30}
+
+
+static func tier_req(t: int) -> int:
+	return 1 + STEP * (t - 1)
+
+
 ## A magia (id) está liberada para este personagem?
 func spell_unlocked(id: String) -> bool:
 	var s := Spells.get_spell(id, classe)
@@ -513,22 +525,40 @@ func spell_unlocked(id: String) -> bool:
 		return false
 	var t := int(s.tier)
 	if id.begins_with("fus:"):
-		var la := elem_level(elem_a())
-		var lb := elem_level(elem_b())
-		return (la == lb and la >= 3) if t == 3 else mini(la, lb) >= t
+		return elem_level(elem_b()) >= int(FUS_REQ.get(t, 30))
 	var el: String = s.els[0]
-	return skills.has(el) and elem_level(el) >= t
+	return skills.has(el) and elem_level(el) >= 1 and elem_level(el) >= tier_req(t)
 
 
 ## Texto de requisito de uma magia bloqueada.
 func spell_req(id: String) -> String:
 	var s := Spells.get_spell(id, classe)
+	var nb: String = Spellbook.ELEMENTS[elem_b()].nome
+	var na: String = Spellbook.ELEMENTS[elem_a()].nome
 	if id.begins_with("fus:"):
-		var both := "%s e %s" % [Spellbook.ELEMENTS[elem_a()].nome, Spellbook.ELEMENTS[elem_b()].nome]
-		return ("%s no mesmo nível (3+)" % both) if int(s.tier) == 3 else ("%s no nível %d" % [both, s.tier])
+		return "%s nível %d (mistura: magia suprema)" % [nb, int(FUS_REQ.get(int(s.tier), 30))]
 	if elem_level(str(s.els[0])) <= 0 and str(s.els[0]) == elem_b():
-		return "%s nível %d (o %s libera no nível 31 de %s)" % [Spellbook.ELEMENTS[s.els[0]].nome, s.tier, Spellbook.ELEMENTS[s.els[0]].nome, Spellbook.ELEMENTS[elem_a()].nome]
-	return "%s nível %d" % [Spellbook.ELEMENTS[s.els[0]].nome, s.tier]
+		return "%s nível %d (o %s começa no nível 31 de %s)" % [nb, tier_req(int(s.tier)), nb, na]
+	return "%s nível %d" % [Spellbook.ELEMENTS[s.els[0]].nome, tier_req(int(s.tier))]
+
+
+## Nível de magia que vale para o dano/cura: o segundo elemento vem depois do primeiro (mais forte);
+## as misturas somam os dois.
+func magic_level(s: Dictionary) -> float:
+	var id := str(s.get("id", ""))
+	if id.begins_with("fus:"):
+		return float(elem_level(elem_a()) + elem_level(elem_b()))
+	var el := str(s.els[0])
+	if el == elem_b() and el != "luz":
+		return float(elem_level(el)) + 25.0
+	return float(elem_level(el))
+
+
+func magic_mult(s: Dictionary) -> float:
+	var id := str(s.get("id", ""))
+	if id.begins_with("fus:"):
+		return 2.0 if int(s.tier) >= 7 else 1.3
+	return 1.35 if str(s.els[0]) == elem_b() and str(s.els[0]) != "luz" else 1.0
 
 
 func bar_spell(i: int) -> Dictionary:
@@ -565,13 +595,11 @@ func cast_at(world_pos = null) -> void:
 	cast_slot(0, world_pos)
 
 
-## Poder: base + por nível do personagem, × nível do(s) elemento(s) e bênção de ataque.
+## Poder (dano e cura): vem do nível de MAGIA do elemento, não do nível do personagem
+## (o nível do personagem dá vida e mana). Segundo elemento mais forte; misturas = dano supremo.
 func spell_power(s: Dictionary) -> float:
-	var el_lv := 0.0
-	for e in s.els:
-		el_lv += elem_level(e)
-	el_lv /= maxf(1, s.els.size())
-	var p := (float(s.get("base", 0.0)) + float(s.get("perL", 0.0)) * level) * (1.0 + 0.035 * el_lv)
+	var ml := magic_level(s)
+	var p := (float(s.get("base", 0.0)) + float(s.get("perL", 0.0)) * ml) * (1.0 + 0.02 * ml) * magic_mult(s)
 	# nível da própria magia (+2% por nível) e melhorias (+8% cada)
 	var sid := str(s.get("id", ""))
 	p *= (1.0 + 0.02 * (spell_lvl(sid) - 1)) * (1.0 + 0.08 * spell_up(sid))
@@ -732,7 +760,7 @@ func cast_spell(id: String, world_pos = null) -> void:
 		"summon":
 			ok = _summon(id, s)
 		"shield":
-			if els.size() == 1 and els[0] != "luz" and elem_level(elem_a()) == elem_level(elem_b()) and elem_level(elem_a()) >= 3:
+			if els.size() == 1 and els[0] != "luz" and spell_unlocked("fus:3"):
 				# os dois elementos no mesmo nível: os escudos se fundem e ficam mais fortes
 				els = [elem_a(), elem_b()]
 				pw = spell_power(Spells.get_spell("fus:3", classe))
@@ -1011,7 +1039,8 @@ func _auto_attack(delta: float) -> void:
 	b.global_position = global_position + Vector2(0, -2)
 	b.on_hit = func():
 		if is_instance_valid(tgt) and not tgt.dead:
-			tgt.take_damage(Rules.roll((9.0 + 1.3 * level + float(gear().get("ataque", 0))) * (1.0 + 0.035 * elem_level(elem_a())) * (1.25 if buff_t > 0.0 else 1.0), float(tgt.info.def)), self)
+			var ml := float(elem_level(elem_a()))
+			tgt.take_damage(Rules.roll((9.0 + 1.3 * ml + float(gear().get("ataque", 0))) * (1.0 + 0.02 * ml) * (1.25 if buff_t > 0.0 else 1.0), float(tgt.info.def)), self)
 	get_parent().add_child(b)
 
 

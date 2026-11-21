@@ -91,7 +91,7 @@ func _ready() -> void:
 			Chars.use(4)
 			start_game(4)
 			for k in player.skills:
-				player.skills[k] = [6, 0.0]
+				player.skills[k] = [40, 0.0]
 			get_tree().create_timer(12.0).timeout.connect(func():
 				player.mp = player.max_mp
 				player.cast_spell(player.elem_a() + ":5")
@@ -190,7 +190,7 @@ func start_game(slot: int) -> void:
 	for arg in _test_args():
 		if str(arg).begins_with("--teste-vermagia="):
 			for k in player.skills:
-				player.skills[k] = [8, 0.0]
+				player.skills[k] = [40, 0.0]
 			player.level = 15
 			player._recalc()
 			var mm: Monster = null

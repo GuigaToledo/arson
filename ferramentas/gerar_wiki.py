@@ -81,7 +81,11 @@ npcs = [
 regras = [
     'Toque no chão ou use o joystick para andar; no PC, WASD ou clique. Shift corre.',
     'O alvo é escolhido sozinho: o inimigo mais próximo. As magias ficam na barra (1 a 8 no PC).',
-    'Cada elemento sobe de nível com o uso. A Defesa sobe quando você leva golpes.',
+    'Cada elemento tem o próprio nível de magia, que sobe com o uso. É o nível de magia que aumenta o dano e a cura; o nível do personagem aumenta a vida e a mana.',
+    'No começo você tem só a 1ª magia do primeiro elemento (ataque) e a 1ª da Luz (cura). Cada próxima magia libera a cada 5 níveis do elemento: 1, 6, 11, 16, 21 e 26. No nível 30 o primeiro lado está completo.',
+    'No nível 31 do primeiro elemento começa o segundo, do nível 1 e com a mesma escada de 5 em 5. As magias do segundo elemento são as mais fortes.',
+    'As misturas dos dois elementos são as magias supremas: escudo fundido no nível 11 do segundo elemento, invocação fundida no 21, ataque supremo no 26 e área suprema no 30.',
+    'A Defesa sobe quando você leva golpes.',
     'Monstros dão experiência e ouro e podem deixar itens. Cada região tem os seus monstros.',
     'Cada monstro tem um nível. Nome verde: até 4 níveis acima do seu (normal). Laranja: 5 a 9 acima, bate 20x mais e dá 50% mais experiência. Vermelho: 10 ou mais acima, bate 50x mais e dá o dobro de experiência.',
     'Qualquer monstro comum pode nascer Elite (aura dourada): 2,6x vida, mais dano, 3x experiência e ouro e mais saque.',
