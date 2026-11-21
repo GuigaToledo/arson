@@ -458,13 +458,13 @@ func _build_glow() -> void:
 						n[1] += 1
 				"r":
 					# lava só nas colinas de pedra do continente (longe da vila)
-					if r < 0.13 and (x >= 58 or y >= 58):
-						var inner := true
+					if r < 0.3 and (x >= 58 or y >= 58):
+						var rn := 0
 						for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-							if map.at(x + d.x, y + d.y) != "r":
-								inner = false
-						if inner:
-							GlowProps.lava_pool(entities, Iso.to_screen(Vector2(x + 0.5, y + 0.5)), x * 7 + y * 13, 48.0 + r * 300.0)
+							if map.at(x + d.x, y + d.y) == "r":
+								rn += 1
+						if rn >= 3:
+							GlowProps.lava_pool(entities, Iso.to_screen(Vector2(x + 0.5, y + 0.5)), x * 7 + y * 13, 44.0 + r * 120.0)
 							n[2] += 1
 	print("brilhos: %d cogumelos, %d cristais, %d poças de lava" % n)
 
