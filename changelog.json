@@ -1,5 +1,15 @@
 [
  {
+  "versao": "0.10.1",
+  "data": "2026-11-21",
+  "titulo": "Mais leve",
+  "itens": [
+   "Monstros de nome vermelho batem 5x o dano normal e os laranjas 2x",
+   "Jogo mais leve: monstros longe dormem de verdade, efeitos e brilhos fora da tela param de rodar, nomes fora da tela não são calculados",
+   "Menos luzes de cogumelo (todos continuam brilhando) e efeitos com menos pedaços quando a qualidade está baixa"
+  ]
+ },
+ {
   "versao": "0.10.0",
   "data": "2026-11-21",
   "titulo": "Efeitos de todos os elementos refeitos",
