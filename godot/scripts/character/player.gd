@@ -240,6 +240,8 @@ var buff_t := 0.0
 var invis := false
 var immortal_t := 0.0
 var _aura: StatusAura
+## Invocações vivas: elemento (ou "fus") -> Summon.
+var summons := {}
 
 
 ## Os 3 elementos da classe (A, B e Luz) e a Defesa, todos no nível 1.
@@ -370,9 +372,6 @@ func cast_spell(id: String, world_pos = null) -> void:
 	if not spell_unlocked(id):
 		_msg("%s: requer %s" % [s.nome, spell_req(id)])
 		return
-	if s.type == "summon":
-		_msg("Invocações chegam numa próxima atualização", s.color)
-		return
 	if float(cds.get(id, 0.0)) > 0.0:
 		return
 	if mp < float(s.mana):
@@ -471,6 +470,8 @@ func cast_spell(id: String, world_pos = null) -> void:
 				SpellFx.meteor(get_parent(), center2, float(s.delay), rad, boom, col)
 			else:
 				boom.call()
+		"summon":
+			ok = _summon(id, s)
 		"shield":
 			shield_hp = pw * 1.5
 			shield_t = float(s.dur)
@@ -479,12 +480,19 @@ func cast_spell(id: String, world_pos = null) -> void:
 			_msg("%s (%d)" % [s.nome, int(shield_hp)], col)
 		"heal":
 			_heal(Rules.roll(pw))
+			for sm in summons.values():
+				if is_instance_valid(sm):
+					sm.heal(pw)
 			SpellFx.heal(get_parent(), global_position)
 			if s.has("ring"):
 				SpellFx.ring(get_parent(), global_position, float(s.ring), Color(1, 0.95, 0.6), 0.8)
 		"chainheal":
 			var pts := [global_position + Vector2(0, -40)]
 			_heal(Rules.roll(pw))
+			for sm in summons.values():
+				if is_instance_valid(sm):
+					sm.heal(pw * 0.8)
+					pts.append(sm.global_position + Vector2(0, -40))
 			for rp in get_tree().get_nodes_in_group("remote_players"):
 				if Rules.gdist(global_position, rp.global_position) < 8.0:
 					pts.append(rp.global_position + Vector2(0, -40))
@@ -521,6 +529,41 @@ func cast_spell(id: String, world_pos = null) -> void:
 	play_action("cast", 0.45)
 
 
+## Invoca (ou cura, se já estiver viva). A fundida desfaz as separadas e vice-versa.
+func _summon(id: String, s: Dictionary) -> bool:
+	var key := "fus" if id.begins_with("fus:") else str(s.els[0])
+	var cur = summons.get(key)
+	if cur != null and is_instance_valid(cur) and not cur.dead:
+		cur.heal(cur.max_hp * 0.4)
+		return true
+	for k in summons.keys():
+		var other = summons[k]
+		if (key == "fus") != (k == "fus") and is_instance_valid(other):
+			other.queue_free()
+			summons.erase(k)
+	var sm := Summon.make(self, s.els, key == "fus", str(s.nome))
+	sm.position = global_position + Vector2(-50, 24)
+	get_parent().add_child(sm)
+	summons[key] = sm
+	_msg("%s invocado!" % sm.display_name, s.color)
+	return true
+
+
+func summon_died(sm: Summon) -> void:
+	for k in summons.keys():
+		if summons[k] == sm:
+			summons.erase(k)
+
+
+## Estado das invocações para a rede: [x, y, elemento, fundida, direção, animação].
+func summons_state() -> Array:
+	var out := []
+	for sm in summons.values():
+		if is_instance_valid(sm) and not sm.dead:
+			out.append([int(sm.global_position.x), int(sm.global_position.y), str(sm.els[0]), 1 if sm.fused else 0, sm.facing, sm.anim])
+	return out
+
+
 ## Estados da Luz e do escudo (contagem e efeitos por segundo).
 func _tick_states(delta: float) -> void:
 	if shield_t > 0.0:
@@ -535,8 +578,17 @@ func _tick_states(delta: float) -> void:
 		_spirit_acc += delta
 		if _spirit_acc >= 2.0:
 			_spirit_acc = 0.0
-			if hp < max_hp:
+			# cura leve em quem tiver menos vida (você ou uma invocação)
+			var low: Node2D = self
+			var lf := hp / max_hp
+			for sm in summons.values():
+				if is_instance_valid(sm) and not sm.dead and sm.hp / sm.max_hp < lf:
+					low = sm
+					lf = sm.hp / sm.max_hp
+			if low == self and hp < max_hp:
 				_heal(max_hp * 0.04 + 4, Color(1, 0.95, 0.6))
+			elif low != self:
+				low.heal(low.max_hp * 0.05 + 4)
 	if buff_t > 0.0:
 		buff_t -= delta
 	if immortal_t > 0.0:

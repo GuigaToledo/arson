@@ -11,6 +11,7 @@ static var auto := {
 	"pocao_vida": false, "pocao_vida_pct": 35,
 	"pocao_mana": false, "pocao_mana_pct": 25,
 	"infinitas": false,
+	"summon_agressivo": true,
 }
 static var zoom := 1.9
 ## 0 = automática; 1 (mais leve) a 6 (resolução total).

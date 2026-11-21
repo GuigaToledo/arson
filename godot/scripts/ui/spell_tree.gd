@@ -93,6 +93,8 @@ func _draw() -> void:
 	var same := la == lb and la >= 3
 	_link(Vector2(xa, _row(3)), Vector2(xf, _row(3)), ca, same)
 	_link(Vector2(xb, _row(3)), Vector2(xf, _row(3)), cb, same)
+	_link(Vector2(xa, _row(5)), Vector2(xf, _row(5)), ca, mini(la, lb) >= 5)
+	_link(Vector2(xb, _row(5)), Vector2(xf, _row(5)), cb, mini(la, lb) >= 5)
 	_link(Vector2(xa, _row(6)), Vector2(xf, _row(7)), ca, mini(la, lb) >= 7)
 	_link(Vector2(xb, _row(6)), Vector2(xf, _row(7)), cb, mini(la, lb) >= 7)
 	_link(Vector2(xf, _row(7)), Vector2(xf, _row(8)), cf, mini(la, lb) >= 8)
@@ -110,6 +112,9 @@ func _draw() -> void:
 	_node(font, Vector2(xf, _row(3)), 3, fus[0], cf, same,
 		{"id": "fus:3", "fus": 3, "nome": fus[0], "req": "%s no MESMO nível (3 ou mais)" % both,
 		"desc": "Os dois escudos se fundem num só, mais forte."})
+	_node(font, Vector2(xf, _row(5)), 5, Spellbook.SUMMON_FUSION[player.classe], cf, mini(la, lb) >= 5,
+		{"id": "fus:5", "fus": 5, "nome": Spellbook.SUMMON_FUSION[player.classe], "req": "%s, os dois no nível 5" % both,
+		"desc": "Funde as duas invocações num só guardião aprimorado (mais vida e força, os dois efeitos). Usar uma invocação separada desfaz a fundida."})
 	_node(font, Vector2(xf, _row(7)), 7, fus[1], cf, mini(la, lb) >= 7,
 		{"id": "fus:7", "fus": 7, "nome": fus[1], "req": "%s, os dois no nível 7" % both,
 		"desc": "Mistura dos dois elementos num ataque de alvo único, com os dois efeitos."})
@@ -134,7 +139,7 @@ func _draw() -> void:
 	var title := ""
 	var desc := ""
 	if n.has("fus"):
-		title = "%s — %s" % [n.nome, "Escudo fundido" if n.fus == 3 else Spellbook.TIER_KIND[n.fus]]
+		title = "%s — %s" % [n.nome, "Escudo fundido" if n.fus == 3 else ("Invocação fundida" if n.fus == 5 else Spellbook.TIER_KIND[n.fus])]
 		desc = n.desc
 	else:
 		var el: Dictionary = Spellbook.ELEMENTS[n.el]

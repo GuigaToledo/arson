@@ -108,6 +108,8 @@ func start_game(slot: int) -> void:
 		_teste_menu.call_deferred()
 	if "--teste-magias" in OS.get_cmdline_user_args():
 		_teste_magias.call_deferred()
+	if "--teste-summon" in OS.get_cmdline_user_args():
+		_teste_summon.call_deferred()
 	if "--teste-boneco" in OS.get_cmdline_user_args():
 		_teste_boneco()
 	var net := NetSync.new()
@@ -538,3 +540,35 @@ func _teste_magias() -> void:
 		print("TESTE magias classe=", cl, " lancadas=", feitos, "/", ids.size(), " escudo=", int(player.shield_hp), " golem_vida=", int(m.hp), " barra=", player.bar)
 	player.invis = false
 	player.immortal_t = 0.0
+
+
+func _teste_summon() -> void:
+	await get_tree().create_timer(0.3).timeout
+	for k in player.skills:
+		player.skills[k] = [6, 0.0]
+	player.level = 15
+	player._recalc()
+	var m: Monster = null
+	for c in get_tree().get_nodes_in_group("monsters"):
+		if c.mtype != "boneco":
+			m = c
+			break
+	player.global_position = m.global_position + Vector2(200, 60)
+	player.foe = m
+	var xp0 := player.xp
+	player.mp = player.max_mp
+	player.cast_spell(player.elem_a() + ":5")
+	player.mp = player.max_mp
+	player.cast_spell(player.elem_b() + ":5")
+	print("TESTE summon invocados=", player.summons.keys())
+	await get_tree().create_timer(8.0).timeout
+	var info := []
+	for k in player.summons:
+		var sm = player.summons[k]
+		info.append([k, sm.display_name, int(sm.hp), int(sm.max_hp)])
+	print("TESTE summon depois=", info, " xp_ganho=", player.xp - xp0)
+	player.mp = player.max_mp
+	player.cds.clear()
+	player.cast_spell("fus:5")
+	await get_tree().create_timer(0.5).timeout
+	print("TESTE summon fundido=", player.summons.keys(), " rede=", player.summons_state())

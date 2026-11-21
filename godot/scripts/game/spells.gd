@@ -27,6 +27,7 @@ static func get_spell(id: String, classe: String) -> Dictionary:
 		s.els = els
 		s.color = (Spellbook.ELEMENTS[els[0]].cor as Color).lerp(Spellbook.ELEMENTS[els[1]].cor, 0.5)
 		match t:
+			5: s.merge({"nome": Spellbook.SUMMON_FUSION[classe], "type": "summon", "mana": 120, "cd": 30.0})
 			3: s.merge({"nome": names[0], "type": "shield", "mana": 50, "cd": 25.0, "base": 90.0, "perL": 16.0, "dur": 30.0})
 			7: s.merge({"nome": names[1], "type": "single", "mana": 45, "cd": 4.0, "base": 70.0, "perL": 9.0, "range": 8.0, "big": true})
 			8: s.merge({"nome": names[2], "type": "area", "mana": 100, "cd": 10.0, "base": 75.0, "perL": 9.0, "range": 8.0, "radius": 3.0, "delay": 0.6})
@@ -62,7 +63,7 @@ static func get_spell(id: String, classe: String) -> Dictionary:
 				s.merge({"type": "line", "mana": 30, "cd": 3.0, "base": 30.0, "perL": 4.5, "range": 7.0})
 			else:
 				s.merge({"type": "cone", "mana": 30, "cd": 3.0, "base": 30.0, "perL": 4.5, "range": 4.5, "ang": 0.6})
-		5: s.merge({"type": "summon", "mana": 0, "cd": 1.0})
+		5: s.merge({"type": "summon", "mana": 80, "cd": 20.0})
 		6: s.merge({"type": "area", "mana": 65, "cd": 6.0, "base": 46.0, "perL": 6.0, "range": 8.0, "radius": 2.3, "delay": 0.5 if el == "lava" else 0.0})
 	return s
 

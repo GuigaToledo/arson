@@ -117,7 +117,7 @@ func _process(delta: float) -> void:
 		_net.setMe(JSON.stringify({
 			"x": snappedf(player.global_position.x, 0.1), "y": snappedf(player.global_position.y, 0.1),
 			"f": player.facing, "a": player.anim, "n": player.display_name, "eq": eq,
-			"d": player.dead, "sf": Rules.is_safe(player.global_position), "l": player.level, "c": player.classe,
+			"d": player.dead, "sf": Rules.is_safe(player.global_position), "l": player.level, "c": player.classe, "sm": player.summons_state(),
 		}))
 		if is_host and net_ready:
 			var ms := []

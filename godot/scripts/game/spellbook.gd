@@ -46,6 +46,11 @@ const FUSOES := {
 	"terra": ["Bastião Vivo", "Estaca de Espinhos", "Floresta Petrificada"],
 }
 
+## Invocação fundida de cada classe (os dois elementos no nível 5): um só summon aprimorado.
+const SUMMON_FUSION := {
+	"fogo": "Titã de Magma", "agua": "Colosso Glacial", "vento": "Avatar da Tempestade", "terra": "Guardião Ancestral",
+}
+
 ## Elementos de cada classe: [elemento A, elemento B].
 const CLASS_ELEMENTS := {
 	"fogo": ["fogo", "lava"], "agua": ["agua", "gelo"], "vento": ["vento", "raio"], "terra": ["terra", "natureza"],
@@ -65,6 +70,6 @@ static func spell_desc(el: String, tier: int) -> String:
 		2: return "Controle de grupo e enfraquecimento: %s em vários inimigos." % e.efeito
 		3: return "Escudo mágico de %s que absorve dano." % e.nome
 		4: return "Ataque em cone ou em linha com %s." % e.efeito
-		5: return "Invocação: tanque que luta como monge shaolin, segue você e sobe de nível com você."
+		5: return "Invocação: tanque que luta como monge shaolin (socos, chute giratório, cabeçada, agarrar e morder, esquiva), segue você e sobe de nível com você. Pode ser curada."
 		6: return "Dano em área com %s." % e.efeito
 	return ""

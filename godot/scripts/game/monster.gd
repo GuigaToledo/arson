@@ -91,7 +91,7 @@ func _ready() -> void:
 func _player() -> Node2D:
 	var best: Node2D = null
 	var bd := 1e9
-	for p in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("remote_players"):
+	for p in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("remote_players") + get_tree().get_nodes_in_group("summons"):
 		if not _valid_foe(p):
 			continue
 		var d := Rules.gdist(global_position, p.global_position)

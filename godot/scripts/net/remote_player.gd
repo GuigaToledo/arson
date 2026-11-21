@@ -8,6 +8,8 @@ var dead := false
 var level := 1
 var classe := ""
 var _class_aura: ClassAura
+## Invocações deste jogador (só visual).
+var _sm_puppets: Array = []
 
 
 func take_damage(n: int, src: String) -> void:
@@ -62,6 +64,7 @@ func apply_state(s: Dictionary) -> void:
 		facing = "S"
 	anim = str(s.get("a", "idle"))
 	display_name = str(s.get("n", ""))
+	_sync_summons(s.get("sm", []))
 	var eq: Dictionary = s.get("eq", {})
 	var key := JSON.stringify(eq)
 	if key != _eq_key:
@@ -70,6 +73,48 @@ func apply_state(s: Dictionary) -> void:
 		for k in eq:
 			ids[int(k)] = eq[k]
 		equipment.load_ids(ids)
+
+
+func _sync_summons(list) -> void:
+	if not list is Array:
+		list = []
+	while _sm_puppets.size() > list.size():
+		var p0 = _sm_puppets.pop_back()
+		if is_instance_valid(p0):
+			p0.queue_free()
+	for i in list.size():
+		var row: Array = list[i]
+		var el := str(row[2])
+		if not Summon.LOOK.has(el):
+			continue
+		var fused := int(row[3]) == 1
+		var p: Summon = _sm_puppets[i] if i < _sm_puppets.size() and is_instance_valid(_sm_puppets[i]) else null
+		if p != null and (p.els[0] != el or p.fused != fused):
+			p.queue_free()
+			p = null
+		if p == null:
+			var els2 := [el]
+			if fused:
+				for c in Spellbook.CLASS_ELEMENTS:
+					if Spellbook.CLASS_ELEMENTS[c][0] == el:
+						els2 = Spellbook.CLASS_ELEMENTS[c].duplicate()
+			p = Summon.make(null, els2, fused, "Invocação de %s" % display_name)
+			p.puppet = true
+			p.position = Vector2(float(row[0]), float(row[1]))
+			get_parent().add_child(p)
+			if i < _sm_puppets.size():
+				_sm_puppets[i] = p
+			else:
+				_sm_puppets.append(p)
+		p.puppet_target = Vector2(float(row[0]), float(row[1]))
+		p.facing = str(row[4]) if Iso.DIRS.has(str(row[4])) else "S"
+		p.anim = str(row[5])
+
+
+func _exit_tree() -> void:
+	for p in _sm_puppets:
+		if is_instance_valid(p):
+			p.queue_free()
 
 
 func _physics_process(delta: float) -> void:
