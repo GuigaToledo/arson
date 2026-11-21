@@ -18,6 +18,8 @@ const CAST_COST := 12.0
 const ATTACK_RANGE := 6.5  # tiles
 const SAVE_PATH := "user://arson_jogador.cfg"
 
+## Classe de mago (fogo, agua, vento, terra) — escolhida na tela inicial.
+var classe := "fogo"
 var level := 1
 var xp := 0
 var gold := 0
@@ -55,6 +57,7 @@ func _ready() -> void:
 	camera.offset = Vector2(0, -30)
 	add_child(camera)
 	camera.make_current()
+	save()
 	# raio de luz do herói (como no Diablo 2): o mundo é escuro, a luz acompanha o personagem
 	var aura := LightKit.make(Color(1.0, 0.9, 0.78), 0.95, 3.6, true, 0.0)
 	aura.position = Vector2(0, -30)
@@ -97,8 +100,18 @@ func reload() -> void:
 	foe = null
 
 
+## Classe salva no progresso ("" se ainda não escolheu).
+static func saved_class() -> String:
+	var c := ConfigFile.new()
+	if c.load(SAVE_PATH) != OK:
+		return ""
+	var k := str(c.get_value("jogador", "classe", ""))
+	return k if MageClass.valid(k) else ""
+
+
 func save() -> void:
 	var c := ConfigFile.new()
+	c.set_value("jogador", "classe", classe)
 	c.set_value("jogador", "xp", xp)
 	c.set_value("jogador", "ouro", gold)
 	c.set_value("jogador", "nivel", level)

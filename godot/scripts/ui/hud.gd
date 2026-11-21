@@ -254,7 +254,7 @@ func _process(_d: float) -> void:
 	var online := ("%d online%s" % [net.online_count, " · anfitrião" if net.is_host else ""]) if net.enabled else ""
 	bars.hp = player.hp / player.max_hp
 	bars.mp = player.mp / player.max_mp
-	bars.title = "%s · nível %d" % [player.display_name if player.display_name != "" else "Mago das Chamas", player.level]
+	bars.title = "%s · nível %d" % [player.display_name if player.display_name != "" else MageClass.info(player.classe).nome, player.level]
 	var a := Rules.xp_to_reach(player.level)
 	var b := Rules.xp_to_reach(player.level + 1)
 	bars.xp = float(player.xp - a) / float(maxi(1, b - a))

@@ -140,6 +140,8 @@ func _refresh_skills() -> void:
 		c.queue_free()
 	var a := Rules.xp_to_reach(player.level)
 	var b := Rules.xp_to_reach(player.level + 1)
+	var cd := MageClass.info(player.classe)
+	_skills_box.add_child(_lbl("%s — %s, %s e Luz" % [cd.nome, cd.elementos[0], cd.elementos[1]], 16, cd.cor))
 	_skills_box.add_child(_bar_row("Nível", player.level, float(player.xp - a) / maxf(1, b - a),
 		"%d / %d xp" % [player.xp - a, b - a], "Sobe matando criaturas. Aumenta vida, mana e dano. Não tem limite."))
 	var tips := {"magia": "Sobe usando magias (cura também conta). +6% de dano por nível.",
@@ -306,6 +308,13 @@ func _page_save() -> Control:
 	v.add_child(h1)
 	var b3 := _btn("Importar (colar código)", _paste)
 	v.add_child(b3)
+	v.add_child(_lbl("Trocar de classe volta para a tela inicial. Seu nível e suas habilidades continuam.", 13, DIM))
+	v.add_child(_btn("Trocar de classe", func():
+		player.save()
+		if OS.has_feature("web"):
+			JavaScriptBridge.eval("location.reload()")
+		else:
+			get_tree().reload_current_scene()))
 	return r[0]
 
 

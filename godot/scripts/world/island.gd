@@ -51,8 +51,45 @@ func _ready() -> void:
 	_build_buildings()
 	_build_details()
 	_build_lights()
-	_spawn_characters()
+	# câmera da tela inicial (o mundo aparece escuro ao fundo)
+	var intro := Camera2D.new()
+	intro.name = "CameraInicial"
+	intro.position = Iso.to_screen(map.spawn) + Vector2(0, -40)
+	intro.zoom = Vector2(1.3, 1.3)
+	add_child(intro)
+	intro.make_current()
+	var saved := Player.saved_class()
+	var testing: bool = Array(OS.get_cmdline_user_args()).any(func(a): return str(a).begins_with("--teste")) or DisplayServer.get_name() == "headless"
+	if "--teste-titulo" in OS.get_cmdline_user_args():
+		testing = false
+	if testing:
+		start_game(saved if saved != "" else "fogo", "")
+		return
+	var nome := ""
+	if OS.has_feature("web") and JavaScriptBridge.eval("typeof window.ArsonNet !== 'undefined'", true):
+		nome = str(JavaScriptBridge.get_interface("ArsonNet").savedName())
+	var ts := TitleScreen.new()
+	add_child(ts)
+	ts.setup(saved, nome)
+	ts.chosen.connect(start_game)
+	if "--teste-titulo" in OS.get_cmdline_user_args():
+		await get_tree().create_timer(0.5).timeout
+		ts._select("agua")
+		ts._go()
+		await get_tree().create_timer(0.5).timeout
+		print("TESTE titulo classe=", player.classe, " cajado=", player.equipment.get_item(EquipSlot.Slot.MAIN_HAND).id if player.equipment.get_item(EquipSlot.Slot.MAIN_HAND) else "nenhum", " salvo=", Player.saved_class(), " nome=", player.display_name)
+
+
+## Começa o jogo com a classe escolhida (chamado pela tela inicial).
+func start_game(classe: String, nome: String) -> void:
+	if nome != "" and OS.has_feature("web") and JavaScriptBridge.eval("typeof window.ArsonNet !== 'undefined'", true):
+		JavaScriptBridge.get_interface("ArsonNet").saveName(nome)
+	_spawn_characters(classe)
+	if nome != "":
+		player.display_name = nome
 	_spawn_monsters()
+	if has_node("CameraInicial"):
+		get_node("CameraInicial").queue_free()
 	if "--teste-combate" in OS.get_cmdline_user_args():
 		_teste_combate()
 	if "--teste-menu" in OS.get_cmdline_user_args():
@@ -323,8 +360,11 @@ func _teste_boneco() -> void:
 	print("TESTE boneco vida=", dm.hp, "/", dm.max_hp, " morto=", dm.dead, " habilidades=", player.skills, " vida_jogador=", int(player.hp))
 
 
-func _spawn_characters() -> void:
+func _spawn_characters(classe: String) -> void:
 	player = Player.new()
+	player.classe = classe
+	var cj: String = MageClass.info(classe).cajado
+	player.start_items = player.start_items.map(func(it): return cj if it == "cajado_brasa" else it)
 	player.name = "Jogador"
 	player.position = Iso.to_screen(map.spawn)
 	entities.add_child(player)
