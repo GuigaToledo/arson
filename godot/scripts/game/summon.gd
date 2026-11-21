@@ -54,6 +54,8 @@ static func make(owner: Node2D, elements: Array, is_fused: bool, fused_name := "
 
 func _ready() -> void:
 	super()
+	if OS.has_feature("web"):
+		visual.draw_hz = 15.0
 	if not puppet:
 		add_to_group("summons")
 	collision_layer = 0
