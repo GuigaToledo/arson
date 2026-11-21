@@ -916,7 +916,7 @@ func _teste_magias() -> void:
 		player.classe = cl
 		player._reset_skills()
 		for k in player.skills:
-			player.skills[k] = [8, 0.0]
+			player.skills[k] = [40, 0.0]
 		player.level = 20
 		player._recalc()
 		var ids: Array = []

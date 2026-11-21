@@ -583,6 +583,35 @@ class Proj:
 				for i in 3:
 					var b: Vector2 = c + nrm * (i - 1) * 7 - dir * absf(i - 1) * 8
 					SpellArt.thorn(self, b - dir * 14, b + dir * 9, 2.5, Color(0.25, 0.55, 0.15))
+			"faca", "flecha", "lanca":
+				var L: float = {"faca": 14.0, "flecha": 26.0, "lanca": 34.0}[el] * s
+				var spin := _t * 22.0 if el == "faca" else 0.0
+				var dd := dir.rotated(spin)
+				var qq := Vector2(-dd.y, dd.x)
+				if el != "faca":
+					ElemArt.ribbon(self, PackedVector2Array([c - dd * L, c + dd * L * 0.5]), 1.4, 1.4, Color(0.45, 0.32, 0.18))
+					SpellArt.poly(self, PackedVector2Array([c + dd * L * 0.85, c + dd * L * 0.5 + qq * 4.0, c + dd * L * 0.5 - qq * 4.0]), Color(0.72, 0.74, 0.78))
+					SpellArt.poly(self, PackedVector2Array([c - dd * L, c - dd * L * 0.75 + qq * 4.0, c - dd * L * 0.8]), Color(0.85, 0.82, 0.75))
+					SpellArt.poly(self, PackedVector2Array([c - dd * L, c - dd * L * 0.75 - qq * 4.0, c - dd * L * 0.8]), Color(0.85, 0.82, 0.75))
+				else:
+					SpellArt.poly(self, PackedVector2Array([c + dd * L * 0.6, c + qq * 2.5, c - dd * L * 0.1, c - qq * 2.5]), Color(0.8, 0.82, 0.86))
+					ElemArt.ribbon(self, PackedVector2Array([c - dd * L * 0.1, c - dd * L * 0.5]), 2.2, 2.2, Color(0.3, 0.2, 0.12))
+			"teia":
+				for i in 6:
+					var a := TAU * i / 6.0 + _t * 3.0
+					draw_line(c, c + Vector2.from_angle(a) * 10.0 * s, Color(0.95, 0.95, 0.9, 0.85), 1.2)
+				for r in [4.0, 7.5]:
+					draw_arc(c, r * s, 0, TAU, 12, Color(0.95, 0.95, 0.9, 0.7), 1.0)
+			"trevas":
+				for i in 4:
+					var off := Vector2(sin(_t * 9.0 + i * 1.7), cos(_t * 7.0 + i)) * 4.0
+					ElemArt.puff(self, c + off - dir * i * 5.0, (8.0 - i * 1.4) * s, Color(0.28, 0.08, 0.36, 0.55 - i * 0.1))
+				draw_circle(c, 3.5 * s, Color(0.75, 0.45, 1.0, 0.9))
+			"gosma":
+				ElemArt.drop(self, c, dir * 300.0, 6.0 * s, Color(0.45, 0.9, 0.35, 0.92))
+			"lasca":
+				var sp := _t * 16.0
+				SpellArt.poly(self, PackedVector2Array([c + Vector2.from_angle(sp) * 8.0, c + Vector2.from_angle(sp + 2.2) * 3.0, c + Vector2.from_angle(sp + 3.6) * 6.0]), Color(0.85, 0.72, 0.4))
 			_:
 				SpellArt.poly(self, PackedVector2Array([c + dir * 9 * s, c + nrm * 5 * s, c - dir * 9 * s, c - nrm * 5 * s]), SpellArt.cor(el))
 
@@ -609,17 +638,25 @@ static func bit(n: CanvasItem, el: String, p: Vector2, rot: float, a: float) -> 
 			rock(n, p, 2.5, Color(0.42, 0.35, 0.27, a), int(rot * 10.0) % 7, rot)
 		"vento":
 			n.draw_arc(p, 5.0, rot, rot + 1.8, 6, Color(0.9, 1, 0.95, 0.7 * a), 1.2)
+		"trevas":
+			n.draw_circle(p, 3.0, Color(0.3, 0.1, 0.4, 0.5 * a))
+		"gosma":
+			ElemArt.drop(n, p, Vector2(0, 200), 2.0, Color(0.45, 0.9, 0.35, 0.9 * a))
+		"teia":
+			n.draw_line(p, p + Vector2.from_angle(rot) * 5.0, Color(0.95, 0.95, 0.9, 0.6 * a), 0.8)
 		_:
 			pass
 
 
-static func projectile(parent: Node, from: Vector2, target: Node2D, el: String, big: bool, els: Array, on_hit: Callable) -> void:
+static func projectile(parent: Node, from: Vector2, target: Node2D, el: String, big: bool, els: Array, on_hit: Callable, spd := 0.0) -> void:
 	if el == "raio":
-		var b := fx(parent, Vector2.ZERO, 0.35, func(n: DrawFx, k: float):
+		fx(parent, Vector2.ZERO, 0.32, func(n: DrawFx, k: float):
 			if is_instance_valid(target):
-				jag(n, from + Vector2(0, -50), target.global_position + Vector2(0, -40), Color(0.85, 0.85, 1, 1.0 - k), 3.0 if big else 2.0, 9, 12.0))
-		_no(parent, target.global_position + Vector2(0, -40), cor("raio"), 2.0, 1.0, 0.3)
-		parent.get_tree().create_timer(0.05).timeout.connect(on_hit)
+				ElemArt.bolt(n, from + Vector2(0, -50), target.global_position + Vector2(0, -40), n.seed_v + int(n.t * 24.0), 2.0 if big else 1.4, 1.0 - k))
+		parent.get_tree().create_timer(0.05).timeout.connect(func():
+			on_hit.call()
+			if is_instance_valid(target):
+				impact(parent, target.global_position, "raio", big))
 		return
 	if el == "natureza" and big:
 		# Estaca de Espinhos: brota do chão embaixo do alvo
@@ -638,13 +675,13 @@ static func projectile(parent: Node, from: Vector2, target: Node2D, el: String, 
 	pr.target = target
 	pr.big = big
 	pr.on_hit = on_hit
-	pr.speed = 380.0 if el == "terra" else 560.0
+	pr.speed = spd if spd > 0.0 else (380.0 if el == "terra" else 560.0)
 	pr.global_position = from
 	parent.add_child(pr)
 
 
 ## Impacto no alvo, na cara do elemento.
-static func impact(parent: Node, pos: Vector2, el: String, big := false) -> void:
+static func _impact_old(parent: Node, pos: Vector2, el: String, big := false) -> void:
 	var c := cor(el)
 	var s := 1.6 if big else 1.0
 	match el:
@@ -675,7 +712,7 @@ static func impact(parent: Node, pos: Vector2, el: String, big := false) -> void
 
 
 # ------------------------------------------------------------ controle de grupo (magia 2)
-static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void:
+static func _cc_old(parent: Node, center: Vector2, radius: float, el: String) -> void:
 	var rx := radius * RX
 	var c := cor(el)
 	match el:
@@ -768,7 +805,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 
 
 # ------------------------------------------------------------ cone e linha (magia 4)
-static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, half_ang: float, el: String) -> void:
+static func _cone_old(parent: Node, pos: Vector2, dir: Vector2, length_px: float, half_ang: float, el: String) -> void:
 	var c := cor(el)
 	var o := pos + Vector2(0, -36)
 	match el:
@@ -831,7 +868,7 @@ static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, hal
 			SpellFx.cone(parent, pos, dir, length_px, half_ang, c.lightened(0.4), c)
 
 
-static func line(parent: Node, a: Vector2, b: Vector2, el: String) -> void:
+static func _line_old(parent: Node, a: Vector2, b: Vector2, el: String) -> void:
 	var d := b - a
 	match el:
 		"lava":  # Rio de Lava: magma correndo pelo chão, esfriando no fim
@@ -881,7 +918,7 @@ static func line(parent: Node, a: Vector2, b: Vector2, el: String) -> void:
 
 # ------------------------------------------------------------ área (magia 6 e fusão 8)
 ## Desenha a área e chama on_impact quando o dano acontece (algumas caem do céu primeiro).
-static func area(parent: Node, center: Vector2, radius: float, el: String, on_impact: Callable, els := []) -> void:
+static func _area_old(parent: Node, center: Vector2, radius: float, el: String, on_impact: Callable, els := []) -> void:
 	var rx := radius * RX
 	var tree := parent.get_tree()
 	var c := cor(el)
@@ -1066,7 +1103,7 @@ static func blood(parent: Node, pos: Vector2, dmg_frac: float, kind := "sangue",
 
 
 # ------------------------------------------------------------ Luz
-static func light(parent: Node, kind: String, pos: Vector2) -> void:
+static func _light_old(parent: Node, kind: String, pos: Vector2) -> void:
 	var gold := Color(1, 0.92, 0.55)
 	match kind:
 		"heal":  # pilar de luz do céu
@@ -1091,3 +1128,475 @@ static func light(parent: Node, kind: String, pos: Vector2) -> void:
 			parts(parent, pos + Vector2(0, -30), 40, 60.0, 1.0, 0.07, Color(1, 0.95, 0.6), Color(1, 0.6, 0.1), -150.0)
 		"veil":  # cintilar
 			parts(parent, pos + Vector2(0, -40), 30, 40.0, 0.9, 0.04, Color(1, 1, 1), Color(0.7, 0.8, 1), 0.0)
+
+
+# ================================================================ efeitos novos dos elementos
+# Mesma ideia do fogo: vários formatos, tamanhos e ritmos somados, sem marcas no chão.
+# Fogo e lava continuam nas versões _old (já refeitas).
+
+static func _rs(sd: int) -> RandomNumberGenerator:
+	var r := RandomNumberGenerator.new()
+	r.seed = sd
+	return r
+
+
+## Respingo em coroa: gotas de tamanhos diferentes em arco, com gravidade.
+static func splash(parent: Node, pos: Vector2, count: int, spread: float, col := Color(0.6, 0.85, 1.0, 0.9), h := 30.0, life := 0.65) -> void:
+	fxn(parent, pos, life, func(n: DrawFx, k: float):
+		var rng := _rs(n.seed_v)
+		var tt := k * life
+		for i in count:
+			var v := Vector2(rng.randf_range(-1, 1) * spread, rng.randf_range(-0.4, 0.4) * spread * 0.5 - rng.randf_range(120, 260))
+			var p0 := Vector2(rng.randf_range(-6, 6), -h)
+			var g := 620.0
+			var p := p0 + v * tt + Vector2(0, 0.5 * g * tt * tt)
+			if p.y > 4.0:
+				continue
+			ElemArt.drop(n, p, v + Vector2(0, g * tt), rng.randf_range(1.6, 3.6), Color(col, col.a * (1.0 - k * 0.6)))
+		if k < 0.35:
+			var q := k / 0.35
+			for i in 10:
+				var a := TAU * i / 10.0
+				var b := Vector2(cos(a), sin(a) * 0.5) * (10.0 + 18.0 * q)
+				ElemArt.ribbon(n, PackedVector2Array([b, b + Vector2(cos(a) * 4.0, -16.0 * (1.0 - q) - 4.0)]), 2.2, 0.4, Color(0.75, 0.92, 1.0, 0.7 * (1.0 - q)))))
+
+
+## Pedaços que voam e caem (gelo, pedra, folhas, lascas).
+static func debris(parent: Node, pos: Vector2, kind: String, count: int, spread: float, life := 0.9, up := 220.0) -> void:
+	fxn(parent, pos, life, func(n: DrawFx, k: float):
+		var rng := _rs(n.seed_v)
+		var tt := k * life
+		for i in count:
+			var v := Vector2(rng.randf_range(-1, 1) * spread, -rng.randf_range(up * 0.5, up))
+			var g := 120.0 if kind == "folha" else 640.0
+			var p := Vector2(0, -30) + v * tt + Vector2(0, 0.5 * g * tt * tt)
+			if kind == "folha":
+				p.x += sin(tt * 7.0 + i) * 14.0
+			if p.y > 2.0:
+				p.y = 2.0
+			var rot := rng.randf() * TAU + tt * rng.randf_range(-12, 12)
+			var sz := rng.randf_range(0.6, 1.4)
+			var a := 1.0 - maxf(0.0, k - 0.7) / 0.3
+			match kind:
+				"gelo":
+					ElemArt.shard(n, p, 10.0 * sz, 3.0 * sz, rot, a)
+				"pedra":
+					ElemArt.boulder(n, p, 4.5 * sz, rng.randi(), rot, Color(0.46, 0.39, 0.31), a)
+				"folha":
+					ElemArt.leaf(n, p, Vector2.from_angle(rot), 4.5 * sz, Color(0.32, 0.62, 0.2, a).lerp(Color(0.62, 0.72, 0.22, a), rng.randf()))
+				"lasca":
+					ElemArt.fan(n, PackedVector2Array([p, p + Vector2.from_angle(rot) * 7.0 * sz, p + Vector2.from_angle(rot + 2.4) * 3.0 * sz]), Color(0.55, 0.45, 0.28, a)))
+
+
+## Nuvem de poeira, névoa ou vapor que se espalha e some.
+static func cloud(parent: Node, pos: Vector2, rx: float, col: Color, count := 7, life := 1.2, rise := 18.0) -> void:
+	fxn(parent, pos, life, func(n: DrawFx, k: float):
+		var rng := _rs(n.seed_v)
+		for i in count:
+			var p := Vector2(rng.randf_range(-1, 1) * rx, rng.randf_range(-0.45, 0.45) * rx) * (0.5 + k * 0.7) + Vector2(0, -rise * k - 8.0)
+			var r := rng.randf_range(10, 20) * (0.6 + k * 0.9)
+			ElemArt.puff(n, p, r, Color(col, col.a * sin(minf(1.0, k * 1.4) * PI))))
+
+
+static func impact(parent: Node, pos: Vector2, el: String, big := false) -> void:
+	var s := 1.6 if big else 1.0
+	match el:
+		"fogo", "lava":
+			_impact_old(parent, pos, el, big)
+		"agua":
+			splash(parent, pos, int(14 * s), 110.0 * s)
+			cloud(parent, pos, 16.0 * s, Color(0.85, 0.93, 1.0, 0.25), 4, 0.7)
+		"gelo":
+			debris(parent, pos, "gelo", int(9 * s), 120.0 * s, 0.8, 200.0)
+			cloud(parent, pos + Vector2(0, -20), 18.0 * s, Color(0.9, 0.97, 1.0, 0.35), 5, 0.9)
+			fx(parent, pos + Vector2(0, -36), 0.6, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v)
+				for i in 8:
+					var a := rng.randf() * TAU
+					ElemArt.flake(n, Vector2(cos(a), sin(a)) * (8.0 + 30.0 * k) * s, rng.randf_range(2.5, 4.5), a + k * 3.0, Color(1, 1, 1, 1.0 - k)))
+		"vento":
+			fx(parent, pos + Vector2(0, -36), 0.5, func(n: DrawFx, k: float):
+				for i in 4:
+					var a := i * TAU / 4.0 + k * 4.0
+					ElemArt.gust(n, Vector2.from_angle(a) * 6.0, Vector2.from_angle(a + 1.3), 40.0 * s * (0.4 + k), n.t, i * 1.7, 3.5 * s, 1.0 - k))
+			debris(parent, pos, "folha", int(5 * s), 140.0, 0.8, 120.0)
+			cloud(parent, pos, 14.0 * s, Color(0.75, 0.7, 0.6, 0.25), 4, 0.6)
+		"terra":
+			debris(parent, pos, "pedra", int(6 * s), 110.0 * s, 0.85, 240.0)
+			cloud(parent, pos, 22.0 * s, Color(0.55, 0.46, 0.36, 0.45), 6, 1.0)
+		"natureza":
+			debris(parent, pos, "folha", int(9 * s), 120.0 * s, 1.1, 160.0)
+			debris(parent, pos, "lasca", int(4 * s), 90.0, 0.6, 140.0)
+		"raio":
+			fx(parent, pos + Vector2(0, -40), 0.28, func(n: DrawFx, k: float):
+				for i in 4:
+					var a := n.seed_v % 7 + i * TAU / 4.0
+					ElemArt.bolt(n, Vector2.ZERO, Vector2.from_angle(a) * (24.0 + 20.0 * s), n.seed_v + i, 1.4, 1.0 - k))
+			parts(parent, pos + Vector2(0, -40), int(14 * s), 220.0, 0.25, 0.03, Color(1, 1, 0.95), Color(0.6, 0.6, 1), 0.0)
+		_:
+			fx(parent, pos + Vector2(0, -40), 0.6, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v)
+				for i in 7:
+					var a := rng.randf() * TAU
+					ElemArt.star(n, Vector2.from_angle(a) * 26.0 * k * s, rng.randf_range(3, 7) * (1.0 - k), Color(1, 0.95, 0.7, 1.0 - k), k * 3.0))
+
+
+static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void:
+	var rx := radius * RX
+	match el:
+		"fogo", "lava":
+			_cc_old(parent, center, radius, el)
+		"agua":  # Maré Sufocante: redemoinho de água subindo e prendendo
+			fxn(parent, center, 1.8, func(n: DrawFx, k: float):
+				var a := minf(1.0, k * 4.0) * (1.0 - maxf(0.0, k - 0.75) / 0.25)
+				for i in 5:
+					var lp := PackedVector2Array()
+					for j in 22:
+						var f := j / 21.0
+						var ang := n.t * (3.0 + i * 0.4) + f * 5.5 + i * 1.25
+						var r := rx * (0.15 + f * 0.85) * (0.85 + 0.1 * i)
+						lp.append(Vector2(cos(ang) * r, sin(ang) * r * 0.5 - (1.0 - f) * 26.0 * a))
+					ElemArt.ribbon(n, lp, 1.0, 5.0 - i * 0.6, Color(0.25 + i * 0.1, 0.55 + i * 0.07, 1.0, 0.55 * a))
+				for i in 12:
+					var ang := n.t * 4.0 + i * 0.9
+					var r := rx * (0.3 + 0.6 * fmod(i * 0.37, 1.0))
+					n.draw_circle(Vector2(cos(ang) * r, sin(ang) * r * 0.5 - 6.0), 2.0, Color(0.95, 1, 1, 0.8 * a)))
+			for i in 4:
+				var p := center + Vector2(randf_range(-1, 1) * rx * 0.6, randf_range(-0.3, 0.3) * rx)
+				parent.get_tree().create_timer(0.2 + i * 0.25).timeout.connect(func(): splash(parent, p, 8, 70.0, Color(0.6, 0.85, 1.0, 0.9), 10.0))
+		"gelo":  # Congelar: cristais de vários tamanhos brotando, névoa fria e flocos
+			fxn(parent, center, 2.0, func(n: DrawFx, k: float):
+				var g := minf(1.0, k * 4.0)
+				var a := 1.0 - maxf(0.0, k - 0.75) / 0.25
+				var rng := _rs(n.seed_v)
+				var arr := []
+				for i in 18:
+					var ang := rng.randf() * TAU
+					var r := sqrt(rng.randf()) * rx * 0.9
+					arr.append([Vector2(cos(ang) * r, sin(ang) * r * 0.5), rng.randf_range(10, 46) * (1.0 - r / rx * 0.5), rng.randf_range(3, 8), rng.randf_range(-0.55, 0.55), rng.randf() * 0.5])
+				arr.sort_custom(func(p, q): return p[0].y < q[0].y)
+				for e in arr:
+					var gg := clampf((g - float(e[4])) / 0.5, 0.0, 1.0)
+					ElemArt.shard(n, e[0], float(e[1]) * gg, float(e[2]), float(e[3]), a))
+			cloud(parent, center, rx * 0.8, Color(0.88, 0.96, 1.0, 0.35), 8, 1.8, 10.0)
+			fx(parent, center, 1.8, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v)
+				for i in 14:
+					var p := Vector2(rng.randf_range(-1, 1) * rx, -rng.randf_range(10, 70) + fmod(k * 60.0 + i * 13.0, 60.0))
+					ElemArt.flake(n, p, rng.randf_range(2, 4), k * 4.0 + i, Color(1, 1, 1, 0.8 * (1.0 - k))))
+		"vento":  # Rajada: fitas de vento girando para fora, levando poeira e folhas
+			fx(parent, center, 0.9, func(n: DrawFx, k: float):
+				var a := 1.0 - maxf(0.0, k - 0.5) / 0.5
+				for i in 10:
+					var ang := TAU * i / 10.0 + k * 1.5
+					var d := Vector2(cos(ang), sin(ang) * 0.5).normalized()
+					ElemArt.gust(n, d * rx * k * 0.5 + Vector2(0, -20), d.rotated(0.5), rx * (0.4 + k * 0.6), n.t, i * 2.3, 4.0, a, 1.0))
+			debris(parent, center, "folha", 10, rx * 1.6, 1.0, 100.0)
+			cloud(parent, center, rx * 0.7, Color(0.72, 0.66, 0.56, 0.35), 8, 0.9, 6.0)
+		"raio":  # Paralisia: raios pulando entre pontos do chão e subindo, faíscas
+			fx(parent, center, 1.3, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v + int(n.t * 14.0))
+				for i in 4:
+					var a := Vector2(rng.randf_range(-1, 1) * rx * 0.8, rng.randf_range(-0.4, 0.4) * rx)
+					var b := a + Vector2(rng.randf_range(-40, 40), -rng.randf_range(20, 60))
+					if i % 2 == 0:
+						b = Vector2(rng.randf_range(-1, 1) * rx * 0.8, rng.randf_range(-0.4, 0.4) * rx)
+					ElemArt.bolt(n, a, b, rng.randi(), 1.2, 1.0 - k * 0.7)
+				for i in 6:
+					ElemArt.star(n, Vector2(rng.randf_range(-1, 1) * rx, rng.randf_range(-0.5, 0.2) * rx), rng.randf_range(2, 5), Color(0.9, 0.9, 1, 1.0 - k), rng.randf() * TAU))
+		"terra":  # Tremor: rachaduras fundas, estacas de pedra e poeira
+			shake(parent, 4.0, 0.4)
+			fxn(parent, center, 1.5, func(n: DrawFx, k: float):
+				var a := 1.0 - maxf(0.0, k - 0.65) / 0.35
+				var rng := _rs(n.seed_v)
+				var g := minf(1.0, k * 4.0)
+				for i in 7:
+					var ang := TAU * i / 7.0 + rng.randf() * 0.4
+					var p := Vector2.ZERO
+					var pts := PackedVector2Array([p])
+					for j in 5:
+						ang += rng.randf_range(-0.5, 0.5)
+						p += Vector2(cos(ang), sin(ang) * 0.5) * rx * 0.22 * g
+						pts.append(p)
+					ElemArt.ribbon(n, pts, 3.5, 0.5, Color(0.06, 0.04, 0.03, a))
+					n.draw_polyline(pts, Color(0.62, 0.52, 0.4, 0.5 * a), 1.0)
+				var arr := []
+				for i in 9:
+					var ang := rng.randf() * TAU
+					var r := sqrt(rng.randf()) * rx * 0.8
+					arr.append([Vector2(cos(ang) * r, sin(ang) * r * 0.5), rng.randf_range(14, 34), rng.randf_range(4, 8), rng.randf_range(-0.4, 0.4)])
+				arr.sort_custom(func(p, q): return p[0].y < q[0].y)
+				for e in arr:
+					ElemArt.shard(n, e[0], float(e[1]) * sin(minf(1.0, k * 3.0) * PI * 0.5), float(e[2]), float(e[3]), a, Color(0.5, 0.42, 0.34)))
+			debris(parent, center, "pedra", 10, rx * 1.2, 1.0, 260.0)
+			cloud(parent, center, rx * 0.9, Color(0.55, 0.46, 0.36, 0.45), 9, 1.4)
+		"natureza":  # Raízes e cipós brotando, enrolando e soltando folhas
+			fxn(parent, center, 3.0, func(n: DrawFx, k: float):
+				var g := minf(1.0, k * 3.0)
+				var a := 1.0 - maxf(0.0, k - 0.85) / 0.15
+				var rng := _rs(n.seed_v)
+				var arr := []
+				for i in 9:
+					var ang := rng.randf() * TAU
+					var r := sqrt(rng.randf()) * rx * 0.8
+					arr.append([Vector2(cos(ang) * r, sin(ang) * r * 0.5), rng.randf_range(40, 80), rng.randf_range(-1, 1), rng.randi()])
+				arr.sort_custom(func(p, q): return p[0].y < q[0].y)
+				for e in arr:
+					var lp := PackedVector2Array()
+					var b: Vector2 = e[0]
+					for j in 12:
+						var f := j / 11.0
+						lp.append(b + Vector2(sin(f * 5.0 + float(e[2]) * 3.0 + n.t * 2.0) * 9.0 * f + float(e[2]) * f * 16.0, -float(e[1]) * f))
+					ElemArt.vine(n, lp, g, 4.5, int(e[3]), a))
+			debris(parent, center, "folha", 8, rx, 1.6, 90.0)
+			cloud(parent, center, rx * 0.6, Color(0.45, 0.36, 0.25, 0.35), 5, 0.9)
+		_:
+			_cc_old(parent, center, radius, el)
+
+
+static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, half_ang: float, el: String) -> void:
+	match el:
+		"fogo", "lava":
+			_cone_old(parent, pos, dir, length_px, half_ang, el)
+		"agua":  # Onda: parede de água avançando, espuma e gotas
+			fxn(parent, pos, 0.85, func(n: DrawFx, k: float):
+				var r := length_px * minf(1.0, k * 1.25)
+				var base := dir.angle()
+				var lp := PackedVector2Array()
+				for i in 17:
+					var t := base - half_ang + 2.0 * half_ang * i / 16.0
+					lp.append(Vector2(cos(t) * r, sin(t) * r * 0.55))
+				ElemArt.water_wall(n, lp, 34.0 * (1.0 - k * 0.5), n.t, 1.0 - maxf(0.0, k - 0.7) / 0.3))
+			for i in 4:
+				var f := 0.3 + i * 0.22
+				var p := pos + Vector2(dir.x, dir.y * 0.55) * length_px * f
+				parent.get_tree().create_timer(f * 0.65).timeout.connect(func(): splash(parent, p, 9, 90.0, Color(0.6, 0.85, 1.0, 0.9), 26.0))
+		"gelo":  # Sopro gelado: cristais nascendo pelo cone, névoa e flocos
+			fxn(parent, pos, 1.3, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v)
+				var a := 1.0 - maxf(0.0, k - 0.7) / 0.3
+				var arr := []
+				for i in 16:
+					var t := dir.angle() + rng.randf_range(-half_ang, half_ang)
+					var f := rng.randf_range(0.2, 1.0)
+					arr.append([Vector2(cos(t), sin(t) * 0.55) * length_px * f, f, rng.randf_range(10, 30), rng.randf_range(3, 6), rng.randf_range(-0.5, 0.5)])
+				arr.sort_custom(func(p, q): return p[0].y < q[0].y)
+				for e in arr:
+					var gg := clampf((k * 2.0 - float(e[1])) * 3.0, 0.0, 1.0)
+					ElemArt.shard(n, e[0], float(e[2]) * gg, float(e[3]), float(e[4]), a))
+			for i in 4:
+				var p := pos + Vector2(dir.x, dir.y * 0.55) * length_px * (0.25 + i * 0.22)
+				cloud(parent, p, 26.0, Color(0.88, 0.96, 1.0, 0.4), 4, 1.1, 8.0)
+		"vento":  # Ventania: fitas de vento de comprimentos diferentes, folhas e poeira
+			fx(parent, pos + Vector2(0, -28), 0.7, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v)
+				for i in 9:
+					var t := dir.angle() + rng.randf_range(-half_ang, half_ang)
+					var d := Vector2(cos(t), sin(t) * 0.55).normalized()
+					var st := length_px * clampf(k * 1.6 - rng.randf() * 0.4, 0.0, 1.0) * 0.6
+					ElemArt.gust(n, d * st, d, length_px * rng.randf_range(0.25, 0.5), n.t, i * 1.9, rng.randf_range(2.5, 5.0), 1.0 - k, 0.4))
+			debris(parent, pos + Vector2(dir.x, dir.y * 0.55) * length_px * 0.5, "folha", 8, 80.0, 0.9, 80.0)
+			cloud(parent, pos + Vector2(dir.x, dir.y * 0.55) * length_px * 0.6, 30.0, Color(0.72, 0.66, 0.56, 0.3), 5, 0.8)
+		"natureza":  # Chicote de cipós espinhentos pelo cone
+			fxn(parent, pos, 1.1, func(n: DrawFx, k: float):
+				var a := 1.0 - maxf(0.0, k - 0.7) / 0.3
+				for i in 5:
+					var t := dir.angle() - half_ang + 2.0 * half_ang * (i + 0.5) / 5.0
+					var d2 := Vector2(cos(t), sin(t) * 0.55)
+					var lp := PackedVector2Array()
+					for j in 14:
+						var f := j / 13.0
+						lp.append(d2 * length_px * f + Vector2(-d2.y, d2.x) * sin(f * 8.0 + i + n.t * 9.0) * 10.0 * f + Vector2(0, -8 - f * 18))
+					ElemArt.vine(n, lp, minf(1.0, k * 2.5), 4.0, i * 31, a))
+			debris(parent, pos + Vector2(dir.x, dir.y * 0.55) * length_px * 0.6, "folha", 8, 90.0, 1.0, 100.0)
+		_:
+			_cone_old(parent, pos, dir, length_px, half_ang, el)
+
+
+static func line(parent: Node, a: Vector2, b: Vector2, el: String) -> void:
+	var d := b - a
+	match el:
+		"raio":  # Corrente Elétrica: raio principal com galhos e um segundo raio tremendo
+			fx(parent, Vector2.ZERO, 0.45, func(n: DrawFx, k: float):
+				ElemArt.bolt(n, a + Vector2(0, -44), b + Vector2(0, -40), n.seed_v + int(n.t * 20.0), 2.0, 1.0 - k)
+				ElemArt.bolt(n, a + Vector2(0, -44), b + Vector2(0, -40), n.seed_v + 99 + int(n.t * 26.0), 1.0, 0.6 * (1.0 - k)))
+			impact(parent, b, "raio")
+		"terra":  # Fenda: o chão racha e estacas de pedra sobem uma atrás da outra
+			shake(parent, 3.0, 0.35)
+			fxn(parent, a, 1.5, func(n: DrawFx, k: float):
+				var g := minf(1.0, k * 3.0)
+				var al := 1.0 - maxf(0, k - 0.65) / 0.35
+				var nrm := Vector2(-d.normalized().y, d.normalized().x)
+				var rng := _rs(n.seed_v)
+				var pts := PackedVector2Array()
+				for i in 16:
+					var f := i / 15.0 * g
+					pts.append(d * f + nrm * rng.randf_range(-5, 5))
+				ElemArt.ribbon(n, pts, 4.5, 1.0, Color(0.06, 0.04, 0.03, al))
+				for i in 8:
+					var f := (i + 0.5) / 8.0
+					if f <= g:
+						var p := d * f + nrm * rng.randf_range(-10, 10)
+						var h := rng.randf_range(18, 36) * minf(1.0, (g - f) * 6.0)
+						ElemArt.shard(n, p, h, rng.randf_range(4, 8), rng.randf_range(-0.4, 0.4), al, Color(0.5, 0.42, 0.34)))
+			for i in 4:
+				var p := a + d * (i + 1) / 4.0
+				parent.get_tree().create_timer(i * 0.12).timeout.connect(func():
+					debris(parent, p, "pedra", 4, 60.0, 0.7, 200.0)
+					cloud(parent, p, 20.0, Color(0.55, 0.46, 0.36, 0.4), 3, 0.9))
+		_:
+			_line_old(parent, a, b, el)
+
+
+static func area(parent: Node, center: Vector2, radius: float, el: String, on_impact: Callable, els := []) -> void:
+	var rx := radius * RX
+	var tree := parent.get_tree()
+	var fused := els.size() > 1
+	var key: String = el if not fused else "fus_" + str(els[0])
+	match key:
+		"agua":  # Dilúvio: chuva pesada de pingos variados e respingos por todo lado
+			fx(parent, center, 1.4, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v)
+				for i in 55:
+					var p := Vector2(rng.randf_range(-1, 1) * rx, rng.randf_range(-0.5, 0.5) * rx)
+					var sp := rng.randf_range(700, 1100)
+					var y := -220.0 + fmod(n.t * sp + i * 37.0, 220.0)
+					var ln := rng.randf_range(8, 20)
+					n.draw_line(p + Vector2(3, y - ln), p + Vector2(0, y), Color(0.65, 0.85, 1, rng.randf_range(0.3, 0.7)), rng.randf_range(1.0, 2.0)), false)
+			for i in 10:
+				var p := center + Vector2(randf_range(-1, 1) * rx * 0.8, randf_range(-0.4, 0.4) * rx)
+				tree.create_timer(randf_range(0.15, 1.1)).timeout.connect(func(): splash(parent, p, 7, 60.0, Color(0.6, 0.85, 1.0, 0.85), 4.0, 0.5))
+			cloud(parent, center + Vector2(0, -170), rx, Color(0.45, 0.5, 0.6, 0.35), 8, 1.4, 0.0)
+			tree.create_timer(0.4).timeout.connect(on_impact)
+		"gelo", "fus_agua":  # Nevasca / Granizo: flocos de tamanhos diferentes no vento, névoa
+			fx(parent, center, 1.7, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v)
+				for i in 50:
+					var p := Vector2(rng.randf_range(-1, 1) * rx, rng.randf_range(-0.5, 0.5) * rx)
+					var y := -190.0 + fmod(n.t * rng.randf_range(120, 260) + i * 41.0, 190.0)
+					var drift := sin(n.t * 2.0 + i) * 12.0 + (190.0 + y) * 0.25
+					ElemArt.flake(n, p + Vector2(drift, y), rng.randf_range(2, 5) * (1.4 if fused else 1.0), n.t * rng.randf_range(-3, 3), Color(1, 1, 1, 0.85)))
+			cloud(parent, center, rx, Color(0.9, 0.97, 1.0, 0.35), 10, 1.8, 6.0)
+			if fused:
+				for i in 9:
+					var p := center + Vector2(randf_range(-1, 1) * rx * 0.8, randf_range(-0.4, 0.4) * rx)
+					tree.create_timer(randf_range(0, 0.7)).timeout.connect(func():
+						_fall(parent, p, Color(0.85, 0.95, 1), 0.3, "gelo")
+						tree.create_timer(0.3).timeout.connect(func(): debris(parent, p, "gelo", 5, 70.0, 0.6, 140.0)))
+			tree.create_timer(0.5).timeout.connect(func():
+				cc(parent, center, radius * 0.8, "gelo")
+				on_impact.call())
+		"vento", "fus_vento":  # Tornado: funil de fitas girando, poeira, folhas e pedrinhas subindo
+			fx(parent, center, 1.8, func(n: DrawFx, k: float):
+				var a := minf(1.0, k * 4.0) * (1.0 - maxf(0, k - 0.75) / 0.25)
+				var rng := _rs(n.seed_v)
+				for i in 16:
+					var y := -i * 11.0
+					var r := rx * (0.18 + i * 0.055)
+					var lp := PackedVector2Array()
+					var t0 := n.t * (9.0 - i * 0.2) + i * 0.8
+					for j in 10:
+						var ang := t0 + j * 0.32
+						lp.append(Vector2(cos(ang) * r + sin(n.t * 3.0 + i * 0.4) * 8.0, y + sin(ang) * r * 0.28))
+					ElemArt.ribbon(n, lp, 0.6, 3.5, Color(0.86, 0.98, 0.94, 0.45 * a), true)
+					if fused and i % 4 == 0:
+						ElemArt.bolt(n, lp[0], lp[lp.size() - 1] + Vector2(0, -14), rng.randi() + int(n.t * 12.0), 0.8, a)
+				for i in 14:
+					var f := fmod(n.t * 0.5 + i * 0.13, 1.0)
+					var ang := n.t * 8.0 + i * 1.7
+					var r := rx * (0.2 + f * 0.8)
+					var p := Vector2(cos(ang) * r, -f * 170.0 + sin(ang) * r * 0.28)
+					if i % 3 == 0:
+						ElemArt.boulder(n, p, 3.0, i, ang, Color(0.45, 0.4, 0.32), a)
+					else:
+						ElemArt.leaf(n, p, Vector2.from_angle(ang), 4.0, Color(0.4, 0.62, 0.2, a)))
+			cloud(parent, center, rx * 0.8, Color(0.72, 0.66, 0.56, 0.4), 9, 1.6, 30.0)
+			tree.create_timer(0.5).timeout.connect(on_impact)
+		"raio":  # Tempestade de Raios: raios com galhos caindo do céu, um por vez
+			cloud(parent, center + Vector2(0, -260), rx * 1.1, Color(0.25, 0.25, 0.35, 0.5), 9, 1.1, 0.0)
+			for i in 7:
+				var p := center + Vector2(randf_range(-1, 1) * rx * 0.8, randf_range(-0.4, 0.4) * rx)
+				tree.create_timer(i * 0.09).timeout.connect(func():
+					var sky := p + Vector2(randf_range(-50, 50), -420)
+					fx(parent, Vector2.ZERO, 0.3, func(n: DrawFx, k: float): ElemArt.bolt(n, sky, p, n.seed_v, 2.2, 1.0 - k))
+					impact(parent, p, "raio"))
+			tree.create_timer(0.35).timeout.connect(on_impact)
+		"terra", "fus_terra":  # Terremoto / Floresta Petrificada
+			shake(parent, 9.0, 0.8)
+			cc(parent, center, radius, "terra")
+			if fused:
+				fxn(parent, center, 2.4, func(n: DrawFx, k: float):
+					var g := minf(1.0, k * 3.0)
+					var al := 1.0 - maxf(0, k - 0.8) / 0.2
+					var rng := _rs(n.seed_v)
+					for i in 7:
+						var p := Vector2(rng.randf_range(-1, 1) * rx * 0.75, rng.randf_range(-0.38, 0.38) * rx)
+						var h := rng.randf_range(40, 70) * g
+						var lp := PackedVector2Array()
+						for j in 8:
+							lp.append(p + Vector2(sin(j * 0.8 + i) * 4.0, -h * j / 7.0))
+						ElemArt.ribbon(n, lp, 6.0, 2.5, Color(0.46, 0.43, 0.4, al))
+						for j in 3:
+							var bp: Vector2 = lp[3 + j]
+							ElemArt.ribbon(n, PackedVector2Array([bp, bp + Vector2((j % 2 * 2 - 1) * 16, -14) * g]), 2.5, 0.8, Color(0.5, 0.47, 0.44, al))
+						ElemArt.boulder(n, lp[lp.size() - 1], 10.0 * g, i, 0.0, Color(0.42, 0.5, 0.36), al))
+			tree.create_timer(0.25).timeout.connect(on_impact)
+		"natureza":  # Chuva de Espinhos: espinhos de tamanhos variados caindo, folhas e cipós
+			fxn(parent, center, 1.2, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v)
+				for i in 28:
+					var p := Vector2(rng.randf_range(-1, 1) * rx, rng.randf_range(-0.5, 0.5) * rx)
+					var y := -230.0 + fmod(n.t * rng.randf_range(550, 800) + i * 53.0, 230.0)
+					var ln := rng.randf_range(10, 20)
+					thorn(n, p + Vector2(3, y - ln), p + Vector2(0, y), rng.randf_range(1.5, 3.0), Color(0.3, 0.55, 0.18).lerp(Color(0.5, 0.4, 0.2), rng.randf())))
+			tree.create_timer(0.45).timeout.connect(func():
+				cc(parent, center, radius * 0.7, "natureza")
+				on_impact.call())
+		_:
+			_area_old(parent, center, radius, el, on_impact, els)
+
+
+static func light(parent: Node, kind: String, pos: Vector2) -> void:
+	match kind:
+		"heal":  # raios de luz descendo e brilhos subindo pelo corpo
+			fx(parent, pos, 1.0, func(n: DrawFx, k: float):
+				var a := sin(k * PI)
+				var rng := _rs(n.seed_v)
+				for i in 5:
+					var x := rng.randf_range(-18, 18)
+					ElemArt.ribbon(n, PackedVector2Array([Vector2(x * 2.5, -300), Vector2(x, -10)]), rng.randf_range(3, 8), 1.5, Color(1, 0.96, 0.75, 0.22 * a))
+				for i in 10:
+					var f := fmod(k * 1.3 + i * 0.1, 1.0)
+					ElemArt.star(n, Vector2(rng.randf_range(-18, 18), -10 - f * 90.0), rng.randf_range(2, 5) * (1.0 - f), Color(1, 1, 0.85, a), f * 4.0))
+		"ring":  # Círculo Sagrado: colunas de luz subindo em volta e brilhos
+			fx(parent, pos, 1.3, func(n: DrawFx, k: float):
+				var a := sin(k * PI)
+				for i in 10:
+					var t := TAU * i / 10.0 + k * 0.8
+					var b := Vector2(cos(t), sin(t) * 0.5) * RX * 2.6
+					ElemArt.ribbon(n, PackedVector2Array([b, b + Vector2(0, -60 - 30 * sin(i * 1.3 + k * 6.0))]), 4.0, 0.5, Color(1, 0.92, 0.6, 0.4 * a), true)
+					ElemArt.star(n, b + Vector2(0, -70 * k), 4.0, Color(1, 1, 0.85, a), k * 5.0 + i))
+		"bless":  # penas de luz e brilho subindo
+			fx(parent, pos, 1.1, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v)
+				for i in 8:
+					var f := fmod(k + i * 0.125, 1.0)
+					var p := Vector2(rng.randf_range(-22, 22) + sin(k * 8.0 + i) * 6.0, -20 - f * 100.0)
+					ElemArt.leaf(n, p, Vector2.from_angle(-PI * 0.5 + sin(k * 6.0 + i) * 0.6), 5.0, Color(1, 0.97, 0.85, 1.0 - f))
+					ElemArt.star(n, p + Vector2(6, 4), 2.5, Color(1, 0.95, 0.7, 1.0 - f), f * 6.0))
+		"brave":  # chamas douradas subindo pelo corpo
+			fx(parent, pos, 1.0, func(n: DrawFx, k: float):
+				var a := sin(k * PI)
+				for i in 6:
+					var x := (i - 2.5) * 6.0
+					flame(n, Vector2(x, -10 - absf(x)), 26.0 + 10.0 * sin(i * 1.7), 6.0, n.t, i * 1.9, a * 0.8))
+			parts(parent, pos + Vector2(0, -30), 20, 60.0, 1.0, 0.05, Color(1, 0.95, 0.6), Color(1, 0.6, 0.1), -150.0)
+		"veil":  # cintilar azulado em volta do corpo
+			fx(parent, pos, 1.0, func(n: DrawFx, k: float):
+				var rng := _rs(n.seed_v)
+				for i in 14:
+					var ang := rng.randf() * TAU + k * 2.0
+					var p := Vector2(cos(ang) * 22.0, -40 + sin(ang) * 36.0)
+					ElemArt.star(n, p, rng.randf_range(2, 4.5) * sin(fmod(k * 3.0 + i * 0.3, 1.0) * PI), Color(0.9, 0.95, 1, 0.9), k * 4.0))
+		_:
+			_light_old(parent, kind, pos)

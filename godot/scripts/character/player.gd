@@ -86,6 +86,9 @@ func _ready() -> void:
 	_recalc()
 	_aura = StatusAura.new()
 	add_child(_aura)
+	var dfx := DebuffFx.new()
+	dfx.pl = self
+	add_child(dfx)
 	var ca := ClassAura.new()
 	add_child(ca)
 	ca.setup(classe)
@@ -324,9 +327,9 @@ func _tick_debuffs(delta: float) -> void:
 				_die(str(debuffs.veneno[2]))
 	var tint := Color.WHITE
 	if debuffs.has("veneno"):
-		tint = Color(0.75, 1.0, 0.65)
+		tint = Color(0.88, 1.0, 0.84)
 	elif debuffs.has("lento"):
-		tint = Color(0.75, 0.85, 1.0)
+		tint = Color(0.9, 0.94, 1.0)
 	if dead:
 		return
 	if tint != Color.WHITE:
@@ -1438,3 +1441,60 @@ class StatusAura:
 				SpellArt.poly(self, pts, Color(wc, 0.5))
 				for f in 3:
 					draw_line(Vector2(0, -52), Vector2(sgn * (30 + f * 9) * fl, -84 + f * 10), Color(wc.lightened(0.5), 0.7), 1.5)
+
+
+
+## Efeitos ruins no corpo do jogador: veneno (bolhas verdes estourando e pingando de partes
+## do corpo), lento (gosma/geada escorrendo nas pernas), preso (fios de teia e raízes
+## enrolando as pernas), atordoado (estrelas girando na cabeça).
+class DebuffFx:
+	extends Node2D
+	var pl: Node
+	var _t := 0.0
+	const PTS := [Vector2(0, -80), Vector2(-11, -64), Vector2(11, -64), Vector2(-16, -46), Vector2(16, -46), Vector2(0, -52), Vector2(-6, -30), Vector2(6, -30), Vector2(-6, -12), Vector2(6, -12)]
+
+	func _ready() -> void:
+		z_index = 2
+
+	func _process(d: float) -> void:
+		_t += d
+		visible = not pl.debuffs.is_empty() and not pl.dead
+		if visible:
+			queue_redraw()
+
+	func _draw() -> void:
+		var db: Dictionary = pl.debuffs
+		if db.has("veneno"):
+			for i in PTS.size():
+				var p: Vector2 = PTS[i]
+				var f := fmod(_t * (0.7 + (i % 3) * 0.2) + i * 0.29, 1.0)
+				if f < 0.7:
+					var r := 1.5 + f * 4.0
+					draw_circle(p + Vector2(0, -f * 6.0), r, Color(0.45, 0.95, 0.3, 0.6))
+					draw_arc(p + Vector2(-1, -f * 6.0 - 1), r * 0.6, PI * 1.1, PI * 1.6, 6, Color(0.9, 1, 0.8, 0.8), 1.0)
+				else:
+					var q := (f - 0.7) / 0.3
+					ElemArt.drop(self, p + Vector2(0, q * 26.0), Vector2(0, 300), 2.0, Color(0.4, 0.85, 0.25, 0.8 * (1.0 - q)))
+			for i in 3:
+				var f2 := fmod(_t * 0.5 + i * 0.33, 1.0)
+				ElemArt.puff(self, Vector2(sin(_t + i * 2.0) * 10.0, -50 - f2 * 40.0), 6.0 + f2 * 8.0, Color(0.4, 0.8, 0.25, 0.18 * (1.0 - f2)))
+		if db.has("lento"):
+			for i in 5:
+				var x := (i - 2) * 5.0
+				var f := fmod(_t * 0.6 + i * 0.21, 1.0)
+				ElemArt.ribbon(self, PackedVector2Array([Vector2(x, -26), Vector2(x + sin(i) * 2.0, -26 + 10.0 + f * 14.0)]), 2.5, 1.0, Color(0.7, 0.85, 1.0, 0.55))
+				ElemArt.drop(self, Vector2(x, -26 + 10.0 + f * 14.0), Vector2(0, 250), 1.8, Color(0.75, 0.9, 1.0, 0.7 * (1.0 - f)))
+		if db.has("preso"):
+			for i in 5:
+				var a := TAU * i / 5.0 + _t * 0.3
+				var b := Vector2(cos(a) * 14.0, sin(a) * 6.0)
+				var lp := PackedVector2Array()
+				for j in 8:
+					var f := j / 7.0
+					lp.append(b.lerp(Vector2(sin(a + f * 3.0) * 7.0, -8 - f * 26.0), f))
+				draw_polyline(lp, Color(0.95, 0.95, 0.9, 0.75), 1.2)
+				ElemArt.vine(self, lp, 1.0, 2.2, i * 17, 0.8, false)
+		if db.has("atordoado"):
+			for i in 3:
+				var a := _t * 5.0 + TAU * i / 3.0
+				ElemArt.star(self, Vector2(cos(a) * 13.0, -96 + sin(a) * 4.0), 4.5, Color(1, 0.9, 0.4), _t * 3.0)

@@ -289,22 +289,10 @@ func _attack() -> void:
 				continue
 			var mh := float(t2.get("max_hp")) if t2.get("max_hp") != null else 100.0 + 10.0 * (int(t2.get("level")) - 1)
 			var dmg := maxi(1, int(ceil(mh * 0.01)))
-			var b2 := Bolt.new()
-			b2.color = Color(0.85, 0.72, 0.4)
-			b2.speed = 520.0
-			b2.target = t2
-			b2.global_position = global_position
-			b2.on_hit = func(): if _valid_foe(t2): t2.take_damage(dmg, display_name)
-			get_parent().add_child(b2)
+			SpellArt.projectile(get_parent(), global_position, t2, "lasca", false, ["lasca"], func(): if _valid_foe(t2): t2.take_damage(dmg, display_name), 520.0)
 		return
 	if info.has("proj"):
-		var b := Bolt.new()
-		b.color = info.proj
-		b.speed = 380.0
-		b.target = tgt
-		b.global_position = global_position
-		b.on_hit = func(): _hit(tgt)
-		get_parent().add_child(b)
+		SpellArt.projectile(get_parent(), global_position, tgt, _shot_kind(), false, [], func(): _hit(tgt), 380.0)
 	else:
 		_hit(tgt)
 
@@ -405,18 +393,13 @@ func _do_skill(s: Dictionary) -> void:
 		"disparo":
 			play_action("attack", 0.45)
 			_busy = 0.35
-			var b := Bolt.new()
-			b.color = col
-			b.speed = float(s.get("vel", 360.0))
-			b.size = float(s.get("tamanho", 1.0))
-			b.target = tgt
-			b.global_position = global_position
-			b.on_hit = _bolt_hit.bind(tgt, s, col)
-			get_parent().add_child(b)
+			var th := _theme(s)
+			var pel := th if th != "vento" else "terra"
+			SpellArt.projectile(get_parent(), global_position, tgt, pel, float(s.get("tamanho", 1.0)) > 1.5, [pel], _bolt_hit.bind(tgt, s, col), float(s.get("vel", 360.0)))
 		"dreno":
 			play_action("attack", 0.5)
 			_busy = 0.45
-			MonsterFx.beam(get_parent(), self, tgt, col, 0.55)
+			_drain_fx(tgt, col)
 			_hit(tgt, float(s.get("poder", 1.0)), s)
 			var heal := float(info.atk) * float(s.get("poder", 1.0)) * 0.7
 			hp = minf(max_hp, hp + heal)
@@ -428,21 +411,122 @@ func _do_skill(s: Dictionary) -> void:
 			if al != null:
 				var n := al.max_hp * float(s.get("poder", 0.25))
 				al.hp = minf(al.max_hp, al.hp + n)
-				MonsterFx.ring(get_parent(), al.global_position, 1.0, col, 0.6)
+				SpellArt.light(get_parent(), "heal", al.global_position)
 				CombatText.add(al.global_position + Vector2(0, -80), "+%d" % int(n), Color(0.4, 1, 0.4))
 		"uivo":
 			play_action("cast", 0.7)
 			_busy = 0.6
-			MonsterFx.ring(get_parent(), global_position, 3.5, col, 0.7)
+			_roar_fx(col)
 			for m in get_tree().get_nodes_in_group("monsters"):
 				if not m.dead and m.mtype == mtype and Rules.gdist(global_position, m.global_position) <= 7.0:
 					m._buff_t = float(s.get("dur", 8.0))
 
 
+## Dreno: fio de vida saindo do alvo e entrando no monstro (gotas correndo pela corrente).
+func _drain_fx(tgt: Node2D, col: Color) -> void:
+	var me := self
+	SpellArt.fx(get_parent(), Vector2.ZERO, 0.7, func(n, k: float):
+		if not is_instance_valid(tgt) or not is_instance_valid(me):
+			return
+		var p0: Vector2 = tgt.global_position + Vector2(0, -40)
+		var p1: Vector2 = me.global_position + Vector2(0, -40)
+		var nrm := (p1 - p0).orthogonal().normalized()
+		var lp := PackedVector2Array()
+		for i in 14:
+			var f := i / 13.0
+			lp.append(p0.lerp(p1, f) + nrm * sin(f * PI * 3.0 + n.t * 14.0) * 8.0 * sin(f * PI))
+		ElemArt.ribbon(n, lp, 4.0, 2.0, Color(col, 0.35 * (1.0 - k)))
+		ElemArt.ribbon(n, lp, 1.5, 0.8, Color(col.lightened(0.4), 0.8 * (1.0 - k)))
+		for i in 6:
+			var f := fmod(n.t * 1.8 + i / 6.0, 1.0)
+			var q: Vector2 = lp[int(f * 13.0)]
+			ElemArt.drop(n, q, (p1 - p0).normalized() * 300.0, 2.5, Color(col.lightened(0.2), 1.0 - k)))
+
+
+## Urro/uivo: ar tremendo saindo da boca, poeira levantando, olhos acendendo.
+func _roar_fx(col: Color) -> void:
+	var sc := float(info.scale)
+	var at := global_position + Vector2(0, -60 * sc)
+	SpellArt.fx(get_parent(), at, 0.8, func(n, k: float):
+		for i in 5:
+			var f := fmod(k * 1.6 + i * 0.2, 1.0)
+			var r := (14.0 + f * 70.0) * sc
+			n.draw_arc(Vector2.ZERO, r, -0.9, 0.9, 16, Color(1, 1, 1, 0.35 * (1.0 - f)), 2.0)
+			n.draw_arc(Vector2.ZERO, r, PI - 0.9, PI + 0.9, 16, Color(1, 1, 1, 0.35 * (1.0 - f)), 2.0)
+		ElemArt.star(n, Vector2(-5, 2) * sc, 4.0 * sc * (1.0 - k), Color(col, 1.0 - k))
+		ElemArt.star(n, Vector2(5, 2) * sc, 4.0 * sc * (1.0 - k), Color(col, 1.0 - k)))
+	SpellArt.cloud(get_parent(), global_position, 40.0 * sc, Color(0.55, 0.47, 0.38, 0.35), 6, 1.0)
+
+
+## O que o monstro atira no ataque normal à distância.
+func _shot_kind() -> String:
+	var t := mtype
+	if t.contains("arqueiro"):
+		return "flecha"
+	if t.contains("lanceiro"):
+		return "lanca"
+	if t.contains("korvo") or t == "bandido":
+		return "faca"
+	if t.contains("aranha") or t.contains("aracn"):
+		return "teia"
+	if t.contains("slime"):
+		return "gosma"
+	if t.contains("necro") or t.contains("lich") or t.contains("fantasma"):
+		return "trevas"
+	var el := str(info.get("el", ""))
+	return el if el != "" else "trevas"
+
+
+## Tema visual da habilidade pelo nome/descrição (e elemento do monstro): fogo, gelo, raio,
+## terra, trevas, gosma, teia, vento (urros), faca/flecha/lança (arremessos).
+func _theme(s: Dictionary) -> String:
+	var t := (str(s.get("nome", "")) + " " + str(s.get("desc", ""))).to_lower()
+	for pair in [["chama|fogo|brasa|incandesc|flamej|magma|lava", "fogo"], ["gel|neve|congel|frio", "gelo"], ["raio|elétric|trov", "raio"],
+			["teia|seda", "teia"], ["veneno|picada|ácido", "gosma"], ["gosma|geleia", "gosma"], ["morte|crânio|sombr|profan|necr|maldi|alma", "trevas"],
+			["uivo|grito|rugido|fúria", "vento"], ["faca", "faca"], ["flecha", "flecha"], ["lança", "lanca"],
+			["pedra|rocha|terra|terremoto|pisão|esmag|tremor|rúnic|pedregulho", "terra"], ["água|maré", "agua"]]:
+		for w in str(pair[0]).split("|"):
+			if t.contains(w):
+				return str(pair[1])
+	var el := str(info.get("el", ""))
+	return el if el != "" else "terra"
+
+
+## Explosão/onda da habilidade com a cara do tema (sem anel no chão).
+func _burst(at: Vector2, r_tiles: float, th: String) -> void:
+	var par := get_parent()
+	match th:
+		"gosma":
+			SpellArt.splash(par, at, int(8 + r_tiles * 4), 60.0 * r_tiles, Color(0.45, 0.9, 0.35, 0.9), 12.0)
+			SpellArt.cloud(par, at, 30.0 * r_tiles, Color(0.5, 0.85, 0.35, 0.3), 5, 1.0)
+		"teia":
+			SpellArt.fxn(par, at, 1.4, func(n, k: float):
+				var a := 1.0 - maxf(0.0, k - 0.7) / 0.3
+				for i in 10:
+					var ang := TAU * i / 10.0
+					n.draw_line(Vector2.ZERO, Vector2(cos(ang), sin(ang) * 0.5) * 70.0 * r_tiles * minf(1.0, k * 4.0), Color(0.95, 0.95, 0.9, 0.7 * a), 1.2)
+				for j in 4:
+					n.draw_arc(Vector2.ZERO, 16.0 * (j + 1) * r_tiles * minf(1.0, k * 4.0), 0, TAU, 20, Color(0.95, 0.95, 0.9, 0.5 * a), 1.0))
+		"trevas":
+			SpellArt.cloud(par, at, 40.0 * r_tiles, Color(0.25, 0.06, 0.32, 0.55), 9, 1.2, 30.0)
+			SpellArt.fx(par, at, 0.9, func(n, k: float):
+				for i in 8:
+					var ang := TAU * i / 8.0 + k * 2.0
+					ElemArt.ribbon(n, PackedVector2Array([Vector2.ZERO + Vector2(0, -10), Vector2(cos(ang), sin(ang) * 0.5) * 60.0 * r_tiles * k + Vector2(0, -30 * k)]), 3.0, 0.5, Color(0.7, 0.35, 1.0, 0.6 * (1.0 - k)), true))
+		"faca", "flecha", "lanca":
+			SpellArt.impact(par, at, "terra")
+		_:
+			if r_tiles >= 1.5:
+				SpellArt.cc(par, at, r_tiles * 0.8, th)
+			else:
+				SpellArt.impact(par, at, th, r_tiles >= 1.0)
+
+
 func _land(s: Dictionary, col: Color) -> void:
 	if dead:
 		return
-	MonsterFx.ring(get_parent(), global_position, 0.8, col, 0.35)
+	SpellArt.impact(get_parent(), global_position, "terra", float(info.scale) > 1.4)
+	SpellArt.cloud(get_parent(), global_position, 34.0 * float(info.scale), Color(0.55, 0.47, 0.38, 0.4), 6, 0.9)
 	if foe != null and _valid_foe(foe) and Rules.gdist(global_position, foe.global_position) <= 1.6:
 		_hit(foe, float(s.get("poder", 1.5)), s)
 
@@ -451,7 +535,7 @@ func _wave(s: Dictionary, col: Color) -> void:
 	if dead:
 		return
 	var r := float(s.get("raio", 2.0))
-	MonsterFx.ring(get_parent(), global_position, r, col, 0.5)
+	_burst(global_position, r, _theme(s))
 	for p in _foes_near(global_position, r):
 		_hit(p, float(s.get("poder", 1.3)), s)
 
@@ -460,11 +544,14 @@ func _bolt_hit(tgt, s: Dictionary, col: Color) -> void:
 	if dead or tgt == null or not is_instance_valid(tgt):
 		return
 	var area := float(s.get("area", 0.0))
+	var th := _theme(s)
 	if area > 0.0:
-		MonsterFx.ring(get_parent(), tgt.global_position, area, col, 0.45)
+		_burst(tgt.global_position, area, th)
 		for p in _foes_near(tgt.global_position, area):
 			_hit(p, float(s.get("poder", 1.2)), s)
 	else:
+		if th not in ["fogo", "gelo", "raio", "agua", "terra", "natureza"]:
+			_burst(tgt.global_position, 0.6, th)
 		_hit(tgt, float(s.get("poder", 1.2)), s)
 
 
