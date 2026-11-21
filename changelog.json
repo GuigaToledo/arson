@@ -1,5 +1,20 @@
 [
  {
+  "versao": "0.6.0",
+  "data": "2026-11-21",
+  "titulo": "Elites, chefes e saque",
+  "itens": [
+   "Inventário novo no meio da tela, sem cobrir os botões de ataque, com ícones desenhados e botão Bolsa no topo",
+   "Bolsa de saque com 30 espaços: peles, ossos, gosmas, presas, sedas e mais de 40 materiais",
+   "Brann agora compra o saque (vender 1, todos ou tudo de uma vez) e a loja ganhou abas",
+   "Versão Elite de todos os monstros: aura dourada, mais forte, 3x experiência e ouro e mais saque",
+   "Um chefe por região: Capitão Korvo, Golem Ancestral, Slime Rei, Lich Mortecinza, Matriarca Uivante, Rainha Aracnídea, Rei Goblin, Chefe Orc e Polifemo",
+   "Cada chefe deixa um troféu valioso e pode deixar um equipamento único",
+   "As invocações não atacam mais o boneco de treino, só monstros",
+   "Menus se ajustam ao tamanho da tela"
+  ]
+ },
+ {
   "versao": "0.5.0",
   "data": "2026-11-21",
   "titulo": "Bestiário e o continente de Brumavale",
