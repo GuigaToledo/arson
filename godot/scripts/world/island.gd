@@ -38,6 +38,7 @@ func _ready() -> void:
 	entities.y_sort_enabled = true
 	add_child(entities)
 	_build_buildings()
+	_build_details()
 	_build_lights()
 	_spawn_characters()
 	var net := NetSync.new()
@@ -76,6 +77,54 @@ func _build_ground() -> void:
 
 
 const OBJ := "res://assets/objetos/"
+const T := 0.643  # tiles por metro (peças desenhadas por código)
+
+var anchors := {}
+
+
+## Peça desenhada por código: a origem da imagem vai no ponto `og` da grade.
+func piece(nm: String, og: Vector2, fpos: Vector2, fsize: Vector2, flip := false, shadow := true) -> Prop:
+	if anchors.is_empty():
+		var txt := FileAccess.get_file_as_string(OBJ + "ancoras.json")
+		var parsed = JSON.parse_string(txt) if txt != "" else null
+		anchors = parsed if parsed is Dictionary else {"_": 0}
+	var p := Prop.new().setup("box", fpos, fsize, 60.0, Color(0.3, 0.2, 0.1))
+	var a = anchors.get(nm)
+	var an := Vector2(a[0], a[1]) if a is Array else Vector2(-1, -1)
+	var center := Iso.to_screen(fpos + fsize * 0.5)
+	p.with_image(OBJ + nm + ".png", 1.0, Iso.to_screen(og) - center, flip, an)
+	p.casts_shadow = shadow
+	entities.add_child(p)
+	return p
+
+
+func _build_details() -> void:
+	# poço no meio da praça
+	piece("poco", Vector2(27.5, 30.2), Vector2(27.5, 30.2) - Vector2(0.51, 0.51), Vector2(1.03, 1.03))
+	# bancos perto da fogueira
+	piece("banco", Vector2(29.0, 36.9), Vector2(28.95, 36.9), Vector2(1.16, 0.27))
+	piece("banco", Vector2(32.2, 35.4), Vector2(32.2, 35.35), Vector2(0.27, 1.16), true)
+	# caixotes e barris ao lado das casas
+	for r: Rect2 in map.blocks("H"):
+		var cx := Vector2(r.end.x + 0.55, r.position.y + 0.5)
+		if map.walkable_grid(cx):
+			piece("caixotes", cx, cx - Vector2(0.32, 0.32), Vector2(0.8, 0.64))
+		var bx := Vector2(r.end.x + 0.45, r.position.y + 1.5)
+		if map.walkable_grid(bx):
+			piece("barril", bx, bx - Vector2(0.23, 0.23), Vector2(0.46, 0.46))
+	# cercas ao longo das estradas do sul e do leste
+	var y := 34.0
+	while y < 43.0:
+		for x in [26.55, 29.45]:
+			if map.walkable_grid(Vector2(x, y + 1.0)):
+				piece("cerca", Vector2(x, y), Vector2(x - 0.05, y), Vector2(0.1, 2.06), true, false)
+		y += 2.2
+	var x2 := 40.0
+	while x2 < 50.0:
+		for yy in [26.55, 29.45]:
+			if map.walkable_grid(Vector2(x2 + 1.0, yy)):
+				piece("cerca", Vector2(x2, yy), Vector2(x2, yy - 0.05), Vector2(2.06, 0.1), false, false)
+		x2 += 2.2
 
 
 func _build_buildings() -> void:
@@ -115,11 +164,9 @@ func _build_buildings() -> void:
 
 func _build_lights() -> void:
 	for c in [Vector2(22.5, 26.6), Vector2(33.5, 26.6), Vector2(22.5, 32.5), Vector2(33.5, 32.5)]:
-		var post := LampPost.new()
-		post.position = Iso.to_screen(c)
-		entities.add_child(post)
-		var l := LightKit.make(Color(1.0, 0.65, 0.3), 1.0, 1.8, false, 0.12)
-		l.position = Vector2(10, -30)
+		var post := piece("lampiao", c, c - Vector2(0.07, 0.07), Vector2(0.14, 0.14), false, false)
+		var l := LightKit.make(Color(1.0, 0.65, 0.3), 1.1, 1.9, false, 0.12)
+		l.position = post.tex_foot + Vector2(23, -96)
 		post.add_child(l)
 	var camp := Prop.new().setup("box", Vector2(30.6, 35.6), Vector2(0.8, 0.8), 40.0, Color(0.3, 0.2, 0.1))
 	camp.with_image(OBJ + "fogueira.png", 1.0, Vector2(0, 6))

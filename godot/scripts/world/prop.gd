@@ -17,6 +17,8 @@ var tex_scale := 1.0
 var tex_flip := false
 ## Onde fica o "pé" da imagem (base, centro embaixo), relativo à origem da peça.
 var tex_foot := Vector2.ZERO
+## Pixel da imagem que encosta no chão (origem da peça). Negativo = centro da base.
+var tex_anchor := Vector2(-1, -1)
 
 var A: Vector2
 var B: Vector2
@@ -27,9 +29,10 @@ var _player: Node2D
 var _fade := 1.0
 
 
-func with_image(path: String, sc: float, foot := Vector2.ZERO, flip := false) -> Prop:
+func with_image(path: String, sc: float, foot := Vector2.ZERO, flip := false, anchor := Vector2(-1, -1)) -> Prop:
 	if ResourceLoader.exists(path):
 		tex = load(path)
+		tex_anchor = anchor
 		tex_scale = sc
 		tex_foot = foot
 		tex_flip = flip
@@ -68,8 +71,11 @@ func _ready() -> void:
 		add_child(occ)
 	_bounds = Rect2(Vector2(D.x, A.y - height), Vector2(B.x - D.x, C.y - A.y + height))
 	if tex:
-		var sz := tex.get_size() * tex_scale
-		_bounds = Rect2(tex_foot + Vector2(-sz.x * 0.5, -sz.y), sz).grow(-sz.x * 0.08)
+		_bounds = _tex_rect()
+		if tex_flip:
+			_bounds.position.x = -_bounds.position.x - _bounds.size.x
+		_bounds.position += tex_foot
+		_bounds = _bounds.grow(-_bounds.size.x * 0.08)
 	set_process(fade_when_behind)
 
 
@@ -82,6 +88,13 @@ func _process(delta: float) -> void:
 	var behind := lp.y < 0.0 and _bounds.grow(6).has_point(lp + Vector2(0, -35))
 	_fade = move_toward(_fade, 0.35 if behind else 1.0, delta * 3.0)
 	modulate.a = _fade
+
+
+## Retângulo da imagem relativo ao ponto de apoio (antes do espelhamento).
+func _tex_rect() -> Rect2:
+	var sz := tex.get_size() * tex_scale
+	var an := Vector2(sz.x * 0.5, sz.y) if tex_anchor.x < 0 else tex_anchor * tex_scale
+	return Rect2(-an, sz)
 
 
 func up(p: Vector2, h: float) -> Vector2:
@@ -101,13 +114,9 @@ func inset(k: float) -> Array:
 
 func _draw() -> void:
 	if tex:
-		var sz := tex.get_size() * tex_scale
-		if tex_flip:
-			draw_set_transform(tex_foot, 0.0, Vector2(-1, 1))
-			draw_texture_rect(tex, Rect2(Vector2(-sz.x * 0.5, -sz.y), sz), false)
-			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		else:
-			draw_texture_rect(tex, Rect2(tex_foot + Vector2(-sz.x * 0.5, -sz.y), sz), false)
+		draw_set_transform(tex_foot, 0.0, Vector2(-1, 1) if tex_flip else Vector2.ONE)
+		draw_texture_rect(tex, _tex_rect(), false)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		return
 	match kind:
 		"table":
