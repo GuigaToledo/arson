@@ -202,6 +202,8 @@ func start_game(slot: int) -> void:
 			player.foe = mm
 			var sid := str(arg).split("=")[1]
 			get_tree().create_timer(0.2).timeout.connect(func():
+				player.max_mp = 9999.0
+				player.mp = 9999.0
 				var mp0 := player.mp
 				player.cast_spell(sid)
 				print("TESTE vermagia ", sid, " gastou=", mp0 - player.mp, " seguro=", Rules.is_safe(player.global_position), " acao=", player._action_time, " liberada=", player.spell_unlocked(sid), " textos=", CombatText.items.map(func(x): return x.get("text", x.get("t", "")))))
@@ -455,9 +457,9 @@ func _build_glow() -> void:
 						GlowProps.crystal(entities, Iso.to_screen(gp), x * 17 + y * 3)
 						n[1] += 1
 				"r":
-					if r < 0.06 and Vector2(x, y).distance_to(map.spawn) > 6.0:
+					if r < 0.13 and Vector2(x, y).distance_to(map.spawn) > 6.0:
 						var inner := true
-						for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(-1, -1)]:
+						for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 							if map.at(x + d.x, y + d.y) != "r":
 								inner = false
 						if inner:
