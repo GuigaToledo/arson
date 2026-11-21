@@ -1,0 +1,55 @@
+[
+  {
+    "versao": "0.4.0",
+    "data": "21/11/2026",
+    "titulo": "Página inicial, wiki e atualizações",
+    "itens": [
+      "Página inicial do jogo com nome, versão, características e botão Jogar",
+      "Registro de atualizações (esta página)",
+      "Wiki do jogo com classes, magias, monstros, itens, NPCs e regiões",
+      "Depois de uma atualização automática o jogo volta direto, sem passar pela página inicial"
+    ]
+  },
+  {
+    "versao": "0.3.0",
+    "data": "21/11/2026",
+    "titulo": "Itens de mago e visual de cinema",
+    "itens": [
+      "Itens de mago: chapéus, turbante, diadema, mantos, saias, calças, sandálias, botas, capa estelar, livros, grimórios, varinhas e cetros por elemento, colar, amuleto e anel",
+      "Atributos e nível mínimo nos itens, bolsa, itens caindo dos monstros e loja do Brann",
+      "Capa de Lobo Infernal e Escudo Mímico como opção de visual",
+      "Pós-processamento: cor de cinema, brilho nas luzes, neblina baixa, vinheta, granulação e poeira no ar",
+      "Cenário com sujeira, escorridos, sombra nos cantos, luz de contorno e musgo",
+      "A classe começa com o elemento base; o segundo elemento vem no nível 31",
+      "Cada magia sobe de nível sem limite e tem 5 melhorias de força e efeito",
+      "Várias otimizações para rodar leve no celular"
+    ]
+  },
+  {
+    "versao": "0.2.0",
+    "data": "21/11/2026",
+    "titulo": "Classes, magias e vila viva",
+    "itens": [
+      "Tela inicial com até 4 personagens e escolha da classe: Fogo/Lava, Água/Gelo, Vento/Raio, Terra/Natureza",
+      "Magias de cada elemento: alvo único, controle, escudo, cone, invocação, área e fusões",
+      "Magias de Luz: cura, bênção, corrente de luz, círculo sagrado, espírito, aura, véu e ascensão",
+      "Invocações que lutam ao seu lado e sobem de nível junto com você",
+      "Brann, o Mercador, vende poções; Lira, a Sacerdotisa, cura e dá tarefas de caça",
+      "Esqueleto articulado nos personagens e golpes animados",
+      "Controles separados para PC e celular; menu único com abas"
+    ]
+  },
+  {
+    "versao": "0.1.0",
+    "data": "20/11/2026",
+    "titulo": "Nova versão em 2.5D isométrico",
+    "itens": [
+      "O jogo passou para a Godot, em 2D isométrico no estilo Diablo 2",
+      "Ilha inicial inspirada em Rookgaard, com vila, templo, estradas, rio, ponte e píer",
+      "Online com amigos no navegador: o primeiro hospeda e outro assume se ele sair",
+      "Equipamentos trocáveis peça por peça e painel no estilo do Tibia",
+      "Cenário desenhado por código: casas, templo, árvores, carroças, tendas, poço e lampiões",
+      "Controles para celular: joystick, bola de fogo e correr"
+    ]
+  }
+]

@@ -1,220 +1,148 @@
 <!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
-		<title>Arson</title>
-		<style>
-html, body, #canvas {
-	margin: 0;
-	padding: 0;
-	border: 0;
-}
-
-body {
-	color: white;
-	background-color: black;
-	overflow: hidden;
-	touch-action: none;
-}
-
-#canvas {
-	display: block;
-}
-
-#canvas:focus {
-	outline: none;
-}
-
-#status, #status-splash, #status-progress {
-	position: absolute;
-	left: 0;
-	right: 0;
-}
-
-#status, #status-splash {
-	top: 0;
-	bottom: 0;
-}
-
-#status {
-	background-color: #242424;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	visibility: hidden;
-}
-
-#status-splash {
-	max-height: 100%;
-	max-width: 100%;
-	margin: auto;
-}
-
-#status-splash.show-image--false {
-	display: none;
-}
-
-#status-splash.fullsize--true {
-	height: 100%;
-	width: 100%;
-	object-fit: contain;
-}
-
-#status-splash.use-filter--false {
-	image-rendering: pixelated;
-}
-
-#status-progress, #status-notice {
-	display: none;
-}
-
-#status-progress {
-	bottom: 10%;
-	width: 50%;
-	margin: 0 auto;
-}
-
-#status-notice {
-	background-color: #5b3943;
-	border-radius: 0.5rem;
-	border: 1px solid #9b3943;
-	color: #e0e0e0;
-	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
-	line-height: 1.3;
-	margin: 0 2rem;
-	overflow: hidden;
-	padding: 1rem;
-	text-align: center;
-	z-index: 1;
-}
-		</style>
-		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+<meta name="theme-color" content="#0b0706">
+<title>Arson — RPG de fantasia sombria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0b0706; color: #e8d9bd; }
+#canvas { display: block; position: fixed; inset: 0; width: 100%; height: 100%; outline: none; }
+#canvas:focus { outline: none; }
+#home { position: fixed; inset: 0; overflow-y: auto; z-index: 10; font-family: 'Crimson Text', Georgia, serif;
+  background: radial-gradient(ellipse at 50% 115%, rgba(150, 45, 10, .55), rgba(40, 12, 6, .35) 40%, transparent 70%),
+              radial-gradient(ellipse at 50% 0%, #22150f 0%, #0b0706 60%); }
+#embers { position: fixed; inset: 0; pointer-events: none; }
+.wrap { position: relative; max-width: 980px; margin: 0 auto; padding: 5vh 22px 40px; text-align: center; }
+.logo { font-family: 'Cinzel', serif; font-weight: 900; font-size: clamp(56px, 13vw, 132px); letter-spacing: .14em; margin: 0;
+  background: linear-gradient(180deg, #ffe2a0 0%, #f39b3a 45%, #8a2a0c 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 18px rgba(255, 110, 30, .45)) drop-shadow(0 4px 0 #1a0a05); }
+.tag { font-family: 'Cinzel', serif; letter-spacing: .32em; text-transform: uppercase; color: #c9a873; font-size: clamp(11px, 2.4vw, 15px); margin: 6px 0 4px; }
+.ver { display: inline-block; margin: 10px 0 26px; padding: 4px 14px; border: 1px solid #6b4a26; border-radius: 20px; color: #e0c48f; font-size: 15px; background: rgba(20, 10, 5, .6); }
+.play { font-family: 'Cinzel', serif; font-weight: 700; font-size: clamp(22px, 5vw, 30px); letter-spacing: .2em; color: #1b0b03; cursor: pointer;
+  padding: 16px 64px; border: none; border-radius: 6px; background: linear-gradient(180deg, #ffcf73, #e07a24 55%, #a8430f);
+  box-shadow: 0 0 0 2px #3b1a08, 0 0 0 4px #c98b3c, 0 10px 40px rgba(255, 110, 30, .45); transition: transform .12s, filter .12s; }
+.play:hover { transform: translateY(-2px) scale(1.02); filter: brightness(1.1); }
+.play:active { transform: scale(.98); }
+.links { margin: 22px 0 34px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.links a { font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: .12em; color: #e8d2a6; text-decoration: none; padding: 10px 22px;
+  border: 1px solid #6b4a26; border-radius: 6px; background: rgba(25, 13, 7, .75); transition: background .15s, border-color .15s; }
+.links a:hover { background: rgba(70, 30, 10, .8); border-color: #c98b3c; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; text-align: left; margin-top: 10px; }
+.card { background: linear-gradient(180deg, rgba(36, 22, 14, .85), rgba(18, 10, 6, .85)); border: 1px solid #4a3220; border-radius: 8px; padding: 14px 16px; }
+.card h3 { font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: .08em; margin: 0 0 6px; color: #f0b560; }
+.card p { margin: 0; font-size: 16px; line-height: 1.35; color: #d8c8aa; }
+.news { margin-top: 30px; text-align: left; background: rgba(15, 8, 5, .7); border: 1px solid #4a3220; border-radius: 8px; padding: 14px 18px; }
+.news h2 { font-family: 'Cinzel', serif; font-size: 17px; color: #f0b560; margin: 0 0 6px; letter-spacing: .08em; }
+.news ul { margin: 6px 0 0 18px; padding: 0; } .news li { margin: 3px 0; font-size: 16px; }
+.foot { margin-top: 28px; font-size: 13px; color: #8f7a5c; }
+#loading { position: fixed; inset: 0; z-index: 9; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+  background: #0b0706; font-family: 'Cinzel', serif; color: #e0c48f; letter-spacing: .15em; }
+#bar { width: min(360px, 70vw); height: 8px; border: 1px solid #6b4a26; border-radius: 6px; overflow: hidden; background: #1a0e08; }
+#bar div { height: 100%; width: 0; background: linear-gradient(90deg, #a8430f, #ffcf73); transition: width .2s; }
+#err { color: #ff8a6a; font-family: 'Crimson Text', serif; letter-spacing: 0; max-width: 80vw; text-align: center; }
+</style>
+<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
-<script>(function(){var m=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent));if(m)return;var r=window.devicePixelRatio||1;Object.defineProperty(window,'devicePixelRatio',{get:function(){return Math.min(4,r*2);}});})();</script><script src="arson_net.js?v=2a3b7f2"></script>
-	</head>
-	<body>
-		<canvas id="canvas">
-			Your browser does not support the canvas tag.
-		</canvas>
-
-		<noscript>
-			Your browser does not support JavaScript.
-		</noscript>
-
-		<div id="status">
-			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
-			<progress id="status-progress"></progress>
-			<div id="status-notice"></div>
-		</div>
-
-		<script src="index.js"></script>
-		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","mainPack":"index-2a3b7f2.pck","experimentalVK":true,"fileSizes":{"index-2a3b7f2.pck":6392704,"index.wasm":43699190},"focusCanvas":true,"gdextensionLibs":[]};
+<script>(function(){var m=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent));if(m)return;var r=window.devicePixelRatio||1;Object.defineProperty(window,'devicePixelRatio',{get:function(){return Math.min(4,r*2);}});})();</script><script src="arson_net.js?v=baa2874"></script>
+</head>
+<body>
+<canvas id="canvas" tabindex="-1">Seu navegador não suporta o jogo (precisa de WebGL 2).</canvas>
+<div id="loading"><div>Carregando o mundo…</div><div id="bar"><div></div></div><div id="err"></div></div>
+<div id="home">
+  <canvas id="embers"></canvas>
+  <div class="wrap">
+    <h1 class="logo">ARSON</h1>
+    <div class="tag">RPG online de fantasia sombria</div>
+    <div class="ver" id="ver">versão …</div><br>
+    <button class="play" id="play">JOGAR</button>
+    <div class="links">
+      <a href="atualizacoes.html">Atualizações</a>
+      <a href="wiki.html">Wiki do jogo</a>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>Mundo online</h3><p>Todos no mesmo mundo, no navegador do celular ou do PC. Chame os amigos e cacem juntos.</p></div>
+      <div class="card"><h3>Magos elementais</h3><p>Fogo e Lava, Água e Gelo, Vento e Raio, Terra e Natureza — e a Luz para curar e proteger.</p></div>
+      <div class="card"><h3>Magias que evoluem</h3><p>Cada elemento sobe de nível com o uso. As magias ganham força, efeitos novos e se fundem.</p></div>
+      <div class="card"><h3>Habitats e monstros</h3><p>Slimes e goblins na região inicial, cemitério de mortos-vivos, cavernas, selva e acampamentos inimigos.</p></div>
+      <div class="card"><h3>Equipamentos</h3><p>Chapéus, mantos, cajados, grimórios e amuletos. Monte seu visual peça por peça.</p></div>
+      <div class="card"><h3>Isométrico 2.5D</h3><p>Visão diagonal no estilo dos clássicos, com luz de fogo, sombras e noites escuras.</p></div>
+    </div>
+    <div class="news" id="news" style="display:none"><h2 id="newsTitle">Novidades</h2><ul id="newsList"></ul></div>
+    <div class="foot">Arson · feito com Godot · <span id="build"></span></div>
+  </div>
+</div>
+<script src="index.js"></script>
+<script>
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","mainPack":"index-baa2874.pck","experimentalVK":true,"fileSizes":{"index-baa2874.pck":6394176,"index.wasm":43699190},"focusCanvas":true,"gdextensionLibs":[]};
 const GODOT_THREADS_ENABLED = false;
-const engine = new Engine(GODOT_CONFIG);
+const engine = new Engine(Object.assign({}, GODOT_CONFIG, { canvas: document.getElementById('canvas') }));
+const home = document.getElementById('home');
+const loading = document.getElementById('loading');
+let started = false;
 
+function setStatus(text) { document.getElementById('err').textContent = text; }
+
+function startGame() {
+  if (started) return;
+  started = true;
+  home.style.display = 'none';
+  loading.style.display = 'flex';
+  const mobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  if (mobile && document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+  const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
+  if (missing.length) { setStatus('Seu navegador não tem o que o jogo precisa: ' + missing.join(', ')); return; }
+  const bar = document.querySelector('#bar div');
+  engine.startGame({
+    onProgress: function (cur, total) { if (total > 0) bar.style.width = Math.round(cur / total * 100) + '%'; },
+  }).then(() => { loading.style.display = 'none'; document.getElementById('canvas').focus(); },
+          (err) => { setStatus(String(err && err.message || err)); });
+}
+document.getElementById('play').addEventListener('click', startGame);
+
+// volta direto ao jogo depois de uma atualização automática ou em testes
+const q = new URLSearchParams(location.search);
+let resume = false;
+try { resume = !!sessionStorage.getItem('arson-resume'); } catch (e) {}
+if (resume || q.has('jogar') || q.has('autoteste') || q.has('teste')) startGame();
+
+// versão e novidades
+fetch('changelog.json', { cache: 'no-store' }).then(r => r.json()).then(log => {
+  const last = log && log[0];
+  if (!last) return;
+  document.getElementById('ver').textContent = 'versão ' + last.versao + ' · ' + last.data;
+  document.getElementById('newsTitle').textContent = 'Novidades da versão ' + last.versao + (last.titulo ? ' — ' + last.titulo : '');
+  const ul = document.getElementById('newsList');
+  (last.itens || []).slice(0, 6).forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+  document.getElementById('news').style.display = 'block';
+}).catch(() => {});
+fetch('version.json', { cache: 'no-store' }).then(r => r.json()).then(v => { document.getElementById('build').textContent = 'build ' + v.v; }).catch(() => {});
+
+// brasas subindo no fundo
 (function () {
-	const statusOverlay = document.getElementById('status');
-	const statusProgress = document.getElementById('status-progress');
-	const statusNotice = document.getElementById('status-notice');
-
-	let initializing = true;
-	let statusMode = '';
-
-	function setStatusMode(mode) {
-		if (statusMode === mode || !initializing) {
-			return;
-		}
-		if (mode === 'hidden') {
-			statusOverlay.remove();
-			initializing = false;
-			return;
-		}
-		statusOverlay.style.visibility = 'visible';
-		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
-		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
-		statusMode = mode;
-	}
-
-	function setStatusNotice(text) {
-		while (statusNotice.lastChild) {
-			statusNotice.removeChild(statusNotice.lastChild);
-		}
-		const lines = text.split('\n');
-		lines.forEach((line) => {
-			statusNotice.appendChild(document.createTextNode(line));
-			statusNotice.appendChild(document.createElement('br'));
-		});
-	}
-
-	function displayFailureNotice(err) {
-		console.error(err);
-		if (err instanceof Error) {
-			setStatusNotice(err.message);
-		} else if (typeof err === 'string') {
-			setStatusNotice(err);
-		} else {
-			setStatusNotice('An unknown error occurred.');
-		}
-		setStatusMode('notice');
-		initializing = false;
-	}
-
-	const missing = Engine.getMissingFeatures({
-		threads: GODOT_THREADS_ENABLED,
-	});
-
-	if (missing.length !== 0) {
-		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
-			let serviceWorkerRegistrationPromise;
-			try {
-				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
-			} catch (err) {
-				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
-			}
-			// There's a chance that installing the service worker would fix the issue
-			Promise.race([
-				serviceWorkerRegistrationPromise.then((registration) => {
-					if (registration != null) {
-						return Promise.reject(new Error('Service worker already exists.'));
-					}
-					return registration;
-				}).then(() => engine.installServiceWorker()),
-				// For some reason, `getRegistration()` can stall
-				new Promise((resolve) => {
-					setTimeout(() => resolve(), 2000);
-				}),
-			]).then(() => {
-				// Reload if there was no error.
-				window.location.reload();
-			}).catch((err) => {
-				console.error('Error while registering service worker:', err);
-			});
-		} else {
-			// Display the message as usual
-			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
-			displayFailureNotice(missingMsg + missing.join('\n'));
-		}
-	} else {
-		setStatusMode('progress');
-		engine.startGame({
-			'onProgress': function (current, total) {
-				if (current > 0 && total > 0) {
-					statusProgress.value = current;
-					statusProgress.max = total;
-				} else {
-					statusProgress.removeAttribute('value');
-					statusProgress.removeAttribute('max');
-				}
-			},
-		}).then(() => {
-			setStatusMode('hidden');
-		}, displayFailureNotice);
-	}
-}());
-		</script>
-	</body>
+  const c = document.getElementById('embers'), x = c.getContext('2d');
+  let W, H, ps = [];
+  function size() { W = c.width = innerWidth; H = c.height = innerHeight; }
+  size(); addEventListener('resize', size);
+  for (let i = 0; i < 70; i++) ps.push({ x: Math.random(), y: Math.random(), s: .5 + Math.random() * 2, v: .0006 + Math.random() * .0016, p: Math.random() * 6 });
+  function step() {
+    if (home.style.display === 'none') return;
+    x.clearRect(0, 0, W, H);
+    for (const p of ps) {
+      p.y -= p.v; p.p += .03; if (p.y < -0.05) { p.y = 1.05; p.x = Math.random(); }
+      const a = Math.min(1, p.y * 1.4) * (.5 + .5 * Math.sin(p.p));
+      x.fillStyle = 'rgba(255,' + (120 + (p.s * 40 | 0)) + ',40,' + a.toFixed(2) + ')';
+      x.beginPath(); x.arc(p.x * W + Math.sin(p.p) * 8, p.y * H, p.s, 0, 6.3); x.fill();
+    }
+    requestAnimationFrame(step);
+  }
+  step();
+})();
+</script>
+</body>
 </html>
 
