@@ -22,11 +22,11 @@ func _ready() -> void:
 	map = WorldMap.load_file(MAP_PATH)
 	Actor.walkable = map.walkable
 	var cm := CanvasModulate.new()
-	cm.color = Color(0.62, 0.55, 0.5)
+	cm.color = Color(0.34, 0.31, 0.32)
 	add_child(cm)
 	var sun := DirectionalLight2D.new()
 	sun.color = Color(1.0, 0.78, 0.55)
-	sun.energy = 0.35
+	sun.energy = 0.22
 	sun.rotation_degrees = 35.0
 	sun.shadow_enabled = true
 	sun.shadow_color = Color(0, 0, 0, 0.45)

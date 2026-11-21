@@ -18,7 +18,7 @@ Rede: PeerJS. O primeiro jogador hospeda o mundo e, se ele sair, outro assume au
 - Projeto em `godot/` (abre no Godot 4.4+). Cada push em `godot/` é testado e exportado automaticamente para `/jogo/` pelo GitHub Actions.
 - Equipamentos: um arquivo `.tres` por item em `godot/data/items/` (slot, atributos, sprites por direção). Item novo = arquivo novo; o código do personagem não muda.
 - Personagem em camadas (corpo + 10 slots), 8 direções, camadas reordenadas por direção.
-- A arte atual é provisória (formas simples). Os sprites finais virão de modelos 3D renderizados em 2D nas 8 direções.
+- Estilo: 2.5D isométrico no estilo Diablo 2, tudo em 2D (ver `arte/LEIA-ME.md`). A arte atual dos personagens e casas é provisória.
 - A versão antiga (3D, Three.js) continua na raiz do site.
 
 ## Créditos

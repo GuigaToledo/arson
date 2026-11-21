@@ -23,58 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Peças de cenário (remove fundo)
         run: |
           pip install --quiet pillow
           python3 ferramentas/processar_objetos.py arte/objetos godot/assets/objetos
-
-      - name: Gerar 3D grátis (Hunyuan3D no Hugging Face)
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          if [ -n "$(python3 ferramentas/gerar_3d.py --listar)" ]; then
-            pip install --quiet gradio_client rembg onnxruntime
-            timeout 1500 python3 ferramentas/gerar_3d.py || true
-          fi
-
-      - name: Rig e animação automáticos (Blender)
-        run: |
-          for m in arte/modelos_gerados/*; do
-            [ -f "$m" ] || continue
-            n=$(basename "${m%.*}")
-            [ -f "arte/personagens/$n/modelo.glb" ] && continue
-            rot=$(python3 -c "import json,sys;print(json.load(open('arte/gerar3d/personagens/$n.json')).get('rotacao',0))" 2>/dev/null || echo 0)
-            bash ferramentas/blender.sh -b --factory-startup -P ferramentas/blender_autorig.py -- "$m" "arte/personagens/$n" "$rot" 2>&1 | grep -vE "^Fra:|^Info" | tail -30
-          done
-
-      - name: Personagens que mudaram
-        id: chars
-        run: |
-          list=""
-          for d in arte/personagens/*/; do
-            [ -f "$d/config.json" ] || continue
-            n=$(basename "$d")
-            h=$( (cat ferramentas/blender_sprites.py ferramentas/montar_sprites.py; find "$d" -type f | sort | xargs cat) | sha1sum | cut -c1-16)
-            if [ "$(cat godot/assets/personagens/$n/hash.txt 2>/dev/null)" != "$h" ]; then list="$list $n:$h"; fi
-          done
-          echo "list=$list" >> $GITHUB_OUTPUT
-          echo "Para renderizar:$list"
-
-      - name: Renderizar personagens no Blender (8 direções)
-        if: steps.chars.outputs.list != ''
-        run: |
-          for item in ${{ steps.chars.outputs.list }}; do
-            n=${item%%:*}; h=${item##*:}
-            rm -rf /tmp/render_$n
-            bash ferramentas/blender.sh -b --factory-startup -P ferramentas/blender_sprites.py -- "arte/personagens/$n" "/tmp/render_$n" 2>&1 | grep -vE "^Fra:|Rendering|Sample|Denois|Path Tracing|Synchroniz|Updating|Loading|Finished|Saved:" | tail -40
-            rm -rf "godot/assets/personagens/$n"
-            python3 ferramentas/montar_sprites.py "/tmp/render_$n" "godot/assets/personagens/$n" "$n"
-            echo "$h" > "godot/assets/personagens/$n/hash.txt"
-          done
 
       - name: Baixar Godot e modelos de exportação
         run: |
