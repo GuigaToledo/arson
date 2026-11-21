@@ -12,6 +12,12 @@ var _sprite: AnimatedSprite2D
 var _light: PointLight2D
 
 
+## Personagens ficam na máscara de luz 2: só as luzes grandes (aura do herói, lampiões, fogueira)
+## os iluminam. As luzes pequenas (portas, cajados, efeitos) iluminam só o chão (mais leve).
+func _enter_tree() -> void:
+	light_mask = 2
+
+
 func set_item(it: EquipmentItem) -> void:
 	item = it
 	if _sprite:

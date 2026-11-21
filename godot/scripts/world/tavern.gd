@@ -115,6 +115,7 @@ func _build_props() -> void:
 	entities.add_child(fp)
 	Fx.fire(fp, fp.hearth_point(), 1.0)
 	var fl := LightKit.make(Color(1.0, 0.52, 0.18), 1.7, 3.4, true, 0.18)
+	fl.range_item_cull_mask = 3
 	fl.position = fp.hearth_point() + Vector2(-18, 22)
 	fp.add_child(fl)
 

@@ -68,6 +68,7 @@ func _ready() -> void:
 	save()
 	# raio de luz do herói (como no Diablo 2): o mundo é escuro, a luz acompanha o personagem
 	var aura := LightKit.make(Color(1.0, 0.9, 0.78), 0.95, 3.6, true, 0.0)
+	aura.range_item_cull_mask = 3  # ilumina chão (1) e personagens (2)
 	aura.position = Vector2(0, -30)
 	aura.height = 60.0
 	add_child(aura)

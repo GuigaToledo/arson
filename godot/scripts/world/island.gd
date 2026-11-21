@@ -400,12 +400,14 @@ func _build_lights() -> void:
 	for c in [Vector2(22.5, 26.6), Vector2(33.5, 26.6), Vector2(22.5, 32.5), Vector2(33.5, 32.5)]:
 		var post := piece("lampiao", c, c - Vector2(0.07, 0.07), Vector2(0.14, 0.14), false, false)
 		var l := LightKit.make(Color(1.0, 0.65, 0.3), 1.1, 1.9, false, 0.12)
+		l.range_item_cull_mask = 3
 		l.position = post.tex_foot + Vector2(23, -96)
 		post.add_child(l)
 	var camp := piece("fogueira", Vector2(31.0, 36.0), Vector2(30.6, 35.6), Vector2(0.8, 0.8), false, false)
 	camp.fade_when_behind = false
 	Fx.fire(camp, camp.tex_foot + Vector2(0, -6), 0.5)
 	var fl := LightKit.make(Color(1.0, 0.55, 0.2), 1.3, 2.4, true, 0.2)
+	fl.range_item_cull_mask = 3
 	fl.position = camp.tex_foot + Vector2(0, -12)
 	camp.add_child(fl)
 
