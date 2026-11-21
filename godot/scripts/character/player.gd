@@ -847,7 +847,6 @@ func cast_spell(id: String, world_pos = null) -> void:
 			shield_t = float(s.dur)
 			shield_col = col
 			shield_els = els.duplicate()
-			SpellFx.ring(get_parent(), global_position, 0.9, col, 0.6)
 			_msg("%s (%d)" % [s.nome, int(shield_hp)], col)
 		"heal":
 			_heal(Rules.roll(pw))
@@ -1106,14 +1105,12 @@ func _auto_attack(delta: float) -> void:
 	facing = Iso.dir_from_vector(foe.global_position - global_position)
 	play_action("cast", 0.35)
 	var tgt := foe
-	var b := Bolt.new()
-	b.target = tgt
-	b.global_position = global_position + Vector2(0, -2)
-	b.on_hit = func():
+	# ataque básico com a cara do elemento (bola de fogo pequena, espinho, jato...), sem bola de luz
+	var ea := elem_a()
+	SpellArt.projectile(get_parent(), global_position, tgt, ea, false, [ea], func():
 		if is_instance_valid(tgt) and not tgt.dead:
 			var ml := float(elem_level(elem_a()))
-			tgt.take_damage(Rules.roll((9.0 + 1.3 * ml + float(gear().get("ataque", 0))) * (1.0 + 0.02 * ml) * (1.25 if buff_t > 0.0 else 1.0), float(tgt.info.def)), self)
-	get_parent().add_child(b)
+			tgt.take_damage(Rules.roll((9.0 + 1.3 * ml + float(gear().get("ataque", 0))) * (1.0 + 0.02 * ml) * (1.25 if buff_t > 0.0 else 1.0), float(tgt.info.def)), self))
 
 
 ## Zoom da câmera (menu → Gráficos, roda do mouse, + e -).

@@ -1,7 +1,7 @@
 class_name SpellTree
 extends Control
 ## Árvore de magias da classe: elemento A | fusões | elemento B | Luz.
-## Cada elemento libera a magia N no nível N. As fusões (escudo fundido, 7 e 8) ficam no meio,
+## Cada magia libera 5 níveis depois da anterior (1, 6, 11, 16, 21, 26). As fusões (escudo fundido, 7 e 8) ficam no meio,
 ## ligadas aos dois elementos. Toque/passe o mouse num círculo para ver a descrição.
 
 var player: Player
@@ -63,7 +63,6 @@ func _draw() -> void:
 	var eb: String = els[1]
 	var la := player.elem_level(ea)
 	var lb := player.elem_level(eb)
-	var ll := player.elem_level("luz")
 	var w := size.x
 	var xa := w * 0.05 + R
 	var xf := w * 0.29
@@ -84,43 +83,45 @@ func _draw() -> void:
 	_header(font, Vector2(xl - R, 20), "Luz", ll, player.skills.luz, cl, "luz")
 	draw_string(font, Vector2(xf - 30, 20), "Fusões", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, cf.lightened(0.2))
 
-	# ligações
+	# ligações (acendem quando a magia de baixo realmente libera)
+	var U := func(id: String) -> bool: return player.spell_unlocked(id)
 	for t in range(1, 6):
-		_link(Vector2(xa, _row(t)), Vector2(xa, _row(t + 1)), ca, la >= t + 1)
-		_link(Vector2(xb, _row(t)), Vector2(xb, _row(t + 1)), cb, lb >= t + 1)
+		_link(Vector2(xa, _row(t)), Vector2(xa, _row(t + 1)), ca, U.call("%s:%d" % [ea, t + 1]))
+		_link(Vector2(xb, _row(t)), Vector2(xb, _row(t + 1)), cb, U.call("%s:%d" % [eb, t + 1]))
 	for t in range(1, 8):
-		_link(Vector2(xl, _row(t)), Vector2(xl, _row(t + 1)), cl, ll >= t + 1)
-	var same := la == lb and la >= 3
-	_link(Vector2(xa, _row(3)), Vector2(xf, _row(3)), ca, same)
-	_link(Vector2(xb, _row(3)), Vector2(xf, _row(3)), cb, same)
-	_link(Vector2(xa, _row(5)), Vector2(xf, _row(5)), ca, mini(la, lb) >= 5)
-	_link(Vector2(xb, _row(5)), Vector2(xf, _row(5)), cb, mini(la, lb) >= 5)
-	_link(Vector2(xa, _row(6)), Vector2(xf, _row(7)), ca, mini(la, lb) >= 7)
-	_link(Vector2(xb, _row(6)), Vector2(xf, _row(7)), cb, mini(la, lb) >= 7)
-	_link(Vector2(xf, _row(7)), Vector2(xf, _row(8)), cf, mini(la, lb) >= 8)
+		_link(Vector2(xl, _row(t)), Vector2(xl, _row(t + 1)), cl, U.call("luz:%d" % (t + 1)))
+	_link(Vector2(xa, _row(3)), Vector2(xf, _row(3)), ca, U.call("fus:3"))
+	_link(Vector2(xb, _row(3)), Vector2(xf, _row(3)), cb, U.call("fus:3"))
+	_link(Vector2(xa, _row(5)), Vector2(xf, _row(5)), ca, U.call("fus:5"))
+	_link(Vector2(xb, _row(5)), Vector2(xf, _row(5)), cb, U.call("fus:5"))
+	_link(Vector2(xa, _row(6)), Vector2(xf, _row(7)), ca, U.call("fus:7"))
+	_link(Vector2(xb, _row(6)), Vector2(xf, _row(7)), cb, U.call("fus:7"))
+	_link(Vector2(xf, _row(7)), Vector2(xf, _row(8)), cf, U.call("fus:8"))
 
 	# nós
 	for t in range(1, 7):
-		_node(font, Vector2(xa, _row(t)), t, Spellbook.ELEMENTS[ea].magias[t - 1], ca, la >= t,
-			{"id": "%s:%d" % [ea, t], "el": ea, "t": t, "req": "%s nível %d" % [Spellbook.ELEMENTS[ea].nome, t]})
-		_node(font, Vector2(xb, _row(t)), t, Spellbook.ELEMENTS[eb].magias[t - 1], cb, lb >= t,
-			{"id": "%s:%d" % [eb, t], "el": eb, "t": t, "req": "%s nível %d" % [Spellbook.ELEMENTS[eb].nome, t]})
+		var ida := "%s:%d" % [ea, t]
+		var idb := "%s:%d" % [eb, t]
+		_node(font, Vector2(xa, _row(t)), t, Spellbook.ELEMENTS[ea].magias[t - 1], ca, U.call(ida),
+			{"id": ida, "el": ea, "t": t, "req": player.spell_req(ida)})
+		_node(font, Vector2(xb, _row(t)), t, Spellbook.ELEMENTS[eb].magias[t - 1], cb, U.call(idb),
+			{"id": idb, "el": eb, "t": t, "req": player.spell_req(idb)})
 	for t in range(1, 9):
-		_node(font, Vector2(xl, _row(t)), t, Spellbook.ELEMENTS.luz.magias[t - 1], cl, ll >= t,
-			{"id": "luz:%d" % t, "el": "luz", "t": t, "req": "Luz nível %d" % t})
-	var both := "%s e %s" % [Spellbook.ELEMENTS[ea].nome, Spellbook.ELEMENTS[eb].nome]
-	_node(font, Vector2(xf, _row(3)), 3, fus[0], cf, same,
-		{"id": "fus:3", "fus": 3, "nome": fus[0], "req": "%s no MESMO nível (3 ou mais)" % both,
+		var idl := "luz:%d" % t
+		_node(font, Vector2(xl, _row(t)), t, Spellbook.ELEMENTS.luz.magias[t - 1], cl, U.call(idl),
+			{"id": idl, "el": "luz", "t": t, "req": player.spell_req(idl)})
+	_node(font, Vector2(xf, _row(3)), 3, fus[0], cf, U.call("fus:3"),
+		{"id": "fus:3", "fus": 3, "nome": fus[0], "req": player.spell_req("fus:3"),
 		"desc": "Os dois escudos se fundem num só, mais forte."})
-	_node(font, Vector2(xf, _row(5)), 5, Spellbook.SUMMON_FUSION[player.classe], cf, mini(la, lb) >= 5,
-		{"id": "fus:5", "fus": 5, "nome": Spellbook.SUMMON_FUSION[player.classe], "req": "%s, os dois no nível 5" % both,
+	_node(font, Vector2(xf, _row(5)), 5, Spellbook.SUMMON_FUSION[player.classe], cf, U.call("fus:5"),
+		{"id": "fus:5", "fus": 5, "nome": Spellbook.SUMMON_FUSION[player.classe], "req": player.spell_req("fus:5"),
 		"desc": "Funde as duas invocações num só guardião aprimorado (mais vida e força, os dois efeitos). Usar uma invocação separada desfaz a fundida."})
-	_node(font, Vector2(xf, _row(7)), 7, fus[1], cf, mini(la, lb) >= 7,
-		{"id": "fus:7", "fus": 7, "nome": fus[1], "req": "%s, os dois no nível 7" % both,
-		"desc": "Mistura dos dois elementos num ataque de alvo único, com os dois efeitos."})
-	_node(font, Vector2(xf, _row(8)), 8, fus[2], cf, mini(la, lb) >= 8,
-		{"id": "fus:8", "fus": 8, "nome": fus[2], "req": "%s, os dois no nível 8" % both,
-		"desc": "Mistura dos dois elementos em área, com os dois efeitos."})
+	_node(font, Vector2(xf, _row(7)), 7, fus[1], cf, U.call("fus:7"),
+		{"id": "fus:7", "fus": 7, "nome": fus[1], "req": player.spell_req("fus:7"),
+		"desc": "Magia suprema: os dois elementos num ataque de alvo único, dano altíssimo."})
+	_node(font, Vector2(xf, _row(8)), 8, fus[2], cf, U.call("fus:8"),
+		{"id": "fus:8", "fus": 8, "nome": fus[2], "req": player.spell_req("fus:8"),
+		"desc": "Magia suprema em área com os dois elementos, dano altíssimo."})
 
 	# descrição do círculo escolhido
 	_draw_bar(font)

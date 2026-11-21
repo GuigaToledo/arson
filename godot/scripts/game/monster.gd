@@ -122,7 +122,7 @@ func configure(t: String, at: Vector2, is_elite := false, cap := 999) -> Monster
 	home = at
 	position = at
 	walk_speed = info.speed
-	run_speed = info.speed * 1.5
+	run_speed = _chase_speed(float(info.speed))
 	_wander_t = randf() * 3.0
 	return self
 
@@ -169,6 +169,13 @@ func _player() -> Node2D:
 			bd = d
 			best = p
 	return best
+
+
+## Velocidade correndo atrás de alguém: os de 4 patas (e morcegos) são mais rápidos, mas
+## ninguém alcança o jogador correndo (210); andando (120) só os rápidos alcançam.
+func _chase_speed(ws: float) -> float:
+	var four := ["quadrupede", "morcego"].has(str(info.get("body", "humano")))
+	return minf(ws * (1.3 if four else 1.15), 175.0 if four else 135.0)
 
 
 func _valid_foe(p) -> bool:
@@ -261,10 +268,10 @@ func _physics_process(delta: float) -> void:
 	var ws := walk_speed
 	if _buff_t > 0.0:
 		walk_speed *= 1.3
-		run_speed = walk_speed * 1.5
+		run_speed = _chase_speed(walk_speed)
 	move(d, running, delta)
 	walk_speed = ws
-	run_speed = ws * 1.5
+	run_speed = _chase_speed(ws)
 	if foe != null and d == Vector2.ZERO:
 		facing = Iso.dir_from_vector(foe.global_position - global_position)
 
@@ -373,12 +380,18 @@ func _do_skill(s: Dictionary) -> void:
 		"salto":
 			play_action("attack", 0.5)
 			_busy = 0.5
+			_busy = 1.0
 			var to: Vector2 = tgt.global_position - global_position
-			var end: Vector2 = tgt.global_position - to.normalized() * 20.0
+			# pulo de verdade: agacha, sobe num arco e cai (no máximo ~3 tiles, dá para ver e desviar)
+			var end: Vector2 = global_position + to.limit_length(maxf(0.0, to.length() - 20.0)).limit_length(190.0)
 			if Actor.walkable.is_valid() and not Actor.walkable.call(end):
 				end = global_position
+			var y0 := visual.position.y
 			var tw := create_tween()
-			tw.tween_property(self, "global_position", end, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tw.tween_interval(0.3)
+			tw.tween_property(self, "global_position", end, 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			tw.parallel().tween_method(func(k: float): visual.position.y = y0 - sin(k * PI) * 46.0, 0.0, 1.0, 0.55)
+			tw.tween_callback(func(): visual.position.y = y0)
 			tw.tween_callback(_land.bind(s, col))
 		"onda":
 			play_action("attack", 0.6)
@@ -585,7 +598,7 @@ func _tick_status(delta: float) -> bool:
 	_slow_t -= delta
 	_root_t -= delta
 	walk_speed = float(info.speed) * (0.5 if _slow_t > 0.0 else 1.0)
-	run_speed = walk_speed * 1.5
+	run_speed = _chase_speed(walk_speed)
 	if _knock_t > 0.0:
 		_knock_t -= delta
 		var np := global_position + _knock_v * delta

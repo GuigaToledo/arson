@@ -13,6 +13,7 @@ static var AA := not OS.has_feature("web")
 
 ## Efeito extra das melhorias: 1 anel de brilho, 2 dois anéis, 3 faíscas subindo, 4 runa no chão, 5 onda de choque e clarão.
 static func upgrade_fx(parent: Node, pos: Vector2, col: Color, up: int) -> void:
+	return
 	if up >= 1:
 		SpellFx.ring(parent, pos, 0.6, col.lightened(0.3), 0.5)
 	if up >= 2:
@@ -22,13 +23,13 @@ static func upgrade_fx(parent: Node, pos: Vector2, col: Color, up: int) -> void:
 	if up >= 4:
 		fxg(parent, pos, 1.0, func(n: DrawFx, k: float):
 			var a := 1.0 - k
-			ellipse(n, Vector2.ZERO, RX * 1.2, Color(col, 0.6 * a), false, 2.0)
+			_no(n, Vector2.ZERO, RX * 1.2, Color(col, 0.6 * a), false, 2.0)
 			for i in 6:
 				var t := TAU * i / 6.0 + k * 2.0
 				n.draw_line(Vector2(cos(t), sin(t) * 0.5) * RX * 1.2, Vector2(cos(t + 2.1), sin(t + 2.1) * 0.5) * RX * 1.2, Color(col.lightened(0.3), a * 0.8), 1.5, SpellArt.AA))
 	if up >= 5:
-		fx(parent, pos, 0.6, func(n: DrawFx, k: float): ellipse(n, Vector2.ZERO, RX * (0.5 + k * 2.5), Color(1, 1, 1, (1.0 - k) * 0.7), false, 4.0 * (1.0 - k)))
-		SpellFx.flash(parent, pos + Vector2(0, -30), col, 3.0, 2.0, 0.5)
+		fx(parent, pos, 0.6, func(n: DrawFx, k: float): _no(n, Vector2.ZERO, RX * (0.5 + k * 2.5), Color(1, 1, 1, (1.0 - k) * 0.7), false, 4.0 * (1.0 - k)))
+		_no(parent, pos + Vector2(0, -30), col, 3.0, 2.0, 0.5)
 
 
 # ------------------------------------------------------------ peças
@@ -357,7 +358,7 @@ static func fire_patch(parent: Node, pos: Vector2, rx: float, dur: float, count 
 	fx(parent, pos, dur, func(n: DrawFx, k: float):
 		var g := minf(1.0, k * 6.0)
 		var a := 1.0 - maxf(0.0, k - 0.65) / 0.35
-		ellipse(n, Vector2.ZERO, rx * 1.1, Color(1, 0.3, 0.05, 0.12 * a))
+		_no(n, Vector2.ZERO, rx * 1.1, Color(1, 0.3, 0.05, 0.12 * a))
 		flames_in(n, rx, count, 34.0, n.t, g, a, n.seed_v))
 	parts(parent, pos + Vector2(0, -10), int(6 + rx * 0.1), 30.0, 1.3, 0.04, Color(1, 0.75, 0.3), Color(0.6, 0.1, 0.0), -70.0, 40.0)
 
@@ -385,6 +386,7 @@ class Proj:
 		_last = target.global_position
 		_dist = maxf(1.0, _from.distance_to(_last))
 		_light = LightKit.make(SpellArt.cor(el), 0.8 if not big else 1.4, 0.7, false, 0.2)
+		_light.visible = el == "fogo" or el == "lava"
 		add_child(_light)
 
 	func _process(delta: float) -> void:
@@ -480,7 +482,7 @@ static func projectile(parent: Node, from: Vector2, target: Node2D, el: String, 
 		var b := fx(parent, Vector2.ZERO, 0.35, func(n: DrawFx, k: float):
 			if is_instance_valid(target):
 				jag(n, from + Vector2(0, -50), target.global_position + Vector2(0, -40), Color(0.85, 0.85, 1, 1.0 - k), 3.0 if big else 2.0, 9, 12.0))
-		SpellFx.flash(parent, target.global_position + Vector2(0, -40), cor("raio"), 2.0, 1.0, 0.3)
+		_no(parent, target.global_position + Vector2(0, -40), cor("raio"), 2.0, 1.0, 0.3)
 		parent.get_tree().create_timer(0.05).timeout.connect(on_hit)
 		return
 	if el == "natureza" and big:
@@ -518,7 +520,7 @@ static func impact(parent: Node, pos: Vector2, el: String, big := false) -> void
 			lava_splash(parent, pos, int(7 * s), 40.0 * s)
 		"agua":
 			parts(parent, pos + Vector2(0, -36), int(30 * s), 160.0, 0.7, 0.045, Color(0.8, 0.95, 1), Color(0.2, 0.45, 1), 520.0, 70.0)
-			fx(parent, pos, 0.5, func(n: DrawFx, k: float): ellipse(n, Vector2.ZERO, 10 + 30 * k * s, Color(0.6, 0.85, 1, 1.0 - k), false, 2.0))
+			fx(parent, pos, 0.5, func(n: DrawFx, k: float): _no(n, Vector2.ZERO, 10 + 30 * k * s, Color(0.6, 0.85, 1, 1.0 - k), false, 2.0))
 		"gelo": parts(parent, pos + Vector2(0, -36), int(24 * s), 130.0, 0.7, 0.05, Color(1, 1, 1), Color(0.6, 0.85, 1), 380.0, 90.0)
 		"vento": fx(parent, pos + Vector2(0, -36), 0.4, func(n: DrawFx, k: float):
 			for i in 3:
@@ -533,7 +535,7 @@ static func impact(parent: Node, pos: Vector2, el: String, big := false) -> void
 					rock(n, Vector2(off.x * k * 2.0, -h - 6), 3.5, Color(0.45, 0.38, 0.3), sd, k * 9.0))
 		"natureza": parts(parent, pos + Vector2(0, -36), int(16 * s), 110.0, 0.6, 0.05, Color(0.6, 0.9, 0.35), Color(0.2, 0.45, 0.1), 300.0)
 		"raio": parts(parent, pos + Vector2(0, -40), int(26 * s), 200.0, 0.3, 0.04, Color(1, 1, 0.9), Color(0.5, 0.5, 1), 0.0)
-	SpellFx.flash(parent, pos + Vector2(0, -36), c, 1.4 * s, 0.9 * s, 0.4)
+	_no(parent, pos + Vector2(0, -36), c, 1.4 * s, 0.9 * s, 0.4)
 
 
 # ------------------------------------------------------------ controle de grupo (magia 2)
@@ -541,15 +543,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 	var rx := radius * RX
 	var c := cor(el)
 	match el:
-		"fogo":  # Marca Ardente: runa em brasa no chão
-			fx(parent, center, 1.4, func(n: DrawFx, k: float):
-				var a := 1.0 - maxf(0.0, k - 0.6) / 0.4
-				ellipse(n, Vector2.ZERO, rx, Color(1, 0.4, 0.05, 0.18 * a))
-				ellipse(n, Vector2.ZERO, rx, Color(1, 0.55, 0.1, a), false, 3.0)
-				ellipse(n, Vector2.ZERO, rx * 0.7, Color(1, 0.7, 0.2, a * 0.8), false, 2.0)
-				for i in 6:
-					var t := TAU * i / 6.0 + k * 1.5
-					n.draw_line(Vector2(cos(t), sin(t) * 0.5) * rx * 0.7, Vector2(cos(t + 2.1), sin(t + 2.1) * 0.5) * rx * 0.7, Color(1, 0.8, 0.3, a), 2.0, SpellArt.AA))
+		"fogo":  # Marca Ardente: o chão pega fogo
 			# a runa acende e o chão pega fogo: chamas na borda e no meio
 			fx(parent, center, 1.6, func(n: DrawFx, k: float):
 				var g := minf(1.0, k * 5.0)
@@ -566,7 +560,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 				lava(n, Vector2.ZERO, rx * (0.55 + 0.45 * g), n.t, n.seed_v, a))
 			fx(parent, center, 3.0, func(n: DrawFx, k: float):
 				var a := minf(1.0, k * 6.0) * (1.0 - maxf(0.0, k - 0.8) / 0.2)
-				ellipse(n, Vector2.ZERO, rx * 1.15, Color(1, 0.35, 0.05, 0.14 * a))
+				_no(n, Vector2.ZERO, rx * 1.15, Color(1, 0.35, 0.05, 0.14 * a))
 				flames_in(n, rx * 0.7, 4, 22.0, n.t, 1.0, a * 0.6, n.seed_v))
 			parts(parent, center, 30, 30.0, 2.5, 0.04, Color(1, 0.7, 0.25), Color(0.5, 0.08, 0.0), -60.0, 180.0)
 			parts(parent, center + Vector2(0, -20), 14, 18.0, 2.5, 0.16, Color(0.25, 0.22, 0.2, 0.35), Color(0.1, 0.1, 0.1, 0.0), -40.0, 30.0, Vector2.UP, false)
@@ -592,7 +586,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 					var h := rng.randf_range(18, 40) * g
 					poly(n, PackedVector2Array([p + Vector2(-5, 0), p + Vector2(0, -h), p + Vector2(5, 0)]), Color(0.75, 0.92, 1, 0.85 * a))
 					n.draw_line(p, p + Vector2(0, -h), Color(1, 1, 1, a), 1.0)
-				ellipse(n, Vector2.ZERO, rx, Color(0.8, 0.95, 1, 0.15 * a)))
+				_no(n, Vector2.ZERO, rx, Color(0.8, 0.95, 1, 0.15 * a)))
 		"vento":  # Rajada: lufadas para fora
 			fx(parent, center, 0.7, func(n: DrawFx, k: float):
 				for i in 12:
@@ -602,7 +596,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 			parts(parent, center, 40, 260.0, 0.6, 0.05, Color(0.75, 0.7, 0.6), Color(0.5, 0.45, 0.4), 0.0, 180.0, Vector2.UP, false)
 		"raio":  # Paralisia: campo elétrico que estala
 			fx(parent, center, 1.2, func(n: DrawFx, k: float):
-				ellipse(n, Vector2.ZERO, rx, Color(0.6, 0.6, 1, 0.12 * (1.0 - k)))
+				_no(n, Vector2.ZERO, rx, Color(0.6, 0.6, 1, 0.12 * (1.0 - k)))
 				for i in 6:
 					var t := randf() * TAU
 					var r := randf() * rx
@@ -634,7 +628,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 					var p := Vector2(rng.randf_range(-1, 1) * rx * 0.8, rng.randf_range(-0.4, 0.4) * rx)
 					root(n, p, rng.randf_range(45, 80), rng.randf_range(-16, 16), g, Color(0.35, 0.25, 0.12, a).lerp(Color(0.3, 0.55, 0.18, a), rng.randf()), 5.0))
 			parts(parent, center, 25, 70.0, 0.7, 0.05, Color(0.5, 0.4, 0.3), Color(0.3, 0.25, 0.2), 300.0, 60.0, Vector2.UP, false)
-	SpellFx.flash(parent, center + Vector2(0, -20), c, 1.6, 1.0 + radius * 0.6, 0.6)
+	_no(parent, center + Vector2(0, -20), c, 1.6, 1.0 + radius * 0.6, 0.6)
 
 
 # ------------------------------------------------------------ cone e linha (magia 4)
@@ -770,7 +764,7 @@ static func area(parent: Node, center: Vector2, radius: float, el: String, on_im
 					var p := center + Vector2(randf_range(-1, 1) * rx * 0.7, randf_range(-0.35, 0.35) * rx)
 					tree.create_timer(i * 0.08).timeout.connect(func():
 						parts(parent, p, 40, 380.0, 1.1, 0.07, Color(1, 0.75, 0.25), Color(0.5, 0.05, 0), 600.0, 15.0)
-						SpellFx.flash(parent, p + Vector2(0, -30), Color(1, 0.45, 0.1), 2.0, 1.2, 0.6))
+						_no(parent, p + Vector2(0, -30), Color(1, 0.45, 0.1), 2.0, 1.2, 0.6))
 				cc(parent, center, radius, "lava")
 				shake(parent, 6.0, 0.6)
 				tree.create_timer(0.3).timeout.connect(on_impact)
@@ -787,7 +781,7 @@ static func area(parent: Node, center: Vector2, radius: float, el: String, on_im
 					var p := Vector2(randf_range(-1, 1) * rx, randf_range(-0.5, 0.5) * rx)
 					var y := -200 + fmod(k * 900 + i * 37, 200)
 					n.draw_line(p + Vector2(4, y - 14), p + Vector2(0, y), Color(0.6, 0.8, 1, 0.6), 1.5)
-				ellipse(n, Vector2.ZERO, rx, Color(0.3, 0.55, 1, 0.15 * k)))
+				_no(n, Vector2.ZERO, rx, Color(0.3, 0.55, 1, 0.15 * k)))
 			tree.create_timer(0.4).timeout.connect(func():
 				for i in 6:
 					impact(parent, center + Vector2(randf_range(-1, 1) * rx * 0.7, randf_range(-0.35, 0.35) * rx), "agua")
@@ -798,7 +792,7 @@ static func area(parent: Node, center: Vector2, radius: float, el: String, on_im
 					var p := Vector2(randf_range(-1, 1) * rx, randf_range(-0.5, 0.5) * rx)
 					var y := -180 + fmod(k * 500 + i * 41, 180)
 					n.draw_circle(p + Vector2(sin(k * 10 + i) * 6, y), 2.0 if not fused else 3.5, Color(1, 1, 1, 0.85))
-				ellipse(n, Vector2.ZERO, rx, Color(0.85, 0.95, 1, 0.22 * k)))
+				_no(n, Vector2.ZERO, rx, Color(0.85, 0.95, 1, 0.22 * k)))
 			if fused:
 				for i in 8:
 					var p := center + Vector2(randf_range(-1, 1) * rx * 0.8, randf_range(-0.4, 0.4) * rx)
@@ -823,7 +817,7 @@ static func area(parent: Node, center: Vector2, radius: float, el: String, on_im
 				var p := center + Vector2(randf_range(-1, 1) * rx * 0.8, randf_range(-0.4, 0.4) * rx)
 				tree.create_timer(i * 0.09).timeout.connect(func():
 					fx(parent, Vector2.ZERO, 0.3, func(n: DrawFx, k: float): jag(n, p + Vector2(randf_range(-40, 40), -420), p, Color(0.9, 0.9, 1, 1.0 - k), 3.0, 10, 18.0))
-					SpellFx.flash(parent, p, Color(0.7, 0.7, 1), 2.5, 1.2, 0.3)
+					_no(parent, p, Color(0.7, 0.7, 1), 2.5, 1.2, 0.3)
 					parts(parent, p, 16, 150.0, 0.3, 0.04, Color(1, 1, 0.9), Color(0.5, 0.5, 1), 0.0))
 			tree.create_timer(0.35).timeout.connect(on_impact)
 		"terra", "fus_terra":  # Terremoto / Floresta Petrificada
@@ -853,8 +847,13 @@ static func area(parent: Node, center: Vector2, radius: float, el: String, on_im
 				cc(parent, center, radius * 0.7, "natureza")
 				on_impact.call())
 		_:
-			SpellFx.blast(parent, center, radius, c, true)
+			impact(parent, center, el, true)
 			on_impact.call()
+
+
+## Sem marcas no chão nem bolas de luz: só o elemento aparece.
+static func _no(_a = null, _b = null, _c = null, _d = null, _e = null, _f = null) -> void:
+	pass
 
 
 ## Algo caindo do céu (bola de fogo, granizo) com explosão.
@@ -911,19 +910,19 @@ static func light(parent: Node, kind: String, pos: Vector2) -> void:
 				var a := sin(k * PI)
 				n.draw_rect(Rect2(-12, -260, 24, 260), Color(1, 0.95, 0.7, 0.25 * a))
 				n.draw_rect(Rect2(-5, -260, 10, 260), Color(1, 1, 0.9, 0.5 * a))
-				ellipse(n, Vector2.ZERO, 26, Color(1, 0.95, 0.6, 0.4 * a)))
+				_no(n, Vector2.ZERO, 26, Color(1, 0.95, 0.6, 0.4 * a)))
 			parts(parent, pos + Vector2(0, -20), 30, 60.0, 1.0, 0.05, Color(1, 1, 0.85), gold, -120.0)
 		"ring":  # Círculo Sagrado: runas douradas no chão
 			fx(parent, pos, 1.2, func(n: DrawFx, k: float):
 				var a := 1.0 - k
-				ellipse(n, Vector2.ZERO, RX * 3.0 * minf(1.0, k * 3.0), Color(1, 0.9, 0.5, a), false, 3.0)
-				ellipse(n, Vector2.ZERO, RX * 2.4 * minf(1.0, k * 3.0), Color(1, 0.95, 0.7, a * 0.7), false, 2.0)
+				_no(n, Vector2.ZERO, RX * 3.0 * minf(1.0, k * 3.0), Color(1, 0.9, 0.5, a), false, 3.0)
+				_no(n, Vector2.ZERO, RX * 2.4 * minf(1.0, k * 3.0), Color(1, 0.95, 0.7, a * 0.7), false, 2.0)
 				for i in 8:
 					var t := TAU * i / 8.0 + k
 					n.draw_circle(Vector2(cos(t), sin(t) * 0.5) * RX * 2.7, 3.0, Color(1, 1, 0.8, a)))
 		"bless":  # halo subindo
 			fx(parent, pos, 1.0, func(n: DrawFx, k: float):
-				ellipse(n, Vector2(0, -80 - k * 30), 14, Color(1, 0.95, 0.6, 1.0 - k), false, 3.0))
+				_no(n, Vector2(0, -80 - k * 30), 14, Color(1, 0.95, 0.6, 1.0 - k), false, 3.0))
 		"brave":  # chamas douradas
 			parts(parent, pos + Vector2(0, -30), 40, 60.0, 1.0, 0.07, Color(1, 0.95, 0.6), Color(1, 0.6, 0.1), -150.0)
 		"veil":  # cintilar

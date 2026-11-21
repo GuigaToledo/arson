@@ -134,7 +134,7 @@ static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, hal
 	parent.add_child(p)
 	p.emitting = true
 	p.get_tree().create_timer(1.0).timeout.connect(p.queue_free)
-	flash(parent, pos + dir * length_px * 0.5, cb, 2.2, 1.6, 0.6)
+	pass
 
 
 ## Meteoro: cai do céu em `delay` segundos e chama `on_impact`.

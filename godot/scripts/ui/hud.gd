@@ -245,6 +245,11 @@ func _input(ev: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
+## Casa da barra com magia liberada? (casas vazias ou bloqueadas nem aparecem)
+static func slot_ready(pl: Player, i: int) -> bool:
+	return pl != null and i < pl.bar.size() and str(pl.bar[i]) != "" and pl.spell_unlocked(str(pl.bar[i]))
+
+
 func _over_controls(pos: Vector2) -> bool:
 	if not mobile:
 		return spellbar.slot_at(pos) >= 0
@@ -465,6 +470,8 @@ class SpellWheel:
 			return -1
 		var lp := pos - get_global_rect().position
 		for i in 10:
+			if i < 8 and not Hud.slot_ready(player, i):
+				continue
 			var b := _btn(i)
 			if lp.distance_to(b[0]) <= float(b[1]) + 6:
 				return i
@@ -484,6 +491,8 @@ class SpellWheel:
 			return
 		var font := ThemeDB.fallback_font
 		for i in 10:
+			if i < 8 and not Hud.slot_ready(player, i):
+				continue
 			var b := _btn(i)
 			var c: Vector2 = b[0]
 			var r: float = b[1]
@@ -548,6 +557,8 @@ class SpellBar:
 			return -1
 		var lp := pos - get_global_rect().position
 		for i in N + 2:
+			if i < N and not Hud.slot_ready(player, i):
+				continue
 			if _rect(i).has_point(lp):
 				return i
 		return -1
@@ -558,6 +569,8 @@ class SpellBar:
 		var font := ThemeDB.fallback_font
 		var n := N
 		for i in n + 2:
+			if i < n and not Hud.slot_ready(player, i):
+				continue
 			var r := _rect(i)
 			draw_rect(r, Color(0.06, 0.05, 0.04, 0.88))
 			var c := r.get_center() + Vector2(0, -5)
