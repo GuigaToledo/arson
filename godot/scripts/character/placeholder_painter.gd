@@ -28,37 +28,97 @@ static func vol(p: Dictionary, c1: Vector2, w1: float, d1: float, c2: Vector2, w
 	return h
 
 
-## Pose do esqueleto para a direção/animação atual.
-static func pose(dir: String, anim: String, phase: float, t: float) -> Dictionary:
+## Duas juntas (cinemática inversa): de a até b com ossos l1 e l2; o joelho/cotovelo dobra para "bend".
+static func ik(a: Vector2, b: Vector2, l1: float, l2: float, bend: Vector2) -> Vector2:
+	var d := b - a
+	var dist := clampf(d.length(), 0.001, l1 + l2 - 0.01)
+	var dir := d.normalized() if d.length() > 0.001 else Vector2.DOWN
+	var x := (l1 * l1 - l2 * l2 + dist * dist) / (2.0 * dist)
+	var h := sqrt(maxf(0.0, l1 * l1 - x * x))
+	var perp := Vector2(-dir.y, dir.x)
+	if perp.dot(bend) < 0.0:
+		perp = -perp
+	return a + dir * x + perp * h
+
+
+## Pose do esqueleto para a direção/animação atual. ak = segundos desde o começo da ação
+## (golpe, magia). Juntas: pescoço, ombros, cotovelos, mãos, quadris, joelhos, pés.
+## Golpes: "punch" (soco), "kick" (chute), "spin" (chute giratório), "headbutt" (cabeçada), "grab" (agarrar e morder).
+static func pose(dir: String, anim: String, phase: float, t: float, ak := 0.0) -> Dictionary:
 	var p := {}
 	var f := Iso.dir_vector(dir)
+	# chute giratório: o corpo gira uma volta inteira
+	var strike := clampf(ak / 0.45, 0.0, 1.0)
+	if anim == "spin":
+		f = f.rotated(strike * TAU)
 	p.f = f
 	p.r = Vector2(-f.y, f.x)
 	p.toward = f.y > -0.25
 	p.away = f.y < -0.3
+	p.t = t
+	p.anim = anim
 	var moving := anim == "walk" or anim == "run"
-	var amp := 11.0 if anim == "run" else (7.0 if anim == "walk" else 0.0)
+	var running := anim == "run"
+	var amp := 12.0 if running else (7.5 if moving else 0.0)
 	var swing := sin(phase) * amp
-	var bob := (absf(sin(phase)) * -1.6) if moving else sin(t * 2.0) * 0.5
+	var bob := (absf(sin(phase)) * -2.2 if running else absf(sin(phase)) * -1.4) if moving else sin(t * 2.0) * 0.6
+	var lean := 4.0 if running else (1.5 if moving else 0.0)
+	# golpe: prepara (0-0.3), acerta (0.3-0.6), volta
+	var ext := 0.0
+	if anim in ["punch", "kick", "spin", "headbutt", "grab", "attack"]:
+		ext = sin(clampf((strike - 0.15) / 0.55, 0.0, 1.0) * PI)
+		lean += ext * 4.0
 	var w := 9.0
 	p.bob = bob
+	p.ext = ext
 	var hip := Vector2(0, -36 + bob)
-	var sh := Vector2(0, -60 + bob)
+	var sh := Vector2(0, -60 + bob) + fwd(p, lean)
 	p.hipL = hip + lat(p, -w * 0.45)
 	p.hipR = hip + lat(p, w * 0.45)
-	p.footL = lat(p, -w * 0.4) + fwd(p, swing) + Vector2(0, -maxf(0.0, sin(phase)) * 3.0 if moving else 0.0)
-	p.footR = lat(p, w * 0.4) + fwd(p, -swing) + Vector2(0, -maxf(0.0, -sin(phase)) * 3.0 if moving else 0.0)
+	var liftL := maxf(0.0, sin(phase)) * (6.0 if running else 3.5) if moving else 0.0
+	var liftR := maxf(0.0, -sin(phase)) * (6.0 if running else 3.5) if moving else 0.0
+	p.footL = lat(p, -w * 0.42) + fwd(p, swing) + Vector2(0, -liftL)
+	p.footR = lat(p, w * 0.42) + fwd(p, -swing) + Vector2(0, -liftR)
 	p.shL = sh + lat(p, -w)
 	p.shR = sh + lat(p, w)
-	p.handL = p.shL + Vector2(0, 23) + fwd(p, -swing * 0.8)
-	p.handR = p.shR + Vector2(0, 23) + fwd(p, swing * 0.8)
+	p.handL = p.shL + Vector2(0, 22) + fwd(p, -swing * 0.8)
+	p.handR = p.shR + Vector2(0, 22) + fwd(p, swing * 0.8)
+	p.head = Vector2(0, -69 + bob) + fwd(p, lean * 1.2)
 	p.casting = anim in ["cast", "spell", "attack"]
-	if p.casting:
-		p.handR = p.shR + Vector2(0, -12) + fwd(p, 9)
-	p.head = Vector2(0, -69 + bob)
+	match anim:
+		"cast", "spell", "attack":
+			# ergue o cajado e empurra para a frente ao soltar a magia
+			p.handR = p.shR + Vector2(0, -10 - ext * 4) + fwd(p, 8 + ext * 8)
+			p.handL = p.shL + Vector2(0, 8) + fwd(p, 9 + ext * 4)
+		"punch":
+			p.handR = p.shR.lerp(p.shR + fwd(p, 24) + Vector2(0, 2), ext) + Vector2(0, 14 * (1.0 - ext))
+			p.handL = p.shL + Vector2(0, 6) + fwd(p, 8)
+		"kick", "spin":
+			p.footR = p.hipR.lerp(p.hipR + fwd(p, 28) + Vector2(0, 6), ext) + Vector2(0, 36 * (1.0 - ext))
+			p.footL = p.footL + fwd(p, -ext * 4)
+			p.handL = p.shL + Vector2(0, 10) + lat(p, -6 * ext)
+			p.handR = p.shR + Vector2(0, 10) + lat(p, 6 * ext)
+		"headbutt":
+			p.head = p.head + fwd(p, 9 * ext) + Vector2(0, 3 * ext)
+			p.handL = p.shL + Vector2(0, 14) + fwd(p, 6)
+			p.handR = p.shR + Vector2(0, 14) + fwd(p, 6)
+		"grab":
+			p.handL = p.shL + Vector2(0, 6) + fwd(p, 10 + 12 * ext)
+			p.handR = p.shR + Vector2(0, 6) + fwd(p, 10 + 12 * ext)
+			p.head = p.head + fwd(p, 6 * ext)
+	# joelhos dobram para a frente; cotovelos para trás e para baixo
+	p.kneeL = ik(p.hipL, p.footL, 19.0, 18.5, fwd(p, 1.0) + Vector2(0, -0.2))
+	p.kneeR = ik(p.hipR, p.footR, 19.0, 18.5, fwd(p, 1.0) + Vector2(0, -0.2))
+	p.elbowL = ik(p.shL, p.handL, 12.5, 12.0, fwd(p, -1.0) + Vector2(0, 0.6) + lat(p, -0.6))
+	p.elbowR = ik(p.shR, p.handR, 12.5, 12.0, fwd(p, -1.0) + Vector2(0, 0.6) + lat(p, 0.6))
+	p.neck = Vector2(0, -63 + bob) + fwd(p, lean)
 	p.shC = (p.shL + p.shR) * 0.5
 	p.hipC = (p.hipL + p.hipR) * 0.5
-	p.kneeC = Vector2(0, -10 + bob)
+	p.kneeC = (p.kneeL + p.kneeR) * 0.5 + Vector2(0, 2)
+	# capa: atrás quando anda, balança com o vento, cai com a gravidade parada
+	var wind := sin(t * 1.3) * 1.5 + sin(t * 3.7) * 0.8
+	var trail := (5.0 if moving else 0.0) + (5.0 if running else 0.0) + absf(sin(phase)) * (2.0 if moving else 0.0)
+	p.cape = -fwd(p, 5.0 + trail) + lat(p, wind) + Vector2(0, -trail * 0.6)
 	p.w = w
 	return p
 
@@ -85,23 +145,33 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 	var skin: Color = c.get("skin", Color(0.55, 0.42, 0.34))
 	var under: Color = c.get("under", Color(0.2, 0.18, 0.16))
 	var hair: Color = c.get("hair", Color(0.08, 0.06, 0.05))
-	ci.draw_line(p.hipL, p.footL, under.darkened(0.2), 6.5)
-	ci.draw_line(p.hipR, p.footR, under.darkened(0.2), 6.5)
+	if c.has("summon"):
+		SummonPainter.draw(ci, p, c)
+		return
 	var r: Vector2 = p.r
 	var near_right := r.y > 0.2
 	var near_left := r.y < -0.2
+	# a perna de trás primeiro
 	if near_right:
-		ci.draw_line(p.shL, p.handL, under.darkened(0.3), 4.5)
+		leg(ci, p.hipL, p.kneeL, p.footL, under.darkened(0.3), p)
+		leg(ci, p.hipR, p.kneeR, p.footR, under.darkened(0.15), p)
+	else:
+		leg(ci, p.hipR, p.kneeR, p.footR, under.darkened(0.3), p)
+		leg(ci, p.hipL, p.kneeL, p.footL, under.darkened(0.15), p)
+	if near_right:
+		limb(ci, p.shL, p.elbowL, p.handL, 4.8, 4.0, under.darkened(0.35))
 	if near_left:
-		ci.draw_line(p.shR, p.handR, under.darkened(0.3), 4.5)
-	ci.draw_colored_polygon(vol(p, p.shC, p.w, 5.5, p.hipC, p.w * 0.55, 4.5), under)
+		limb(ci, p.shR, p.elbowR, p.handR, 4.8, 4.0, under.darkened(0.35))
+	var torso := vol(p, p.shC, p.w, 5.5, p.hipC, p.w * 0.55, 4.5)
+	ci.draw_colored_polygon(torso, under)
+	outline(ci, torso, under.darkened(0.5))
 	if not near_right:
-		ci.draw_line(p.shL, p.handL, under.darkened(0.1), 4.5)
+		limb(ci, p.shL, p.elbowL, p.handL, 4.8, 4.0, under.darkened(0.1))
 	if not near_left:
-		ci.draw_line(p.shR, p.handR, under.darkened(0.1), 4.5)
-	ci.draw_circle(p.handL, 2.2, skin)
-	ci.draw_circle(p.handR, 2.2, skin)
-	ci.draw_line(p.head + Vector2(0, 4), p.head + Vector2(0, 8), skin.darkened(0.2), 3.5)
+		limb(ci, p.shR, p.elbowR, p.handR, 4.8, 4.0, under.darkened(0.1))
+	ci.draw_circle(p.handL, 2.3, skin)
+	ci.draw_circle(p.handR, 2.3, skin)
+	ci.draw_line(p.neck, p.head + Vector2(0, 4), skin.darkened(0.2), 3.5, true)
 	ci.draw_circle(p.head, 5.6, hair)
 	if not p.away:
 		ci.draw_circle(p.head + fwd(p, 1.8) + Vector2(0, 1.0), 4.6, skin)
@@ -115,6 +185,28 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 			var a := TAU * k / 5.0 + 0.4
 			ci.draw_line(cc + Vector2(cos(a), sin(a) * 0.6) * 4.0, cc + Vector2(cos(a), sin(a) * 0.6) * 9.5, Color(ccol.darkened(0.1), 0.8), 1.0)
 	eyes(ci, p, c.get("eyes", Color(1, 0.62, 0.15)), c.get("glow_eyes", false))
+
+
+## Membro com duas partes (braço: ombro-cotovelo-mão), afinando na ponta, juntas redondas.
+static func limb(ci: CanvasItem, a: Vector2, j: Vector2, b: Vector2, w1: float, w2: float, col: Color) -> void:
+	ci.draw_line(a, j, col.darkened(0.35), w1 + 1.4, true)
+	ci.draw_line(j, b, col.darkened(0.35), w2 + 1.4, true)
+	ci.draw_line(a, j, col, w1, true)
+	ci.draw_line(j, b, col.lightened(0.04), w2, true)
+	ci.draw_circle(j, w1 * 0.5, col)
+
+
+## Perna (quadril-joelho-pé) com o pé apontando para a frente.
+static func leg(ci: CanvasItem, a: Vector2, j: Vector2, b: Vector2, col: Color, p: Dictionary) -> void:
+	limb(ci, a, j, b + Vector2(0, -1.5), 6.5, 5.2, col)
+	ci.draw_line(b + Vector2(0, -1.5), b + fwd(p, 4.0) + Vector2(0, -0.5), col.darkened(0.25), 3.6, true)
+
+
+static func outline(ci: CanvasItem, poly: PackedVector2Array, col: Color) -> void:
+	if poly.size() > 2:
+		var o := poly.duplicate()
+		o.append(poly[0])
+		ci.draw_polyline(o, Color(col, 0.6), 1.0, true)
 
 
 static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
@@ -140,8 +232,8 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 			ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.kneeC + Vector2(0, 4), p.w * 1.15, 7.5), col)
 			ci.draw_line(p.hipL + Vector2(0, -2), p.hipR + Vector2(0, -2), acc, 2.0)
 			ci.draw_line((p.shL + p.shR) * 0.5, (kL + kR) * 0.5, acc.darkened(0.3), 1.0)
-			ci.draw_line(p.shL, p.handL, col, 5.0)
-			ci.draw_line(p.shR, p.handR, col, 5.0)
+			limb(ci, p.shL, p.elbowL, p.handL.lerp(p.elbowL, 0.15), 5.6, 5.0, col)
+			limb(ci, p.shR, p.elbowR, p.handR.lerp(p.elbowR, 0.15), 5.6, 5.0, col)
 		"vest":
 			ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.hipC + Vector2(0, 4), p.w * 0.6, 5.0), col)
 			ci.draw_line(p.hipL + Vector2(0, 1), p.hipR + Vector2(0, 1), acc, 2.0)
@@ -158,16 +250,16 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 			ci.draw_circle(p.handL, 2.8, col)
 			ci.draw_circle(p.handR, 2.8, col)
 		"pants":
-			ci.draw_line(p.hipL, p.footL + Vector2(0, -3), col, 6.0)
-			ci.draw_line(p.hipR, p.footR + Vector2(0, -3), col, 6.0)
+			limb(ci, p.hipL, p.kneeL, p.footL + Vector2(0, -3), 6.6, 5.6, col)
+			limb(ci, p.hipR, p.kneeR, p.footR + Vector2(0, -3), 6.6, 5.6, col)
 		"boots":
 			ellipse(ci, p.footL + Vector2(0, -1.5), 3.6, 2.4, col)
 			ellipse(ci, p.footR + Vector2(0, -1.5), 3.6, 2.4, col)
-			ci.draw_line(p.footL + Vector2(0, -2), p.footL + Vector2(0, -8), col, 5.0)
-			ci.draw_line(p.footR + Vector2(0, -2), p.footR + Vector2(0, -8), col, 5.0)
+			ci.draw_line(p.footL + Vector2(0, -2), p.footL.lerp(p.kneeL, 0.4), col, 5.6, true)
+			ci.draw_line(p.footR + Vector2(0, -2), p.footR.lerp(p.kneeR, 0.4), col, 5.6, true)
 		"cape":
-			var bot := Vector2(0, -3)
-			ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, 1) - fwd(p, 3), p.w, 3.0, bot - fwd(p, 8), p.w * 1.3, 3.0), col)
+			var bot: Vector2 = Vector2(0, -3) + p.cape
+			draw_cloth(ci, p, p.shC + Vector2(0, 1) - fwd(p, 3), bot - fwd(p, 6), p.w, p.w * 1.35, col)
 			ci.draw_line(p.shL + Vector2(0, 1), p.shR + Vector2(0, 1), acc, 2.0)
 		"staff":
 			var top := staff_top(p)
@@ -192,6 +284,28 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 				ci.draw_circle(c, 1.8, acc)
 
 
+## Pano da capa: alarga para baixo, ondula com o vento (dobras) e segue p.cape (física).
+static func draw_cloth(ci: CanvasItem, p: Dictionary, top: Vector2, bot: Vector2, w_top: float, w_bot: float, col: Color) -> void:
+	var t: float = p.t
+	var left := PackedVector2Array()
+	var right := PackedVector2Array()
+	var n := 6
+	for i in n + 1:
+		var k := float(i) / n
+		var c := top.lerp(bot, k) + Vector2(0, k * k * 2.0)
+		var wv := sin(t * 3.0 + k * 4.0) * 1.6 * k
+		var ww := lerpf(w_top, w_bot, k)
+		left.append(c + lat(p, -ww) + fwd(p, wv))
+		right.append(c + lat(p, ww) + fwd(p, -wv))
+	right.reverse()
+	var poly := left + right
+	ci.draw_colored_polygon(poly, col)
+	outline(ci, poly, col.darkened(0.5))
+	for i in 4:
+		var k2 := (i + 1) / 5.0
+		ci.draw_line(top.lerp(top + lat(p, (k2 - 0.5) * w_top * 2), 1.0), bot + lat(p, (k2 - 0.5) * w_bot * 2) + Vector2(0, sin(t * 3.0 + i) * 1.2), Color(col.darkened(0.35), 0.7), 1.0, true)
+
+
 static func staff_top(p: Dictionary) -> Vector2:
 	return p.handR + Vector2(0, -52) + fwd(p, 4)
 
@@ -201,7 +315,8 @@ static func amulet_pos(p: Dictionary) -> Vector2:
 
 
 static func shield_center(p: Dictionary) -> Vector2:
-	return Vector2(p.handL.x, -34.0 + p.bob) + lat(p, -4) + fwd(p, 7)
+	var arm: Vector2 = (p.elbowL as Vector2).lerp(p.handL, 0.55)
+	return arm + lat(p, -2.5) + fwd(p, 6) + Vector2(0, 4)
 
 
 static func draw_mimic(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
@@ -244,11 +359,11 @@ static func fur_edge(ci: CanvasItem, a: Vector2, b: Vector2, depth: float, col: 
 
 static func draw_wolfcape_back(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 	var col := it.placeholder_color
-	var bot := Vector2(0, -2)
+	var bot: Vector2 = Vector2(0, -2) + p.cape
 	var w: float = p.w
 	var bl: Vector2 = bot + lat(p, -w * 1.9) - fwd(p, 6)
 	var br: Vector2 = bot + lat(p, w * 1.9) - fwd(p, 6)
-	ci.draw_colored_polygon(vol(p, p.shC + Vector2(0, -3) - fwd(p, 3), w, 4.0, bot - fwd(p, 9), w * 1.9, 4.0), col)
+	draw_cloth(ci, p, p.shC + Vector2(0, -3) - fwd(p, 3), bot - fwd(p, 8), w, w * 1.9, col)
 	for i in 9:
 		var t := i / 8.0
 		var top: Vector2 = p.shL.lerp(p.shR, t)
@@ -288,8 +403,8 @@ static func draw_wolfcape_front(ci: CanvasItem, p: Dictionary, it: EquipmentItem
 static func draw_wolfskirt(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 	var col := it.placeholder_color
 	var w: float = p.w
-	ci.draw_line(p.hipL, p.footL + Vector2(0, -3), Color(0.08, 0.07, 0.075), 6.0)
-	ci.draw_line(p.hipR, p.footR + Vector2(0, -3), Color(0.08, 0.07, 0.075), 6.0)
+	limb(ci, p.hipL, p.kneeL, p.footL + Vector2(0, -3), 6.4, 5.4, Color(0.08, 0.07, 0.075))
+	limb(ci, p.hipR, p.kneeR, p.footR + Vector2(0, -3), 6.4, 5.4, Color(0.08, 0.07, 0.075))
 	var kl: Vector2 = Vector2(0, -12 + p.bob) + lat(p, -w * 1.2)
 	var kr: Vector2 = Vector2(0, -12 + p.bob) + lat(p, w * 1.2)
 	ci.draw_colored_polygon(vol(p, p.hipC + Vector2(0, -4), w * 0.65, 5.5, p.kneeC, w * 1.2, 8.5), col)

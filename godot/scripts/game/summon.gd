@@ -45,7 +45,8 @@ static func make(owner: Node2D, elements: Array, is_fused: bool, fused_name := "
 	s.color = Spellbook.ELEMENTS[elements[0]].cor
 	if is_fused:
 		s.color = s.color.lerp(Spellbook.ELEMENTS[elements[1]].cor, 0.5)
-	s.body_colors = {"skin": lk.skin, "under": lk.under, "hair": lk.hair, "eyes": s.color.lightened(0.5), "glow_eyes": true, "core": true, "core_col": s.color}
+	# corpo feito do próprio elemento (SummonPainter): golem de blocos, chamas, raios, raízes...
+	s.body_colors = {"summon": elements[0], "summon2": elements[1] if is_fused and elements.size() > 1 else "", "eyes": s.color.lightened(0.5), "core_col": s.color}
 	s.walk_speed = 150.0 if lk.get("fast", false) else 115.0
 	s.run_speed = s.walk_speed * 2.0
 	return s
@@ -216,10 +217,14 @@ func _physics_process(delta: float) -> void:
 func _strike() -> void:
 	_atk_cd = 0.9 if LOOK[els[0]].get("fast", false) else 1.15
 	_combo += 1
-	play_action("attack", 0.35)
 	var pw := power()
 	var tgt := foe
 	var kind: String = ["Soco", "Chute", "Cabeçada", "Chute giratório", "Agarrar e morder"][_combo % 5]
+	# animação do golpe (mão, pé, cabeça) e o dano no instante do impacto
+	play_action({"Soco": "punch", "Chute": "kick", "Cabeçada": "headbutt", "Chute giratório": "spin", "Agarrar e morder": "grab"}[kind], 0.5)
+	await get_tree().create_timer(0.2).timeout
+	if dead or not is_instance_valid(tgt) or tgt.dead:
+		return
 	match kind:
 		"Chute giratório":
 			SpellFx.ring(get_parent(), global_position, 1.6, color, 0.4)

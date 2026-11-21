@@ -31,6 +31,8 @@ var _time := 0.0
 var _frame := 0
 var _frame_acc := 0.0
 var _order_key := ""
+## Segundos desde o começo da animação atual (golpes e magias usam para o movimento).
+var _anim_t := 0.0
 var _eye_light: PointLight2D
 var _core_light: PointLight2D
 
@@ -82,6 +84,8 @@ func tick(delta: float, new_dir: String, new_anim: String, speed: float) -> void
 	_time += delta
 	if new_anim != anim:
 		_frame = 0
+		_anim_t = 0.0
+	_anim_t += delta
 	dir = new_dir
 	anim = new_anim
 	if anim == "walk" or anim == "run":
@@ -92,7 +96,7 @@ func tick(delta: float, new_dir: String, new_anim: String, speed: float) -> void
 	while _frame_acc >= 1.0:
 		_frame_acc -= 1.0
 		_frame += 1
-	var pose := PlaceholderPainter.pose(dir, anim, _phase, _time)
+	var pose := PlaceholderPainter.pose(dir, anim, _phase, _time, _anim_t)
 	for l: EquipLayer in layers.values():
 		l.update_pose(dir, anim, _frame, pose)
 	if _eye_light:

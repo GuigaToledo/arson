@@ -189,6 +189,18 @@ func start_game(slot: int) -> void:
 			player.camera.position_smoothing_enabled = false
 			player.global_position = Iso.to_screen(map.spawn)
 			player.camera.zoom = Vector2.ONE * float(str(arg).split("=")[1])
+		if str(arg) == "--teste-invocacoes":
+			var anims := ["idle", "punch", "kick", "spin", "headbutt", "grab", "walk", "punch"]
+			var i := 0
+			for el in ["terra", "lava", "gelo", "fogo", "vento", "raio", "agua", "natureza"]:
+				var sm := Summon.make(null, [el], false)
+				sm.puppet = true
+				sm.position = player.position + Vector2(-330 + (i % 4) * 150, -40 + (i / 4) * 150)
+				sm.puppet_target = sm.position
+				entities.add_child(sm)
+				sm.anim = anims[i]
+				sm.facing = "SE"
+				i += 1
 		if str(arg) == "--teste-levelup":
 			player.skill_gain(player.elem_a(), Rules.skill_need(player.elem_a(), player.elem_level(player.elem_a())))
 		if str(arg).begins_with("--teste-vermenu="):
