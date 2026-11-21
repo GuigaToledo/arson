@@ -749,6 +749,11 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 	var eqh := player.equipment.get_item(EquipSlot.Slot.HANDS)
 	print("TESTE colar/anel equipados: ", eqa.display_name if eqa else "nada", " / ", eqh.display_name if eqh else "nada")
 	player.level = lv0
+	player.shield_hp = 10.0
+	player.shield_max = 20.0
+	player.shield_els = [player.elem_a()]
+	player._break_shield()
+	print("TESTE escudo quebrado: ", player.shield_hp)
 	player._roll_drop("Slime Rei")
 	player._roll_drop("Goblin Elite")
 	for n in get_tree().get_nodes_in_group("actors"):
