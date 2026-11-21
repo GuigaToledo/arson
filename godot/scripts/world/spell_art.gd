@@ -1158,7 +1158,7 @@ static func splash(parent: Node, pos: Vector2, count: int, spread: float, col :=
 			for i in 10:
 				var a := TAU * i / 10.0
 				var b := Vector2(cos(a), sin(a) * 0.5) * (10.0 + 18.0 * q)
-				ElemArt.ribbon(n, PackedVector2Array([b, b + Vector2(cos(a) * 4.0, -16.0 * (1.0 - q) - 4.0)]), 2.2, 0.4, Color(0.75, 0.92, 1.0, 0.7 * (1.0 - q)))))
+				ElemArt.ribbon(n, PackedVector2Array([b, b + Vector2(cos(a) * 4.0, -16.0 * (1.0 - q) - 4.0)]), 2.2, 0.4, Color(0.75, 0.92, 1.0, 0.7 * (1.0 - q))))
 
 
 ## Pedaços que voam e caem (gelo, pedra, folhas, lascas).
