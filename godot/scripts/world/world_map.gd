@@ -4,7 +4,7 @@ extends RefCounted
 ## ~ água  , areia  . grama  : terra  # calçamento  f floresta  r rocha
 ## = ponte/píer  H construção  T templo  @ início do jogador
 
-const BLOCKED := "~HT"
+const BLOCKED := "~H"
 
 var rows: PackedStringArray = PackedStringArray()
 var w := 0
@@ -32,6 +32,12 @@ func at(x: int, y: int) -> String:
 	if y < 0 or y >= h or x < 0 or x >= rows[y].length():
 		return "~"
 	return rows[y][x]
+
+
+## Número pseudoaleatório fixo por tile (para espalhar árvores sempre igual).
+func tile_rand(x: int, y: int, k: int = 0) -> float:
+	var h := (x * 73856093) ^ (y * 19349663) ^ (k * 83492791)
+	return float(posmod(h, 10007)) / 10007.0
 
 
 func walkable_grid(g: Vector2) -> bool:

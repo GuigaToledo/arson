@@ -23,15 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Recortar peças das imagens de referência
-        run: |
-          pip install --quiet pillow rembg onnxruntime
-          python3 ferramentas/recortar_referencia.py
-
       - name: Peças de cenário (remove fundo)
         run: |
           pip install --quiet pillow

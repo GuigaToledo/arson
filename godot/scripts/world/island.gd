@@ -75,14 +75,42 @@ func _build_ground() -> void:
 			ground.add_child(p)
 
 
+const OBJ := "res://assets/objetos/"
+
+
 func _build_buildings() -> void:
+	# casas (peça recortada da imagem da vila)
 	for r: Rect2 in map.blocks("H"):
 		var p := Prop.new().setup("house", r.position + Vector2(0.1, 0.1), r.size - Vector2(0.2, 0.2), 150.0, Color(0.42, 0.36, 0.3))
+		var front := Iso.to_screen(r.position + r.size) - Iso.to_screen(r.position + r.size * 0.5)
+		p.with_image(OBJ + "casa.png", 0.62, front + Vector2(18, 10), int(r.position.x) % 2 == 0)
 		entities.add_child(p)
+	# templo: santuário com estátua no centro da área do templo
 	for r: Rect2 in map.blocks("T"):
-		var p := Prop.new().setup("house", r.position + Vector2(0.1, 0.1), r.size - Vector2(0.2, 0.2), 230.0, Color(0.55, 0.52, 0.48))
+		var c := r.position + r.size * 0.5
+		var p := Prop.new().setup("box", c - Vector2(1.0, 0.6), Vector2(2.0, 1.4), 200.0, Color(0.5, 0.48, 0.45))
+		p.with_image(OBJ + "estatua.png", 0.95, Vector2(0, 40))
 		p.name = "Templo"
 		entities.add_child(p)
+	# árvores nas florestas (e algumas soltas na grama)
+	for y in map.h:
+		for x in map.w:
+			var ch := map.at(x, y)
+			var chance := 0.24 if ch == "f" else (0.025 if ch == "." else 0.0)
+			if chance == 0.0 or map.tile_rand(x, y) > chance:
+				continue
+			var j := Vector2(map.tile_rand(x, y, 1), map.tile_rand(x, y, 2)) * 0.6 + Vector2(0.2, 0.2)
+			var t := Prop.new().setup("box", Vector2(x, y) + j - Vector2(0.18, 0.18), Vector2(0.36, 0.36), 200.0, Color(0.3, 0.2, 0.1))
+			t.with_image(OBJ + "arvore_vermelha.png", 0.5 + map.tile_rand(x, y, 3) * 0.25, Vector2(0, 6), map.tile_rand(x, y, 4) > 0.5)
+			t.casts_shadow = false
+			entities.add_child(t)
+	# carroças na estrada do sul
+	var c1 := Prop.new().setup("box", Vector2(24.2, 37.2), Vector2(1.2, 0.8), 60.0, Color(0.3, 0.2, 0.1))
+	c1.with_image(OBJ + "carroca.png", 0.75, Vector2(0, 14))
+	entities.add_child(c1)
+	var c2 := Prop.new().setup("box", Vector2(30.6, 40.0), Vector2(1.0, 0.8), 60.0, Color(0.3, 0.2, 0.1))
+	c2.with_image(OBJ + "carroca_coberta.png", 0.8, Vector2(0, 14))
+	entities.add_child(c2)
 
 
 func _build_lights() -> void:
@@ -93,12 +121,13 @@ func _build_lights() -> void:
 		var l := LightKit.make(Color(1.0, 0.65, 0.3), 1.0, 1.8, false, 0.12)
 		l.position = Vector2(10, -30)
 		post.add_child(l)
-	var camp := Node2D.new()
-	camp.position = g(31.0, 36.0)
+	var camp := Prop.new().setup("box", Vector2(30.6, 35.6), Vector2(0.8, 0.8), 40.0, Color(0.3, 0.2, 0.1))
+	camp.with_image(OBJ + "fogueira.png", 1.0, Vector2(0, 6))
+	camp.fade_when_behind = false
 	entities.add_child(camp)
-	Fx.fire(camp, Vector2(0, -4), 0.6)
+	Fx.fire(camp, Vector2(0, -8), 0.45)
 	var fl := LightKit.make(Color(1.0, 0.55, 0.2), 1.3, 2.4, true, 0.2)
-	fl.position = Vector2(0, -6)
+	fl.position = Vector2(0, -10)
 	camp.add_child(fl)
 
 

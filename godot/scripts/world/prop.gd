@@ -11,6 +11,12 @@ var height := 40.0
 var color := Color(0.3, 0.2, 0.12)
 var casts_shadow := false
 var fade_when_behind := false
+## Imagem da peça (arte final). Se vazio, desenha a forma provisória.
+var tex: Texture2D
+var tex_scale := 1.0
+var tex_flip := false
+## Onde fica o "pé" da imagem (base, centro embaixo), relativo à origem da peça.
+var tex_foot := Vector2.ZERO
 
 var A: Vector2
 var B: Vector2
@@ -19,6 +25,18 @@ var D: Vector2
 var _bounds: Rect2
 var _player: Node2D
 var _fade := 1.0
+
+
+func with_image(path: String, sc: float, foot := Vector2.ZERO, flip := false) -> Prop:
+	if ResourceLoader.exists(path):
+		tex = load(path)
+		tex_scale = sc
+		tex_foot = foot
+		tex_flip = flip
+		var sz := tex.get_size() * sc
+		height = sz.y
+		fade_when_behind = sz.y > 90.0
+	return self
 
 
 func setup(k: String, gp: Vector2, gs: Vector2, h: float, col: Color) -> Prop:
@@ -49,6 +67,9 @@ func _ready() -> void:
 		occ.occluder = op
 		add_child(occ)
 	_bounds = Rect2(Vector2(D.x, A.y - height), Vector2(B.x - D.x, C.y - A.y + height))
+	if tex:
+		var sz := tex.get_size() * tex_scale
+		_bounds = Rect2(tex_foot + Vector2(-sz.x * 0.5, -sz.y), sz).grow(-sz.x * 0.08)
 	set_process(fade_when_behind)
 
 
@@ -79,6 +100,15 @@ func inset(k: float) -> Array:
 
 
 func _draw() -> void:
+	if tex:
+		var sz := tex.get_size() * tex_scale
+		if tex_flip:
+			draw_set_transform(tex_foot, 0.0, Vector2(-1, 1))
+			draw_texture_rect(tex, Rect2(Vector2(-sz.x * 0.5, -sz.y), sz), false)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		else:
+			draw_texture_rect(tex, Rect2(tex_foot + Vector2(-sz.x * 0.5, -sz.y), sz), false)
+		return
 	match kind:
 		"table":
 			var legs := inset(0.18)
