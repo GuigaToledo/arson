@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.6.1",
+  "data": "2026-11-21",
+  "titulo": "Celular: tela cheia e tela sempre acesa",
+  "itens": [
+   "No celular, o primeiro toque no jogo entra em tela cheia (e volta a ela se sair)",
+   "A tela não bloqueia sozinha enquanto o jogo estiver aberto"
+  ]
+ },
+ {
   "versao": "0.6.0",
   "data": "2026-11-21",
   "titulo": "Elites, chefes e saque",

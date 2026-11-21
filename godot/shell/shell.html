@@ -83,15 +83,58 @@ let started = false;
 
 function setStatus(text) { document.getElementById('err').textContent = text; }
 
+// Celular: tela cheia no toque e tela sempre acesa enquanto o jogo estiver aberto.
+const MOBILE = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && matchMedia('(pointer: coarse)').matches);
+function isFull() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function goFull() {
+  if (!MOBILE || isFull()) return;
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) return;
+  try {
+    const p = req.call(el, { navigationUI: 'hide' });
+    const lock = () => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} };
+    if (p && p.then) p.then(lock).catch(() => {}); else lock();
+  } catch (e) {}
+}
+// Wake Lock: o navegador solta a trava quando a aba some, então pede de novo ao voltar.
+let wake = null;
+async function keepAwake() {
+  if (!started || document.visibilityState !== 'visible') return;
+  try {
+    if ('wakeLock' in navigator) {
+      if (wake && !wake.released) return;
+      wake = await navigator.wakeLock.request('screen');
+      return;
+    }
+  } catch (e) {}
+  // navegadores sem Wake Lock: vídeo mudo em laço impede o bloqueio
+  try {
+    let v = document.getElementById('acordado');
+    if (!v) {
+      v = document.createElement('video');
+      v.id = 'acordado'; v.muted = true; v.loop = true; v.playsInline = true;
+      v.setAttribute('playsinline', ''); v.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none';
+      const c = document.createElement('canvas'); c.width = c.height = 2;
+      if (c.captureStream) v.srcObject = c.captureStream(1);
+      document.body.appendChild(v);
+    }
+    v.play().catch(() => {});
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', keepAwake);
+// todo toque durante o jogo: volta à tela cheia (se saiu) e reforça a tela acesa
+for (const ev of ['pointerup', 'touchend']) {
+  document.addEventListener(ev, () => { if (started) { goFull(); keepAwake(); } }, { passive: true });
+}
+
 function startGame() {
   if (started) return;
   started = true;
   home.style.display = 'none';
   loading.style.display = 'flex';
-  const mobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  if (mobile && document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen().catch(() => {});
-  }
+  goFull();
+  keepAwake();
   const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
   if (missing.length) { setStatus('Seu navegador não tem o que o jogo precisa: ' + missing.join(', ')); return; }
   const bar = document.querySelector('#bar div');
