@@ -271,6 +271,8 @@ var skills := {}
 var shield_hp := 0.0
 var shield_t := 0.0
 var shield_col := Color.WHITE
+## Elemento(s) do escudo atual (desenho: chamas, rocha com lava, bolha d'água, gelo, vento, raios, pedra, casca).
+var shield_els: Array = []
 var hot_t := 0.0
 var spirit_t := 0.0
 var _spirit_acc := 0.0
@@ -451,26 +453,23 @@ func cast_spell(id: String, world_pos = null) -> void:
 				if not _alive_foe():
 					foe = tgt
 				aim = tgt.global_position
-				var b := Bolt.new()
-				b.color = col
-				b.speed = 600.0
-				b.size = 1.8 if s.get("big", false) else 1.0
-				b.target = tgt
-				b.global_position = global_position + Vector2(0, -2)
-				b.on_hit = func():
+				var big: bool = s.get("big", false)
+				# visual do nome: Pedrada = pedra em arco, Espinho = espinhos, Faísca = raio...
+				var pel: String = els[els.size() - 1] if big else els[0]
+				SpellArt.projectile(get_parent(), global_position, tgt, pel, big, els, func():
 					if is_instance_valid(tgt) and not tgt.dead:
 						tgt.take_damage(Rules.roll(pw, float(tgt.info.def)), self)
 						for e in els:
-							tgt.apply_effect(e, pw, self, s.get("big", false))
-						SpellFx.burst(tgt.get_parent(), tgt.global_position + Vector2(0, -40), 26, 90.0, 0.5, 0.06, col.lightened(0.4), col)
-				get_parent().add_child(b)
+							tgt.apply_effect(e, pw, self, big)
+							SpellArt.impact(tgt.get_parent(), tgt.global_position, e, big))
 		"cc":
 			var c2 := Iso.to_grid(aim)
 			var gp := Iso.to_grid(global_position)
 			if c2.distance_to(gp) > float(s.range):
 				c2 = gp + (c2 - gp).normalized() * float(s.range)
 			var center := Iso.to_screen(c2)
-			SpellFx.blast(get_parent(), center, float(s.radius), col)
+			for e in els:
+				SpellArt.cc(get_parent(), center, float(s.radius), e)
 			for m in _monsters():
 				if Iso.to_grid(m.global_position).distance_to(c2) <= float(s.radius) + 0.3:
 					m.take_damage(Rules.roll(pw, float(m.info.def)), self)
@@ -483,10 +482,10 @@ func cast_spell(id: String, world_pos = null) -> void:
 			gd = gd.normalized()
 			var screen_dir := (Iso.to_screen(Iso.to_grid(global_position) + gd) - global_position).normalized()
 			if s.type == "cone":
-				SpellFx.cone(get_parent(), global_position, screen_dir, float(s.range) * 64.0, float(s.ang), col.lightened(0.4), col)
+				SpellArt.cone(get_parent(), global_position, screen_dir, float(s.range) * 64.0, float(s.ang), els[0])
 			else:
 				var end := Iso.to_screen(Iso.to_grid(global_position) + gd * float(s.range))
-				SpellFx.line(get_parent(), global_position, end, col, els[0] == "raio")
+				SpellArt.line(get_parent(), global_position, end, els[0])
 			for m in _monsters():
 				var v := Iso.to_grid(m.global_position) - Iso.to_grid(global_position)
 				var hit := false
@@ -508,22 +507,19 @@ func cast_spell(id: String, world_pos = null) -> void:
 			var center2 := Iso.to_screen(cg)
 			var rad := float(s.radius)
 			var boom := func():
-				SpellFx.blast(get_parent(), center2, rad, col, true)
 				for m2 in _monsters():
 					if Iso.to_grid(m2.global_position).distance_to(cg) <= rad + 0.3:
 						m2.take_damage(Rules.roll(pw, float(m2.info.def)), self)
 						for e in els:
 							m2.apply_effect(e, pw, self, true)
-			if float(s.get("delay", 0.0)) > 0.0:
-				SpellFx.meteor(get_parent(), center2, float(s.delay), rad, boom, col)
-			else:
-				boom.call()
+			SpellArt.area(get_parent(), center2, rad, els[0], boom, els)
 		"summon":
 			ok = _summon(id, s)
 		"shield":
 			shield_hp = pw * 1.5
 			shield_t = float(s.dur)
 			shield_col = col
+			shield_els = els.duplicate()
 			SpellFx.ring(get_parent(), global_position, 0.9, col, 0.6)
 			_msg("%s (%d)" % [s.nome, int(shield_hp)], col)
 		"heal":
@@ -531,9 +527,9 @@ func cast_spell(id: String, world_pos = null) -> void:
 			for sm in summons.values():
 				if is_instance_valid(sm):
 					sm.heal(pw)
-			SpellFx.heal(get_parent(), global_position)
+			SpellArt.light(get_parent(), "heal", global_position)
 			if s.has("ring"):
-				SpellFx.ring(get_parent(), global_position, float(s.ring), Color(1, 0.95, 0.6), 0.8)
+				SpellArt.light(get_parent(), "ring", global_position)
 				for rp in _allies(float(s.ring)):
 					_ally(rp, {"k": "heal", "n": int(Rules.roll(pw))})
 		"chainheal":
@@ -554,6 +550,7 @@ func cast_spell(id: String, world_pos = null) -> void:
 			get_tree().create_timer(0.5).timeout.connect(func(): if not dead: _heal(Rules.roll(pw * 0.8)))
 		"hot":
 			hot_t = float(s.dur)
+			SpellArt.light(get_parent(), "bless", global_position)
 			for rp in _allies(8.0):
 				_ally(rp, {"k": "hot", "d": float(s.dur)})
 			_msg("Bênção: cura contínua por 1 minuto", col)
@@ -562,11 +559,13 @@ func cast_spell(id: String, world_pos = null) -> void:
 			_msg("Espírito de Luz por 5 minutos", col)
 		"buff":
 			buff_t = float(s.dur)
+			SpellArt.light(get_parent(), "brave", global_position)
 			for rp in _allies(8.0):
 				_ally(rp, {"k": "buff", "d": float(s.dur)})
 			_msg("Aura de Bravura: +25% ataque e defesa", col)
 		"invis":
 			invis = true
+			SpellArt.light(get_parent(), "veil", global_position)
 			_msg("Invisível até atacar", col)
 		"immortal":
 			immortal_t = float(s.dur)
@@ -688,6 +687,7 @@ func _tick_states(delta: float) -> void:
 	if _aura:
 		_aura.shield = shield_hp > 0.0
 		_aura.shield_col = shield_col
+		_aura.shield_els = shield_els
 		_aura.spirit = spirit_t > 0.0
 		_aura.immortal = immortal_t > 0.0
 		_aura.wing_cols = [Spellbook.ELEMENTS[elem_a()].cor, Spellbook.ELEMENTS[elem_b()].cor]
@@ -948,6 +948,7 @@ class StatusAura:
 	extends Node2D
 	var shield := false
 	var shield_col := Color.WHITE
+	var shield_els: Array = []
 	var spirit := false
 	var immortal := false
 	## Asas da Ascensão: uma de cada elemento que o mago domina.
@@ -963,13 +964,66 @@ class StatusAura:
 		_t += d
 		queue_redraw()
 
+	## Escudo com a cara do elemento.
+	func _draw_shield(el: String) -> void:
+		var c := Vector2(0, -36)
+		match el:
+			"fogo":  # Escudo de Chamas: línguas de fogo em volta
+				for i in 14:
+					var a := TAU * i / 14.0 + _t * 1.5
+					var p := c + Vector2(cos(a) * 26, sin(a) * 30)
+					var h := 10 + sin(_t * 9 + i) * 5
+					draw_colored_polygon(PackedVector2Array([p + Vector2(-4, 0), p + Vector2(0, -h), p + Vector2(4, 0)]), Color(1, 0.5 + 0.2 * sin(i), 0.1, 0.55))
+			"lava":  # placas de rocha com veios de lava girando
+				for i in 5:
+					var a := TAU * i / 5.0 + _t * 0.8
+					var p := c + Vector2(cos(a) * 28, sin(a) * 16)
+					SpellArt.rock(self, p, 7, Color(0.2, 0.08, 0.05), i, a)
+					draw_line(p + Vector2(-3, 0), p + Vector2(3, 1), Color(1, 0.5, 0.1), 1.5)
+			"agua":  # bolha d'água com ondulação
+				draw_set_transform(c, 0.0, Vector2(1.0, 1.25))
+				draw_circle(Vector2.ZERO, 30, Color(0.3, 0.6, 1, 0.12))
+				for i in 2:
+					draw_arc(Vector2.ZERO, 30 - i * 3 + sin(_t * 4 + i) * 1.5, 0, TAU, 40, Color(0.6, 0.85, 1, 0.45), 2.0, true)
+				draw_arc(Vector2(-10, -12), 8, PI, PI * 1.5, 10, Color(1, 1, 1, 0.6), 2.0, true)
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			"gelo":  # Armadura de Gelo: cristais em volta
+				for i in 9:
+					var a := TAU * i / 9.0
+					var p := c + Vector2(cos(a) * 22, sin(a) * 28)
+					var tip := p + Vector2(cos(a), sin(a)) * 10
+					draw_colored_polygon(PackedVector2Array([p + Vector2(-3, 0), tip, p + Vector2(3, 0)]), Color(0.8, 0.95, 1, 0.75))
+			"vento":  # vento girando
+				for i in 3:
+					var a0 := _t * 5.0 + i * 2.1
+					draw_set_transform(c, 0.0, Vector2(1.0, 1.25))
+					draw_arc(Vector2.ZERO, 26 + i * 3, a0, a0 + 2.0, 16, Color(0.85, 1, 0.95, 0.55), 2.0, true)
+					draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			"raio":  # arcos elétricos
+				for i in 3:
+					var a := randf() * TAU
+					var p1 := c + Vector2(cos(a) * 26, sin(a) * 32)
+					var p2 := c + Vector2(cos(a + 0.8) * 26, sin(a + 0.8) * 32)
+					SpellArt.jag(self, p1, p2, Color(0.8, 0.8, 1, 0.9), 1.3, 4, 5.0)
+			"terra":  # Pele de Pedra: placas de pedra no corpo
+				for i in 6:
+					var p := c + Vector2((i % 2) * 12 - 6, -18 + i * 9)
+					SpellArt.rock(self, p, 6, Color(0.45, 0.4, 0.35, 0.8), i + 11)
+			"natureza":  # Casca de Árvore: vinhas e casca em volta
+				for i in 4:
+					var a := TAU * i / 4.0 + _t * 0.4
+					SpellArt.root(self, Vector2(cos(a) * 16, 4 + sin(a) * 6), 60, 10, 1.0, Color(0.35, 0.28, 0.15, 0.8), 2.5)
+			_:
+				draw_set_transform(c, 0.0, Vector2(1.0, 1.25))
+				draw_arc(Vector2.ZERO, 30, 0, TAU, 40, Color(shield_col, 0.4), 3.0)
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
 	func _draw() -> void:
 		if shield:
-			var a := 0.35 + 0.15 * sin(_t * 3.0)
-			draw_set_transform(Vector2(0, -36), 0.0, Vector2(1.0, 1.25))
-			draw_arc(Vector2.ZERO, 30, 0, TAU, 40, Color(shield_col, a), 3.0)
-			draw_circle(Vector2.ZERO, 30, Color(shield_col, 0.08))
-			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			for e in shield_els:
+				_draw_shield(str(e))
+			if shield_els.is_empty():
+				_draw_shield("")
 		if hot:
 			for i in 3:
 				var k := fmod(_t * 0.6 + i / 3.0, 1.0)

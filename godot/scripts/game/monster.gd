@@ -256,6 +256,8 @@ var _knock_v := Vector2.ZERO
 var _knock_t := 0.0
 var _st_col := Color.WHITE
 var _st_t := 0.0
+var _st_el := ""
+var _sfx: StatusFx
 
 
 func _clear_status() -> void:
@@ -274,6 +276,7 @@ func apply_effect(el: String, power: float, by: Node2D, hard: bool, from_net := 
 		return
 	_st_col = Spellbook.ELEMENTS[el].cor
 	_st_t = 3.0
+	_st_el = el
 	if NetSync.is_puppet() and not from_net:
 		NetSync.inst.send({"t": "fx", "i": idx, "el": el, "p": power, "h": hard})
 		return
@@ -315,8 +318,12 @@ func _dot(dps: float, dur: float, by: Node2D) -> void:
 	_dot_by = by
 
 
-## Cor do elemento enquanto o efeito dura.
+## Cor do elemento enquanto o efeito dura, e o desenho do estado (gelo, raízes, chamas, faíscas).
 func _tint(delta: float) -> void:
+	if _sfx == null:
+		_sfx = StatusFx.new()
+		_sfx.m = self
+		add_child(_sfx)
 	if _st_t <= 0.0:
 		return
 	_st_t -= delta
@@ -403,3 +410,48 @@ func _revive() -> void:
 	hp = max_hp
 	global_position = home
 	_revive_visual()
+
+
+## Desenho do estado do monstro: bloco de gelo (congelado), raízes (preso), chamas (queimando),
+## faíscas (paralisado/eletrizado), pedras rodando (atordoado).
+class StatusFx:
+	extends Node2D
+	var m: Node
+	var _t := 0.0
+
+	func _ready() -> void:
+		z_index = 2
+
+	func _process(d: float) -> void:
+		_t += d
+		visible = m._st_t > 0.0 or m._root_t > 0.0 or m._stun_t > 0.0
+		if visible:
+			queue_redraw()
+
+	func _draw() -> void:
+		var s := float(m.info.scale)
+		var el: String = m._st_el
+		if m._stun_t > 0.0 and el == "gelo":
+			draw_rect(Rect2(Vector2(-18, -86) * s, Vector2(36, 88) * s), Color(0.7, 0.9, 1, 0.35))
+			draw_rect(Rect2(Vector2(-18, -86) * s, Vector2(36, 88) * s), Color(0.9, 1, 1, 0.7), false, 1.5)
+			draw_line(Vector2(-12, -80) * s, Vector2(-4, -20) * s, Color(1, 1, 1, 0.6), 1.5)
+		elif m._stun_t > 0.0:
+			for i in 3:
+				var a := _t * 5.0 + TAU * i / 3.0
+				var p := Vector2(cos(a) * 12, -92 + sin(a) * 4) * s
+				if el == "raio":
+					SpellArt.jag(self, p, p + Vector2(6, 8), Color(0.85, 0.85, 1), 1.2, 3, 3.0)
+				else:
+					draw_circle(p, 3, Color(1, 0.9, 0.4))
+		if m._root_t > 0.0:
+			for i in 5:
+				var a := TAU * i / 5.0
+				SpellArt.root(self, Vector2(cos(a) * 12, sin(a) * 5) * s, 34 * s, (i % 2 * 2 - 1) * 8, 1.0, Color(0.35, 0.27, 0.13), 2.5)
+		if m._dot_t > 0.0:
+			if el == "fogo" or el == "lava":
+				for i in 4:
+					var x := sin(_t * 7 + i * 1.7) * 10 * s
+					var h := (14 + sin(_t * 11 + i) * 6) * s
+					draw_colored_polygon(PackedVector2Array([Vector2(x - 4, -40 * s), Vector2(x, -40 * s - h), Vector2(x + 4, -40 * s)]), Color(1, 0.55, 0.1, 0.6))
+			elif el == "raio":
+				SpellArt.jag(self, Vector2(randf_range(-12, 12), -80) * s, Vector2(randf_range(-12, 12), -20) * s, Color(0.85, 0.85, 1, 0.8), 1.2, 4, 5.0)
