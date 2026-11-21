@@ -128,6 +128,7 @@ func gain_xp(n: int, g: int, _src: String) -> void:
 		hp = max_hp
 		mp = max_mp
 		CombatText.add(global_position + Vector2(0, -126), "NÍVEL %d!" % level, Color(1, 0.82, 0.25), true)
+		SpellFx.level_up(get_parent(), global_position, Color(1, 0.78, 0.25))
 		save()
 
 
@@ -271,7 +272,10 @@ func skill_gain(k: String, amt: float) -> void:
 		sk[0] = int(sk[0]) + 1
 		up = true
 	if up:
-		CombatText.add(global_position + Vector2(0, -118), "%s %d!" % [Rules.skill_name(k), sk[0]], Color(0.6, 0.85, 1), true)
+		# magia: cor do elemento; Defesa (não é magia): dourado
+		var col: Color = Spellbook.ELEMENTS[k].cor if Spellbook.ELEMENTS.has(k) else Color(1, 0.78, 0.25)
+		CombatText.add(global_position + Vector2(0, -118), "%s %d!" % [Rules.skill_name(k), sk[0]], col.lightened(0.2), true)
+		SpellFx.level_up(get_parent(), global_position, col)
 
 
 ## Lança a magia `i`. Mira: no alvo se houver; senão na posição indicada; senão à frente.

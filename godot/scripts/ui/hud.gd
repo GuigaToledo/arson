@@ -125,6 +125,7 @@ func _build() -> void:
 	skill_panel.player = player
 	skill_panel.position = Vector2(8, 96)
 	skill_panel.size = Vector2(200, 84)
+	skill_panel.visible = false  # os níveis ficam só no menu
 	root.add_child(skill_panel)
 
 	# barra de magias e poções (teclas 1-6 / Numpad, Q e E; também tocável)
@@ -274,10 +275,6 @@ func _process(_d: float) -> void:
 
 func _unhandled_input(ev: InputEvent) -> void:
 	var k := ev as InputEventKey
-	if k and k.pressed and not k.echo and k.physical_keycode == KEY_K and get_viewport().gui_get_focus_owner() == null:
-		skill_panel.visible = not skill_panel.visible
-		get_viewport().set_input_as_handled()
-		return
 	if k and k.pressed and not k.echo and (k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER) and not chat_input.visible:
 		_open_chat()
 		get_viewport().set_input_as_handled()

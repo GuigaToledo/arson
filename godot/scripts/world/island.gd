@@ -130,6 +130,8 @@ func start_game(slot: int) -> void:
 	gm.on_equip = hud._toggle_panel
 	gm.on_full = hud._fullscreen
 	for arg in OS.get_cmdline_user_args():
+		if str(arg) == "--teste-levelup":
+			player.skill_gain(player.elem_a(), Rules.skill_need(player.elem_a(), player.elem_level(player.elem_a())))
 		if str(arg).begins_with("--teste-vermenu="):
 			gm.toggle()
 			gm._show(int(str(arg).split("=")[1]))

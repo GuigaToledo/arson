@@ -71,6 +71,17 @@ static func ring(parent: Node, pos: Vector2, radius_tiles: float, color: Color, 
 	return r
 
 
+## Subiu de nível: anéis no chão, coluna de faíscas subindo e um clarão, na cor dada
+## (dourado = nível do personagem ou Defesa; cor do elemento = nível de magia).
+static func level_up(parent: Node, pos: Vector2, color: Color) -> void:
+	ring(parent, pos, 1.1, color, 0.7)
+	var r2 := ring(parent, pos, 1.6, color.lightened(0.3), 1.0)
+	r2.modulate.a = 0.7
+	burst(parent, pos + Vector2(0, -6), 60, 45.0, 1.3, 0.09, color.lightened(0.4), color, 200.0)
+	burst(parent, pos + Vector2(0, -50), 26, 110.0, 0.7, 0.07, Color(1, 1, 1), color, 40.0)
+	flash(parent, pos + Vector2(0, -40), color, 1.6, 1.3, 0.9)
+
+
 ## Raio que pula de um ponto a outro (corrente elétrica).
 static func lightning(parent: Node, pts: Array) -> void:
 	var z := Lightning.new()
