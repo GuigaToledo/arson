@@ -768,7 +768,15 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 		ev2.pressed = false
 		get_viewport().push_input(ev2)
 		await get_tree().process_frame
-		res.append("%d:%s" % [j + 1, "ok" if j < player.bar.size() and player.bar[j] == want else "FALHOU(%s)" % str(r)])
+		var okj: bool = j < player.bar.size() and player.bar[j] == want
+		if not okj:
+			var hits := []
+			for c in get_tree().root.find_children("*", "Control", true, false):
+				if c.is_visible_in_tree() and c.mouse_filter != Control.MOUSE_FILTER_IGNORE and c.get_global_rect().has_point(ev.position):
+					hits.append("%s(%s)" % [c.name, c.get_class()])
+			res.append("%d:FALHOU bar=%s em=%s" % [j + 1, player.bar, hits])
+		else:
+			res.append("%d:ok" % (j + 1))
 	print("TESTE barra ", res, " arvore=", tr.get_global_rect(), " tela=", get_viewport().get_visible_rect().size)
 	gm.toggle()
 	var lv := {}
