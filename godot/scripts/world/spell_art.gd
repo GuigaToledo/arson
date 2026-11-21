@@ -364,6 +364,8 @@ static func fire_patch(parent: Node, pos: Vector2, rx: float, dur: float, count 
 
 
 # ------------------------------------------------------------ projéteis (magia 1 e fusão 7)
+## Projétil voando: corpo alongado com cauda afinando e pedacinhos do elemento soltando pelo
+## caminho (gotas, folhas, brasas, lascas de gelo, pedrinhas, fiapos de vento). Sem bolinhas.
 class Proj:
 	extends Node2D
 	var el := "fogo"
@@ -378,9 +380,12 @@ class Proj:
 	var _dist := 1.0
 	var _trail := []
 	var _light: PointLight2D
+	## pedacinhos soltos: [pos global, vel, vida, vida_max, rot, giro]
+	var _bits := []
+	var _spawn := 0.0
 
 	func _ready() -> void:
-		material = SpellFx._add_mat() if el != "terra" and el != "natureza" and el != "lava" else null
+		material = SpellFx._add_mat() if el == "fogo" or el == "raio" else null
 		z_index = 5
 		_from = global_position
 		_last = target.global_position
@@ -396,87 +401,152 @@ class Proj:
 		var to := _last - _from
 		var k := clampf(_t * speed / maxf(1.0, to.length()), 0.0, 1.0)
 		var p := _from.lerp(_last, k)
-		# Pedrada e estaca: arco com gravidade; o resto vai reto na altura do peito
 		var h := 44.0
 		if el == "terra":
 			h = 44.0 + sin(k * PI) * minf(120.0, to.length() * 0.35)
 		global_position = p
 		_light.position = Vector2(0, -h)
 		_trail.push_front(Vector2(0, -h) + global_position)
-		if _trail.size() > 10:
+		if _trail.size() > 9:
 			_trail.pop_back()
-		# rastro de partículas com gravidade
-		if Engine.get_process_frames() % 3 == 0:
+		# solta pedacinhos do elemento
+		_spawn -= delta
+		if _spawn <= 0.0 and k < 1.0:
+			_spawn = 0.035
+			var dir := to.normalized()
+			var side := Vector2(-dir.y, dir.x)
+			var v := -dir * randf_range(20, 70) + side * randf_range(-50, 50)
 			match el:
-				"fogo": SpellArt.parts(get_parent(), global_position + Vector2(0, -h), 3, 25.0, 0.5, 0.05, Color(1, 0.8, 0.3), Color(0.7, 0.1, 0.0), -60.0)
-				"lava": SpellArt.parts(get_parent(), global_position + Vector2(0, -h), 2, 15.0, 0.6, 0.05, Color(1, 0.6, 0.15), Color(0.5, 0.05, 0.0), 260.0)
-				"agua": SpellArt.parts(get_parent(), global_position + Vector2(0, -h), 3, 30.0, 0.5, 0.035, Color(0.7, 0.9, 1), Color(0.2, 0.4, 1), 300.0)
-				"gelo": SpellArt.parts(get_parent(), global_position + Vector2(0, -h), 2, 20.0, 0.6, 0.03, Color(1, 1, 1), Color(0.6, 0.85, 1), 40.0)
-				"vento": SpellArt.parts(get_parent(), global_position + Vector2(0, -h), 2, 30.0, 0.4, 0.04, Color(0.9, 1, 0.95), Color(0.5, 0.9, 0.8), 0.0)
-				"terra": SpellArt.parts(get_parent(), global_position + Vector2(0, -h), 1, 10.0, 0.5, 0.04, Color(0.6, 0.5, 0.4), Color(0.3, 0.25, 0.2), 200.0, 180.0, Vector2.UP, false)
+				"agua", "lava": v += Vector2(0, -randf_range(10, 60))
+				"natureza": v += Vector2(0, -randf_range(0, 30))
+				"fogo": v += Vector2(0, -randf_range(30, 70))
+			var life := randf_range(0.35, 0.7)
+			_bits.append([global_position + Vector2(0, -h) + side * randf_range(-5, 5), v, life, life, randf() * TAU, randf_range(-8, 8)])
+		for bt in _bits:
+			bt[2] -= delta
+			var g := 0.0
+			match el:
+				"agua", "lava", "terra", "gelo": g = 380.0
+				"natureza": g = 60.0
+				"fogo": g = -40.0
+			bt[1] += Vector2(0, g * delta)
+			if el == "natureza":
+				var vv: Vector2 = bt[1]
+				vv.x += sin(_t * 9.0 + float(bt[4])) * 40.0 * delta
+				bt[1] = vv
+			bt[0] += bt[1] * delta
+			bt[4] += float(bt[5]) * delta
+		_bits = _bits.filter(func(bt): return bt[2] > 0.0)
 		queue_redraw()
 		if k >= 1.0:
 			if on_hit.is_valid() and is_instance_valid(target):
 				on_hit.call()
+			_detach_bits()
 			queue_free()
+
+	## os pedacinhos que ainda estão no ar continuam caindo depois do impacto
+	func _detach_bits() -> void:
+		if _bits.is_empty() or not is_instance_valid(get_parent()):
+			return
+		var bits := _bits.duplicate(true)
+		var e := el
+		SpellArt.fxn(get_parent(), Vector2.ZERO, 0.7, func(n: DrawFx, k: float):
+			for bt in bits:
+				var q: Vector2 = bt[0] + bt[1] * k * 0.7 + Vector2(0, 190.0 * k * k * 0.5)
+				SpellArt.bit(n, e, q, float(bt[4]) + k * float(bt[5]), (1.0 - k) * float(bt[2]) / float(bt[3])))
+
+	## cauda afinando a partir da cabeça (faixas de quadriláteros: sem bolinhas)
+	func _tail(w0: float, col: Color, col2: Color) -> void:
+		var n := _trail.size()
+		if n < 3:
+			return
+		var L := []
+		var R := []
+		for i in n:
+			var q: Vector2 = _trail[i] - global_position
+			var dv: Vector2 = _trail[maxi(0, i - 1)] - _trail[mini(n - 1, i + 1)]
+			var nx := Vector2(-dv.y, dv.x).normalized() if dv.length() > 0.01 else Vector2.UP
+			var w := w0 * (1.0 - float(i) / n)
+			L.append([q + nx * w, q + nx * w * 0.45])
+			R.append([q - nx * w, q - nx * w * 0.45])
+		for i in n - 1:
+			var f := 1.0 - float(i) / n
+			draw_colored_polygon(PackedVector2Array([L[i][0], L[i + 1][0], R[i + 1][0], R[i][0]]), Color(col, col.a * f))
+			draw_colored_polygon(PackedVector2Array([L[i][1], L[i + 1][1], R[i + 1][1], R[i][1]]), Color(col2, col2.a * f))
 
 	func _draw() -> void:
 		var c: Vector2 = _trail[0] - global_position if _trail.size() > 0 else Vector2(0, -44)
 		var dir := (_last - _from).normalized()
+		var nrm := Vector2(-dir.y, dir.x)
 		var s := 1.8 if big else 1.0
-		var col := SpellArt.cor(el)
+		for bt in _bits:
+			SpellArt.bit(self, el, bt[0] - global_position, float(bt[4]), float(bt[2]) / float(bt[3]))
 		match el:
 			"fogo":
-				for i in range(_trail.size() - 1, 0, -1):
-					var q: Vector2 = _trail[i] - global_position
-					draw_circle(q, (9.0 - i * 0.7) * s, Color(1, 0.35 + i * 0.03, 0.05, 0.35 - i * 0.03))
-				# bola de fogo com chamas viradas para trás (cometa)
-				var back := -dir
-				draw_set_transform(c, back.angle() + PI * 0.5, Vector2.ONE * s)
+				_tail(9.0 * s, Color(0.95, 0.25, 0.03, 0.55), Color(1, 0.75, 0.25, 0.7))
+				draw_set_transform(c, (-dir).angle() + PI * 0.5, Vector2.ONE * s)
 				for j in 3:
-					SpellArt.flame(self, Vector2((j - 1) * 4.0, 4.0), 26.0 - absf(j - 1) * 8.0, 7.0, _t, j * 2.3)
+					SpellArt.flame(self, Vector2((j - 1) * 4.0, 4.0), 30.0 - absf(j - 1) * 9.0, 7.0, _t, j * 2.3)
 				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-				draw_circle(c, 10 * s, Color(1, 0.35, 0.05, 0.45))
-				draw_circle(c, 6.5 * s, Color(1, 0.65, 0.15))
-				draw_circle(c, 3.5 * s, Color(1, 0.95, 0.7))
+				SpellArt.poly(self, PackedVector2Array([c + dir * 9 * s, c + nrm * 6 * s, c - dir * 6 * s, c - nrm * 6 * s]), Color(1, 0.7, 0.2))
+				SpellArt.poly(self, PackedVector2Array([c + dir * 6 * s, c + nrm * 3 * s, c - dir * 3 * s, c - nrm * 3 * s]), Color(1, 0.95, 0.7))
 			"lava":
-				# bolha de magma com crosta, pingando
-				draw_circle(c, 14 * s, Color(1, 0.3, 0.05, 0.22))
-				SpellArt.lava(self, c, 9.0 * s, _t * 2.0, 7, 1.0, 1.0)
-				for i in range(1, _trail.size(), 2):
-					var q: Vector2 = _trail[i] - global_position + Vector2(0, i * 1.5)
-					draw_circle(q, maxf(1.0, (5.0 - i * 0.45) * s), Color(1, 0.45, 0.08, 0.9 - i * 0.08))
+				_tail(7.0 * s, Color(0.35, 0.08, 0.03, 0.9), Color(1, 0.42, 0.06, 0.95))
+				SpellArt.lava(self, c, 9.0 * s, _t * 2.0, 7, 1.0, 0.8)
 			"agua":
-				var pts := PackedVector2Array()
-				for q in _trail:
-					pts.append(q - global_position + Vector2(0, sin(_t * 20 + pts.size()) * 2.0))
-				if pts.size() > 1:
-					draw_polyline(pts, Color(0.25, 0.55, 1, 0.5), 9 * s, SpellArt.AA)
-					draw_polyline(pts, Color(0.6, 0.85, 1, 0.9), 4 * s, SpellArt.AA)
-				draw_circle(c, 5 * s, Color(0.85, 0.95, 1))
+				_tail(7.0 * s, Color(0.2, 0.5, 1.0, 0.55), Color(0.75, 0.92, 1.0, 0.8))
+				SpellArt.poly(self, PackedVector2Array([c + dir * 10 * s, c + nrm * 5 * s, c - dir * 6 * s, c - nrm * 5 * s]), Color(0.6, 0.85, 1.0, 0.95))
 			"gelo":
-				var n := Vector2(-dir.y, dir.x)
-				var tip := c + dir * 13 * s
-				SpellArt.poly(self, PackedVector2Array([tip, c + n * 5 * s, c - dir * 10 * s, c - n * 5 * s]), Color(0.75, 0.92, 1, 0.95))
-				draw_line(c - dir * 9 * s, tip, Color(1, 1, 1), 1.5, SpellArt.AA)
-				draw_circle(c, 10 * s, Color(0.6, 0.85, 1, 0.2))
+				_tail(6.0 * s, Color(0.7, 0.9, 1.0, 0.3), Color(1, 1, 1, 0.35))
+				var tip := c + dir * 16 * s
+				SpellArt.poly(self, PackedVector2Array([tip, c + nrm * 5 * s, c - dir * 12 * s, c - nrm * 5 * s]), Color(0.75, 0.92, 1, 0.95))
+				draw_line(c - dir * 11 * s, tip, Color(1, 1, 1), 1.5, SpellArt.AA)
 			"vento":
+				for i in 4:
+					var off := nrm * (i - 1.5) * 6.0 * s
+					var pts := PackedVector2Array()
+					for j in 8:
+						var f := j / 7.0
+						pts.append(c + off - dir * f * 46.0 * s + nrm * sin(_t * 18.0 + f * 5.0 + i) * 4.0)
+					draw_polyline(pts, Color(0.85, 1, 0.95, 0.7 - absf(i - 1.5) * 0.15), 2.0, SpellArt.AA)
 				var a0 := dir.angle() - 1.2
-				for r in [12.0, 9.0]:
-					draw_arc(c, r * s, a0 + _t * 8.0, a0 + 2.4 + _t * 8.0, 16, Color(0.85, 1, 0.95, 0.8 if r > 10 else 0.5), 3.0, SpellArt.AA)
+				draw_arc(c, 12 * s, a0, a0 + 2.4, 16, Color(0.9, 1, 0.97, 0.9), 3.0, SpellArt.AA)
 			"terra":
 				SpellArt.rock(self, c, 9 * s, Color(0.45, 0.38, 0.3), 3, _t * 9.0)
 			"natureza":
-				# rajada de 3 espinhos
-				var n2 := Vector2(-dir.y, dir.x)
 				for i in 3:
-					var b: Vector2 = c + n2 * (i - 1) * 7 - dir * absf(i - 1) * 8
-					SpellArt.thorn(self, b - dir * 10, b + dir * 8, 2.5, Color(0.25, 0.55, 0.15))
+					var b: Vector2 = c + nrm * (i - 1) * 7 - dir * absf(i - 1) * 8
+					SpellArt.thorn(self, b - dir * 14, b + dir * 9, 2.5, Color(0.25, 0.55, 0.15))
 			_:
-				draw_circle(c, 7 * s, col)
+				SpellArt.poly(self, PackedVector2Array([c + dir * 9 * s, c + nrm * 5 * s, c - dir * 9 * s, c - nrm * 5 * s]), SpellArt.cor(el))
 
 
-## Lança a magia de alvo único. Raio é instantâneo (o raio cai do cajado no alvo).
+## Pedacinho de elemento: gota, folha, brasa, lasca de gelo, pedrinha, fiapo de vento.
+static func bit(n: CanvasItem, el: String, p: Vector2, rot: float, a: float) -> void:
+	if a <= 0.02:
+		return
+	var d := Vector2.RIGHT.rotated(rot)
+	var q := Vector2(-d.y, d.x)
+	match el:
+		"agua":
+			poly(n, PackedVector2Array([p + Vector2(0, -4), p + Vector2(2.2, 1), p + Vector2(0, 2.5), p + Vector2(-2.2, 1)]), Color(0.65, 0.88, 1, 0.85 * a))
+		"natureza":
+			poly(n, PackedVector2Array([p + d * 5, p + q * 2.2, p - d * 5, p - q * 2.2]), Color(0.35, 0.68, 0.2, a).lerp(Color(0.6, 0.8, 0.25, a), 0.5 + 0.5 * sin(rot)))
+			n.draw_line(p - d * 5, p + d * 5, Color(0.2, 0.4, 0.1, a), 0.8)
+		"fogo":
+			poly(n, PackedVector2Array([p + Vector2(0, -6), p + Vector2(2, 0), p + Vector2(0, 2), p + Vector2(-2, 0)]), Color(1, 0.6 + 0.3 * a, 0.15, a))
+		"lava":
+			poly(n, PackedVector2Array([p + Vector2(0, -4), p + Vector2(2.6, 1), p + Vector2(0, 3), p + Vector2(-2.6, 1)]), Color(1, 0.4 + 0.3 * a, 0.05, a))
+		"gelo":
+			poly(n, PackedVector2Array([p + d * 4, p + q * 1.5, p - d * 4, p - q * 1.5]), Color(0.85, 0.96, 1, 0.9 * a))
+		"terra":
+			rock(n, p, 2.5, Color(0.42, 0.35, 0.27, a), int(rot * 10.0) % 7, rot)
+		"vento":
+			n.draw_arc(p, 5.0, rot, rot + 1.8, 6, Color(0.9, 1, 0.95, 0.7 * a), 1.2)
+		_:
+			pass
+
+
 static func projectile(parent: Node, from: Vector2, target: Node2D, el: String, big: bool, els: Array, on_hit: Callable) -> void:
 	if el == "raio":
 		var b := fx(parent, Vector2.ZERO, 0.35, func(n: DrawFx, k: float):
