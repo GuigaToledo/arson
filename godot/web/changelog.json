@@ -1,5 +1,17 @@
 [
  {
+  "versao": "0.9.6",
+  "data": "2026-11-21",
+  "titulo": "Escudo novo",
+  "itens": [
+   "Escudo aguenta até 50% da sua vida máxima e segura metade de cada golpe; o escudo fundido segura o golpe inteiro",
+   "Barra do escudo por cima da vida, na cor do escudo, descendo conforme leva dano",
+   "Quando zera, o escudo quebra em cacos (animação) e precisa ser criado de novo",
+   "Escudo automático: se estiver na barra, ativa sozinho e ativa de novo quando quebra ou acaba (menu → Automação)",
+   "Cauda dos projéteis bem menor; a Bola de Fogo voltou a ser uma bola"
+  ]
+ },
+ {
   "versao": "0.9.5",
   "data": "2026-11-21",
   "titulo": "Projéteis com cara de elemento",

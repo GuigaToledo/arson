@@ -13,6 +13,7 @@ static var auto := {
 	"infinitas": false,
 	"summon_agressivo": true,
 	"summon_auto": true,
+	"escudo_auto": true,
 }
 static var zoom := 1.9
 ## 0 = automática; 1 (mais leve) a 6 (resolução total).

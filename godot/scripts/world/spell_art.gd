@@ -407,7 +407,7 @@ class Proj:
 		global_position = p
 		_light.position = Vector2(0, -h)
 		_trail.push_front(Vector2(0, -h) + global_position)
-		if _trail.size() > 9:
+		if _trail.size() > 4:
 			_trail.pop_back()
 		# solta pedacinhos do elemento
 		_spawn -= delta
@@ -491,21 +491,23 @@ class Proj:
 			SpellArt.bit(self, el, bt[0] - global_position, float(bt[4]), float(bt[2]) / float(bt[3]))
 		match el:
 			"fogo":
-				_tail(9.0 * s, Color(0.95, 0.25, 0.03, 0.55), Color(1, 0.75, 0.25, 0.7))
+				# bola de fogo redonda com chamas curtinhas para trás
+				_tail(5.0 * s, Color(0.95, 0.25, 0.03, 0.5), Color(1, 0.7, 0.2, 0.6))
 				draw_set_transform(c, (-dir).angle() + PI * 0.5, Vector2.ONE * s)
 				for j in 3:
-					SpellArt.flame(self, Vector2((j - 1) * 4.0, 4.0), 30.0 - absf(j - 1) * 9.0, 7.0, _t, j * 2.3)
+					SpellArt.flame(self, Vector2((j - 1) * 4.0, 2.0), 16.0 - absf(j - 1) * 5.0, 6.0, _t, j * 2.3)
 				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-				SpellArt.poly(self, PackedVector2Array([c + dir * 9 * s, c + nrm * 6 * s, c - dir * 6 * s, c - nrm * 6 * s]), Color(1, 0.7, 0.2))
-				SpellArt.poly(self, PackedVector2Array([c + dir * 6 * s, c + nrm * 3 * s, c - dir * 3 * s, c - nrm * 3 * s]), Color(1, 0.95, 0.7))
+				draw_circle(c, 9.5 * s, Color(0.95, 0.3, 0.04))
+				draw_circle(c + dir * 1.5 * s, 6.5 * s, Color(1, 0.62, 0.15))
+				draw_circle(c + dir * 2.5 * s, 3.5 * s, Color(1, 0.95, 0.7))
 			"lava":
-				_tail(7.0 * s, Color(0.35, 0.08, 0.03, 0.9), Color(1, 0.42, 0.06, 0.95))
+				_tail(4.5 * s, Color(0.35, 0.08, 0.03, 0.9), Color(1, 0.42, 0.06, 0.95))
 				SpellArt.lava(self, c, 9.0 * s, _t * 2.0, 7, 1.0, 0.8)
 			"agua":
-				_tail(7.0 * s, Color(0.2, 0.5, 1.0, 0.55), Color(0.75, 0.92, 1.0, 0.8))
+				_tail(4.5 * s, Color(0.2, 0.5, 1.0, 0.55), Color(0.75, 0.92, 1.0, 0.8))
 				SpellArt.poly(self, PackedVector2Array([c + dir * 10 * s, c + nrm * 5 * s, c - dir * 6 * s, c - nrm * 5 * s]), Color(0.6, 0.85, 1.0, 0.95))
 			"gelo":
-				_tail(6.0 * s, Color(0.7, 0.9, 1.0, 0.3), Color(1, 1, 1, 0.35))
+				_tail(4.0 * s, Color(0.7, 0.9, 1.0, 0.3), Color(1, 1, 1, 0.35))
 				var tip := c + dir * 16 * s
 				SpellArt.poly(self, PackedVector2Array([tip, c + nrm * 5 * s, c - dir * 12 * s, c - nrm * 5 * s]), Color(0.75, 0.92, 1, 0.95))
 				draw_line(c - dir * 11 * s, tip, Color(1, 1, 1), 1.5, SpellArt.AA)
@@ -515,7 +517,7 @@ class Proj:
 					var pts := PackedVector2Array()
 					for j in 8:
 						var f := j / 7.0
-						pts.append(c + off - dir * f * 46.0 * s + nrm * sin(_t * 18.0 + f * 5.0 + i) * 4.0)
+						pts.append(c + off - dir * f * 22.0 * s + nrm * sin(_t * 18.0 + f * 5.0 + i) * 4.0)
 					draw_polyline(pts, Color(0.85, 1, 0.95, 0.7 - absf(i - 1.5) * 0.15), 2.0, SpellArt.AA)
 				var a0 := dir.angle() - 1.2
 				draw_arc(c, 12 * s, a0, a0 + 2.4, 16, Color(0.9, 1, 0.97, 0.9), 3.0, SpellArt.AA)
@@ -927,6 +929,34 @@ static func area(parent: Node, center: Vector2, radius: float, el: String, on_im
 		_:
 			impact(parent, center, el, true)
 			on_impact.call()
+
+
+## Escudo quebrando: a bolha racha e estoura em cacos que voam girando e caem.
+static func shield_break(parent: Node, pos: Vector2, col: Color, els: Array) -> void:
+	var shards := []
+	for i in 16:
+		var a := TAU * i / 16.0 + randf_range(-0.15, 0.15)
+		var from := Vector2(cos(a) * 34.0, sin(a) * 40.0 - 44.0)
+		shards.append([from, Vector2(cos(a), sin(a) * 0.8 - 0.3) * randf_range(90, 180), randf() * TAU, randf_range(-9, 9), randf_range(5, 9)])
+	var c2 := col.lightened(0.35)
+	# rachaduras na bolha (bem rápido)
+	fx(parent, pos, 0.18, func(n: DrawFx, k: float):
+		for i in 7:
+			var a := TAU * i / 7.0
+			var p0 := Vector2(0, -44)
+			var p1 := p0 + Vector2(cos(a), sin(a)) * 18.0
+			var p2 := p1 + Vector2(cos(a + 0.4), sin(a + 0.4)) * 16.0
+			n.draw_polyline(PackedVector2Array([p0, p1, p2]), Color(1, 1, 1, 1.0 - k), 2.0))
+	fxn(parent, pos, 0.9, func(n: DrawFx, k: float):
+		for sd in shards:
+			var p: Vector2 = sd[0] + sd[1] * k + Vector2(0, 260.0 * k * k)
+			var r: float = sd[2] + sd[3] * k
+			var sz: float = sd[4] * (1.0 - k * 0.4)
+			var d := Vector2.RIGHT.rotated(r)
+			var q := Vector2(-d.y, d.x)
+			poly(n, PackedVector2Array([p + d * sz, p + q * sz * 0.5, p - d * sz * 0.7, p - q * sz * 0.4]), Color(col, 0.85 * (1.0 - k)))
+			n.draw_line(p - d * sz * 0.5, p + d * sz, Color(c2, 1.0 - k), 1.2))
+	parts(parent, pos + Vector2(0, -44), 26, 160.0, 0.6, 0.05, c2, col, 300.0, 180.0)
 
 
 ## Sem marcas no chão nem bolas de luz: só o elemento aparece.

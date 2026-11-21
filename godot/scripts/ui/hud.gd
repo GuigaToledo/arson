@@ -303,6 +303,9 @@ func _process(_d: float) -> void:
 	bars.mp = player.mp / player.max_mp
 	bars.hp_txt = "%d / %d" % [int(ceil(player.hp)), int(player.max_hp)]
 	bars.mp_txt = "%d / %d" % [int(player.mp), int(player.max_mp)]
+	bars.sh = player.shield_hp / maxf(1.0, player.shield_max) if player.shield_hp > 0.0 else 0.0
+	bars.sh_col = player.shield_col
+	bars.sh_txt = str(int(ceil(player.shield_hp)))
 	bars.title = "%s · nível %d" % [player.display_name if player.display_name != "" else MageClass.info(player.classe).nome, player.level]
 	var a := Rules.xp_to_reach(player.level)
 	var b := Rules.xp_to_reach(player.level + 1)
@@ -660,6 +663,10 @@ class StatusBars:
 
 	var hp_txt := ""
 	var mp_txt := ""
+	## escudo: fração que resta (0 = sem escudo), cor e pontos
+	var sh := 0.0
+	var sh_col := Color.WHITE
+	var sh_txt := ""
 
 	func _bar(pos: Vector2, w: float, v: float, col: Color, label: String) -> void:
 		draw_rect(Rect2(pos, Vector2(w, 16)), Color(0, 0, 0, 0.6))
@@ -681,6 +688,15 @@ class StatusBars:
 		draw_string_outline(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color.BLACK)
 		draw_string(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.4, 0.95, 0.4))
 		_bar(Vector2(72, 19), 190, hp, Color(0.72, 0.08, 0.06), "Vida " + hp_txt)
+		if sh > 0.0:
+			# barra do escudo por cima da vida, na cor do escudo, descendo com o dano
+			var sp := Vector2(72, 19)
+			draw_rect(Rect2(sp + Vector2(2, 2), Vector2(186 * clampf(sh, 0, 1), 12)), Color(sh_col, 0.78))
+			draw_rect(Rect2(sp + Vector2(2, 2), Vector2(186 * clampf(sh, 0, 1), 3)), Color(sh_col.lightened(0.5), 0.9))
+			draw_rect(Rect2(sp, Vector2(190, 16)), sh_col.lightened(0.3), false, 1.5)
+			var fnt := ThemeDB.fallback_font
+			draw_string_outline(fnt, sp + Vector2(6, 13), "Escudo " + sh_txt + "   Vida " + hp_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, 3, Color.BLACK)
+			draw_string(fnt, sp + Vector2(6, 13), "Escudo " + sh_txt + "   Vida " + hp_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1, 1, 1))
 		_bar(Vector2(72, 39), 190, mp, Color(0.12, 0.22, 0.8), "Mana " + mp_txt)
 		# experiência (barra fina dourada) e ouro
 		draw_rect(Rect2(72, 58, 190, 5), Color(0, 0, 0, 0.6))

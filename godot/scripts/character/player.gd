@@ -346,10 +346,14 @@ func take_damage(n: int, src: String) -> void:
 		n = maxi(1, int(round(n / (1.0 + 0.04 * int(skills.defesa[0])) * (0.8 if buff_t > 0.0 else 1.0))))
 		n = maxi(1, n - int(float(gear().get("defesa", 0)) * 0.6))
 	if shield_hp > 0.0:
-		var ab := minf(shield_hp, n)
+		# escudo comum segura metade de cada golpe; o fundido segura tudo
+		var part := float(n) * (1.0 if shield_els.size() > 1 else 0.5)
+		var ab := minf(shield_hp, part)
 		shield_hp -= ab
-		n -= int(ab)
+		n -= int(round(ab))
 		CombatText.add(global_position + Vector2(0, -78), "escudo -%d" % int(ab), shield_col)
+		if shield_hp <= 0.5:
+			_break_shield()
 		if n <= 0:
 			return
 	hp -= n
@@ -482,6 +486,7 @@ func spell_up(id: String) -> int:
 var skills := {}
 ## Escudo mágico (absorve dano), bênçãos e estados da Luz.
 var shield_hp := 0.0
+var shield_max := 1.0
 var shield_t := 0.0
 var shield_col := Color.WHITE
 ## Elemento(s) do escudo atual (desenho: chamas, rocha com lava, bolha d'água, gelo, vento, raios, pedra, casca).
@@ -843,7 +848,9 @@ func cast_spell(id: String, world_pos = null) -> void:
 				pw = spell_power(Spells.get_spell("fus:3", classe))
 				col = (Spellbook.ELEMENTS[elem_a()].cor as Color).lerp(Spellbook.ELEMENTS[elem_b()].cor, 0.5)
 				_msg("Escudos fundidos: %s" % Spellbook.FUSOES[classe][0], col)
-			shield_hp = pw * 1.5
+			# aguenta até 50% da vida máxima (o poder da magia só conta até esse teto)
+			shield_hp = max_hp * 0.5
+			shield_max = shield_hp
 			shield_t = float(s.dur)
 			shield_col = col
 			shield_els = els.duplicate()
@@ -1000,6 +1007,14 @@ func summons_state() -> Array:
 	return out
 
 
+## Escudo zerado: quebra em cacos com a cor do elemento.
+func _break_shield() -> void:
+	shield_hp = 0.0
+	shield_t = 0.0
+	CombatText.add(global_position + Vector2(0, -110), "Escudo quebrou!", shield_col.lightened(0.3), true)
+	SpellArt.shield_break(get_parent(), global_position, shield_col, shield_els)
+
+
 ## Estados da Luz e do escudo (contagem e efeitos por segundo).
 func _tick_states(delta: float) -> void:
 	if shield_t > 0.0:
@@ -1137,6 +1152,13 @@ func _auto_play(delta: float) -> void:
 			break
 	if A.pocao_vida and hp_pct <= float(A.pocao_vida_pct) and _pot_cd <= 0.0:
 		use_pot("hp")
+	# escudo na barra: ativa sozinho e de novo sempre que quebra ou acaba
+	if A.get("escudo_auto", true) and shield_hp <= 0.0 and _action_time <= 0.0:
+		for id in bar:
+			var sh := Spells.get_spell(str(id), classe)
+			if not sh.is_empty() and sh.type == "shield" and spell_unlocked(str(id)) and float(cds.get(str(id), 0.0)) <= 0.0 and mp >= float(sh.mana):
+				cast_spell(str(id))
+				return
 	if A.cura and heal_id != "" and hp_pct <= float(A.cura_pct) and float(cds.get(heal_id, 0.0)) <= 0.0 and _action_time <= 0.0:
 		var hm := float(Spells.get_spell(heal_id, classe).mana)
 		if mp < hm and A.pocao_mana and _pot_cd <= 0.0:
