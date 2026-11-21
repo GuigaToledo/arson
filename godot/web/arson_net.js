@@ -252,7 +252,12 @@
       if (to === uid) { S.events.push(e); return; }
       for (const c of S.conns.values()) if (c.uid === to && c.c.open) { try { c.c.send({ t: 'ev2', e }); } catch (er) { } }
     },
-    savedName() { try { return localStorage.getItem('arson-g-nome') || ''; } catch (e) { return ''; } },
+    // ?nome=Fulano no endereço tem prioridade (atalho e testes automáticos)
+    savedName() {
+      const q = (new URLSearchParams(location.search).get('nome') || '').replace(/[^\p{L}\p{N} _-]/gu, '').trim().slice(0, 16);
+      if (q) return q;
+      try { return localStorage.getItem('arson-g-nome') || ''; } catch (e) { return ''; }
+    },
     saveName(n) { try { localStorage.setItem('arson-g-nome', String(n).slice(0, 16)); } catch (e) { } },
   };
 })();
