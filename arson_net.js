@@ -186,6 +186,7 @@
       x: Math.max(-5000, Math.min(5000, +s.x)), y: Math.max(-5000, Math.min(5000, +s.y)),
       f: String(s.f || 'S').slice(0, 2), a: String(s.a || 'idle').slice(0, 8), n: String(s.n || 'Viajante').slice(0, 16), eq,
       d: s.d ? 1 : 0, sf: s.sf ? 1 : 0, l: Math.max(1, Math.min(9999, s.l | 0)), c: String(s.c || '').replace(/[^a-z]/g, '').slice(0, 8),
+      sm: Array.isArray(s.sm) ? s.sm.slice(0, 2).filter(a => Array.isArray(a) && a.length === 6).map(a => [a[0] | 0, a[1] | 0, String(a[2]).replace(/[^a-z]/g, '').slice(0, 9), a[3] ? 1 : 0, String(a[4]).slice(0, 2), String(a[5]).replace(/[^a-z]/g, '').slice(0, 8)]) : [],
     };
   }
 
