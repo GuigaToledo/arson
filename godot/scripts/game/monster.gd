@@ -4,44 +4,28 @@ extends Actor
 ## ataca (corpo a corpo ou à distância), morre, dá experiência e renasce.
 ## Arte provisória (mesmo boneco em camadas dos personagens).
 
-const TYPES := {
-	"esqueleto": {
-		"name": "Esqueleto", "sangue": "osso", "hp": 40, "atk": 6.0, "def": 0.0, "xp": 14, "gold": [1, 6], "speed": 75.0,
-		"range": 0.9, "aspd": 1.4, "aggro": 5.0, "scale": 1.0,
-		"colors": {"skin": Color(0.78, 0.74, 0.64), "under": Color(0.32, 0.3, 0.27), "hair": Color(0.78, 0.74, 0.64), "eyes": Color(1, 0.25, 0.1), "glow_eyes": true},
-		"items": ["elmo_ferro"],
-	},
-	"carnical": {
-		"name": "Carniçal", "hp": 70, "atk": 9.0, "def": 1.0, "xp": 25, "gold": [2, 10], "speed": 60.0,
-		"range": 0.9, "aspd": 1.6, "aggro": 5.0, "scale": 1.05,
-		"colors": {"skin": Color(0.38, 0.44, 0.33), "under": Color(0.22, 0.2, 0.16), "hair": Color(0.15, 0.14, 0.1), "eyes": Color(0.9, 0.85, 0.3), "glow_eyes": true},
-		"items": ["calca_tecido"],
-	},
-	"bandido": {
-		"name": "Bandido", "hp": 90, "atk": 12.0, "def": 2.0, "xp": 35, "gold": [5, 20], "speed": 95.0,
-		"range": 0.9, "aspd": 1.3, "aggro": 6.0, "scale": 1.0,
-		"colors": {"skin": Color(0.55, 0.42, 0.33), "under": Color(0.18, 0.15, 0.12), "hair": Color(0.12, 0.09, 0.06), "eyes": Color(0.2, 0.15, 0.1)},
-		"items": ["capuz_aprendiz", "gibao_verde", "calca_tecido", "botas_couro", "luvas_couro"],
-	},
-	"cultista": {
-		"name": "Cultista das Chamas", "hp": 80, "atk": 11.0, "def": 1.0, "xp": 40, "gold": [8, 25], "speed": 80.0,
-		"range": 5.0, "aspd": 1.9, "aggro": 7.0, "scale": 1.0, "proj": Color(1.0, 0.4, 0.1), "el": "fogo",
-		"colors": {"skin": Color(0.5, 0.38, 0.3), "under": Color(0.25, 0.05, 0.04), "hair": Color(0.05, 0.04, 0.04), "eyes": Color(1, 0.4, 0.1), "glow_eyes": true},
-		"items": ["tunica_aprendiz", "capuz_aprendiz", "botas_couro"],
-	},
-	"boneco": {
-		"name": "Boneco de Treino", "sangue": "palha", "hp": 1000, "atk": 1.0, "def": 0.0, "xp": 0, "gold": [0, 0], "speed": 0.0,
-		"range": 1.3, "aspd": 2.0, "aggro": 2.6, "scale": 1.0, "dummy": true,
-		"colors": {"skin": Color(0.78, 0.64, 0.36), "under": Color(0.6, 0.48, 0.25), "hair": Color(0.85, 0.72, 0.4), "eyes": Color(0.2, 0.15, 0.1)},
-		"items": ["avental_taverna"],
-	},
-	"golem": {
-		"name": "Golem de Pedra", "sangue": "pedra", "hp": 320, "atk": 24.0, "def": 6.0, "xp": 160, "gold": [30, 70], "speed": 52.0,
-		"range": 1.2, "aspd": 2.2, "aggro": 6.0, "scale": 1.55, "el": "terra",
-		"colors": {"skin": Color(0.2, 0.19, 0.19), "under": Color(0.16, 0.15, 0.15), "hair": Color(0.18, 0.17, 0.17), "eyes": Color(1, 0.6, 0.15), "glow_eyes": true, "core": true},
-		"items": [],
-	},
-}
+## Tipos de monstro: lidos de data/monstros.json (a wiki do site usa o mesmo arquivo).
+static var TYPES := _load_types()
+
+
+static func _load_types() -> Dictionary:
+	var txt := FileAccess.get_file_as_string("res://data/monstros.json")
+	var raw = JSON.parse_string(txt)
+	if not raw is Dictionary:
+		push_error("monstros.json inválido")
+		return {}
+	for k in raw:
+		var m: Dictionary = raw[k]
+		if m.has("colors"):
+			var c: Dictionary = m.colors
+			for ck in c:
+				if c[ck] is String and str(c[ck]).begins_with("#"):
+					c[ck] = Color.html(c[ck])
+		if m.has("proj") and m.proj is String:
+			m.proj = Color.html(m.proj)
+		if not m.has("items"):
+			m.items = []
+	return raw
 
 var mtype := ""
 ## Número fixo do monstro (igual em todos os jogadores: o mapa espalha sempre igual).

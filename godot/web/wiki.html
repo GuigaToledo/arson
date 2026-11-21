@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arson — Wiki</title>
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header><div class="in">
+  <a class="brand" href="./">ARSON</a>
+  <nav><a href="atualizacoes.html">Atualizações</a><a class="play" href="./?jogar">Jogar</a></nav>
+</div></header>
+<main>
+  <h1>Wiki do Arson</h1>
+  <div class="tabs" id="tabs"></div>
+  <input class="search" id="q" placeholder="Buscar…">
+  <div id="page">Carregando…</div>
+</main>
+<script>
+const SLOT = ['Cabeça', 'Peito', 'Ombros', 'Luvas', 'Pernas', 'Botas', 'Capa', 'Arma', 'Mão secundária', 'Acessório'];
+let W = null, cur = 'classes';
+const TABS = { classes: 'Classes e magias', monstros: 'Monstros', regioes: 'Regiões', itens: 'Itens', npcs: 'NPCs', regras: 'Como jogar' };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function tabs() {
+  const t = document.getElementById('tabs'); t.innerHTML = '';
+  for (const k in TABS) {
+    const b = document.createElement('span'); b.className = 'tab' + (k === cur ? ' on' : ''); b.textContent = TABS[k];
+    b.onclick = () => { cur = k; location.hash = k; render(); }; t.appendChild(b);
+  }
+}
+function match(obj) { const q = document.getElementById('q').value.trim().toLowerCase(); return !q || JSON.stringify(obj).toLowerCase().includes(q); }
+function render() {
+  tabs();
+  const p = document.getElementById('page');
+  if (!W) return;
+  let h = '';
+  if (cur === 'classes') {
+    h += '<p class="muted">Todo mago tem dois elementos e também usa a Luz. Cada elemento sobe de nível sozinho, conforme é usado. O segundo elemento da classe libera no nível 31 do primeiro.</p><div class="grid">';
+    for (const c of W.classes) { if (!match(c)) continue; h += '<div class="card"><h3>' + esc(c.nome) + '</h3><div class="muted">' + c.elementos.map(e => esc(W.elementos[e].nome)).join(' + ') + ' + Luz</div><div>' + esc(c.desc) + '</div>' + (c.fusoes.length ? '<div style="margin-top:6px">Fusões: ' + c.fusoes.map(f => '<span class="pill">' + esc(f) + '</span>').join('') + '</div>' : '') + '</div>'; }
+    h += '</div>';
+    for (const k in W.elementos) {
+      const e = W.elementos[k]; if (!match(e)) continue;
+      h += '<h2><span class="dot" style="background:' + e.cor + '"></span>' + esc(e.nome) + '</h2><div class="muted">Efeito: ' + esc(e.efeito) + '</div><div class="grid" style="margin-top:8px">';
+      e.magias.forEach((m, i) => { h += '<div class="card"><h3>' + (i + 1) + '. ' + esc(m) + '</h3><div class="muted">' + esc(k === 'luz' ? (W.luz_desc[i] || '') : (W.tipos[i + 1] || '')) + '</div></div>'; });
+      h += '</div>';
+    }
+  } else if (cur === 'monstros') {
+    const byReg = {};
+    for (const m of W.monstros) { if (!match(m)) continue; (byReg[m.regiao] = byReg[m.regiao] || []).push(m); }
+    for (const r in byReg) {
+      h += '<h2>' + esc(r) + '</h2><div class="grid">';
+      for (const m of byReg[r]) {
+        h += '<div class="card"><h3><span class="dot" style="background:' + m.cor + '"></span>' + esc(m.nome) + '</h3>';
+        h += '<div class="muted">' + esc(m.desc || '') + '</div>';
+        h += '<div><span class="stat">Vida <b>' + m.hp + '</b></span><span class="stat">Ataque <b>' + m.atk + '</b></span><span class="stat">Defesa <b>' + m.def + '</b></span><span class="stat">XP <b>' + m.xp + '</b></span><span class="stat">Ouro <b>' + m.gold + '</b></span></div>';
+        h += '<div>' + (m.distancia ? '<span class="pill">ataca de longe</span>' : '<span class="pill">corpo a corpo</span>') + (m.elemento ? '<span class="pill">' + esc(m.elemento) + '</span>' : '') + '</div>';
+        if (m.habilidades && m.habilidades.length) { h += '<ul>' + m.habilidades.map(s => '<li><b>' + esc(s.nome) + ':</b> ' + esc(s.desc) + '</li>').join('') + '</ul>'; }
+        h += '</div>';
+      }
+      h += '</div>';
+    }
+  } else if (cur === 'regioes') {
+    h += '<div class="grid">';
+    for (const r of W.regioes) { if (!match(r)) continue; h += '<div class="card"><h3>' + esc(r.nome) + '</h3><div>' + esc(r.desc) + '</div>' + (r.monstros && r.monstros.length ? '<div style="margin-top:6px">' + r.monstros.map(x => '<span class="pill">' + esc(x) + '</span>').join('') + '</div>' : '') + '</div>'; }
+    h += '</div>';
+  } else if (cur === 'itens') {
+    const bySlot = {};
+    for (const it of W.itens) { if (!match(it)) continue; (bySlot[it.slot] = bySlot[it.slot] || []).push(it); }
+    for (const s of Object.keys(bySlot).sort((a, b) => a - b)) {
+      h += '<h2>' + esc(SLOT[s] || s) + '</h2><div class="grid">';
+      for (const it of bySlot[s].sort((a, b) => a.nivel - b.nivel)) {
+        h += '<div class="card"><h3>' + esc(it.nome) + '</h3><div class="muted">' + esc(it.tipo) + ' · nível ' + it.nivel + '</div><div>' + Object.entries(it.atributos || {}).map(([k, v]) => '<span class="stat">' + esc(k) + ' <b>+' + v + '</b></span>').join('') + '</div></div>';
+      }
+      h += '</div>';
+    }
+  } else if (cur === 'npcs') {
+    h += '<div class="grid">';
+    for (const n of W.npcs) { if (!match(n)) continue; h += '<div class="card"><h3>' + esc(n.nome) + '</h3><div class="muted">' + esc(n.local) + '</div><div>' + esc(n.desc) + '</div></div>'; }
+    h += '</div>';
+  } else {
+    h += '<div class="card"><ul>' + W.regras.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul></div>';
+  }
+  p.innerHTML = h || '<p class="muted">Nada encontrado.</p>';
+}
+document.getElementById('q').addEventListener('input', render);
+if (TABS[location.hash.slice(1)]) cur = location.hash.slice(1);
+fetch('wiki.json', { cache: 'no-store' }).then(r => r.json()).then(d => { W = d; render(); })
+  .catch(() => { document.getElementById('page').textContent = 'Não consegui carregar a wiki.'; });
+tabs();
+</script>
+</body>
+</html>

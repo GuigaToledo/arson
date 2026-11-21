@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arson — Atualizações</title>
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header><div class="in">
+  <a class="brand" href="./">ARSON</a>
+  <nav><a href="wiki.html">Wiki</a><a class="play" href="./?jogar">Jogar</a></nav>
+</div></header>
+<main>
+  <h1>Registro de atualizações</h1>
+  <div id="list">Carregando…</div>
+</main>
+<script>
+fetch('changelog.json', { cache: 'no-store' }).then(r => r.json()).then(log => {
+  const el = document.getElementById('list');
+  el.innerHTML = '';
+  for (const v of log) {
+    const c = document.createElement('div');
+    c.className = 'card';
+    c.style.marginBottom = '12px';
+    const h = document.createElement('h2');
+    h.style.marginTop = '0';
+    h.textContent = 'Versão ' + v.versao + (v.titulo ? ' — ' + v.titulo : '');
+    const d = document.createElement('div');
+    d.className = 'ver';
+    d.textContent = v.data;
+    const ul = document.createElement('ul');
+    for (const t of v.itens || []) { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); }
+    c.append(h, d, ul);
+    el.appendChild(c);
+  }
+}).catch(() => { document.getElementById('list').textContent = 'Não consegui carregar o registro.'; });
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@ name: Godot - build web
 on:
   push:
     branches: [main]
-    paths: ["godot/**", "arte/**", "ferramentas/**", ".github/workflows/godot-web.yml"]
+    paths: ["godot/**", "arte/**", "ferramentas/**", "docs/**", ".github/workflows/godot-web.yml"]
   workflow_dispatch:
 
 permissions:
@@ -58,7 +58,11 @@ jobs:
           OLD=$(grep -o 'index-[0-9a-f]*.pck' index.html 2>/dev/null | head -1 || true)
           $HOME/godot --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/index.html" 2>&1 | tee export.log
           test -f index.pck
+          if grep -q '\$GODOT_' index.html; then echo "::error::shell com marcador sem substituir"; exit 1; fi
           cp godot/web/arson_net.js .
+          # site: página inicial (vem no index.html pelo shell), atualizações e wiki gerada dos dados do jogo
+          cp godot/web/atualizacoes.html godot/web/wiki.html godot/web/site.css godot/web/changelog.json .
+          python3 ferramentas/gerar_wiki.py wiki.json
           # nome único por versão: o navegador nunca mistura arquivo novo com antigo do cache
           V=${GITHUB_SHA::7}
           for p in index-*.pck; do [ -f "$p" ] && [ "$p" != "$OLD" ] && git rm -q -f "$p" || true; done
@@ -71,7 +75,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add -A index.html index.js index-*.pck version.json index.wasm index.png index.icon.png index.apple-touch-icon.png index.audio.worklet.js index.audio.position.worklet.js arson_net.js godot/assets arte
+          git add -A index.html index.js index-*.pck version.json index.wasm index.png index.icon.png index.apple-touch-icon.png index.audio.worklet.js index.audio.position.worklet.js arson_net.js atualizacoes.html wiki.html site.css changelog.json wiki.json godot/assets arte
           if git diff --cached --quiet; then echo "Nada mudou"; exit 0; fi
           git commit -m "build: jogo web (${GITHUB_SHA::7})"
           for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
