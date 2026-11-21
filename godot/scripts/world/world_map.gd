@@ -3,8 +3,9 @@ extends RefCounted
 ## Mapa em texto (godot/data/maps/*.txt). Cada caractere é um tile.
 ## ~ água  , areia  . grama  : terra  # calçamento  f floresta  r rocha
 ## = ponte/píer  H construção  T templo  @ início do jogador
+## g cemitério  j selva  k chão de caverna  R parede de caverna  b/o/y acampamentos
 
-const BLOCKED := "~H"
+const BLOCKED := "~HR"
 
 var rows: PackedStringArray = PackedStringArray()
 var w := 0
@@ -59,11 +60,12 @@ func weight_textures() -> Array:
 			var b := Color(0, 0, 0, 0)
 			match c:
 				".", "@": a.r = 1
-				":": a.g = 1
+				":", "b", "o", "y": a.g = 1
 				",": a.b = 1
 				"#", "=", "H", "T": a.a = 1
-				"f": b.r = 1
-				"r": b.g = 1
+				"f", "j": b.r = 1
+				"r", "k", "R": b.g = 1
+				"g": b.a = 1
 				_: b.b = 1
 			i0.set_pixel(x, y, a)
 			i1.set_pixel(x, y, b)

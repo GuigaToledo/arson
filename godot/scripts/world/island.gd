@@ -52,6 +52,7 @@ func _ready() -> void:
 	_build_buildings()
 	_build_details()
 	_build_lights()
+	_build_regions()
 	# câmera da tela inicial (o mundo aparece escuro ao fundo)
 	var intro := Camera2D.new()
 	intro.name = "CameraInicial"
@@ -260,6 +261,11 @@ func start_game(slot: int) -> void:
 			gm._show(int(str(arg).split("=")[1]))
 
 
+func _process(delta: float) -> void:
+	if player != null:
+		Prop.update_fades(player, delta)
+
+
 func _build_ground() -> void:
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://shaders/terrain.gdshader")
@@ -412,6 +418,106 @@ func _build_lights() -> void:
 	camp.add_child(fl)
 
 
+## Regiões do continente (gerar_mapa.py): cemitério, caverna, selva e acampamentos.
+const CAMPS := {"b": Vector2(76.5, 66.5), "o": Vector2(124.5, 74.5), "y": Vector2(106.5, 104.5)}
+var regioes: Array = []
+
+
+func _region_for(ch: String, x: int, y: int) -> Dictionary:
+	if x < 58 and y < 58:
+		return {}
+	for r in regioes:
+		if str(r.get("chars", "")).contains(ch):
+			return r
+	return {}
+
+
+func _build_regions() -> void:
+	var txt := FileAccess.get_file_as_string("res://data/regioes.json")
+	var parsed = JSON.parse_string(txt) if txt != "" else null
+	regioes = parsed if parsed is Array else []
+	for y in map.h:
+		for x in map.w:
+			if x < 58 and y < 58:
+				continue
+			var ch := map.at(x, y)
+			var r1 := map.tile_rand(x, y, 21)
+			var r2 := map.tile_rand(x, y, 22)
+			var j := Vector2(map.tile_rand(x, y, 1), map.tile_rand(x, y, 2)) * 0.6 + Vector2(0.2, 0.2)
+			var og := Vector2(x, y) + j
+			var flip := map.tile_rand(x, y, 4) > 0.5
+			var sc := 0.85 + map.tile_rand(x, y, 3) * 0.35
+			match ch:
+				"g":
+					if r1 < 0.11:
+						piece(["lapide", "lapide_cruz", "cruz"][int(r2 * 3.0)], og, og - Vector2(0.15, 0.08), Vector2(0.3, 0.16), flip, false)
+					elif r1 < 0.14:
+						var dt := piece("arvore_morta", og, og - Vector2(0.15, 0.15), Vector2(0.3, 0.3), flip, false, sc)
+						dt.fade_when_behind = true
+					elif r1 > 0.98:
+						piece("ossos", og, og, Vector2(0.05, 0.05), flip, false)
+				"R":
+					var edge := false
+					for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+						if map.walkable_grid(Vector2(x + d.x + 0.5, y + d.y + 0.5)):
+							edge = true
+					if (edge and r1 < 0.6) or r1 < 0.05:
+						piece("rochedo" if r2 < 0.5 else "rochedo2", Vector2(x + 0.5, y + 0.5), Vector2(x + 0.1, y + 0.1), Vector2(0.8, 0.8), flip, false, 0.9 + r2 * 0.3)
+				"k":
+					if r1 < 0.035:
+						piece("estalagmite", og, og - Vector2(0.15, 0.15), Vector2(0.3, 0.3), flip, false, sc)
+					elif r1 < 0.05:
+						var cr := piece("cristal", og, og - Vector2(0.1, 0.1), Vector2(0.2, 0.2), flip, false)
+						var cl := LightKit.make(Color(0.4, 0.7, 1.0), 0.6, 1.2, false, 0.0)
+						cl.position = cr.tex_foot + Vector2(0, -20)
+						cr.add_child(cl)
+					elif r1 > 0.985:
+						piece("ossos", og, og, Vector2(0.05, 0.05), flip, false)
+				"j":
+					if r1 < 0.15:
+						var nm: String = ["arvore_selva", "arvore_selva2", "arvore_escura"][int(r2 * 3.0)]
+						var jt := piece(nm, og, og - Vector2(0.2, 0.2), Vector2(0.4, 0.4), flip, false, sc)
+						jt.fade_when_behind = true
+					elif r1 < 0.22:
+						piece("samambaia", og, og, Vector2(0.05, 0.05), flip, false, sc)
+				"y", "r":
+					if r1 < (0.05 if ch == "y" else 0.09):
+						piece("pedregulho", og, og - Vector2(0.4, 0.4), Vector2(0.8, 0.8), flip, false, sc)
+	# cripta no meio do cemitério
+	var cg := Vector2(85.0, 7.0)
+	if map.at(int(cg.x), int(cg.y)) == "g":
+		piece("cripta", cg, cg, Vector2(1.67, 1.41))
+	# acampamentos: fogueira no centro, tendas em volta, totens e paliçadas nas bordas
+	for ch in CAMPS:
+		var c: Vector2 = CAMPS[ch]
+		var camp := piece("fogueira", c, c - Vector2(0.4, 0.4), Vector2(0.8, 0.8), false, false)
+		camp.fade_when_behind = false
+		Fx.fire(camp, camp.tex_foot + Vector2(0, -6), 0.5)
+		var fl := LightKit.make(Color(1.0, 0.55, 0.2), 1.2, 2.2, false, 0.2)
+		fl.range_item_cull_mask = 3
+		fl.position = camp.tex_foot + Vector2(0, -12)
+		camp.add_child(fl)
+		var tent := "tenda_orc" if ch == "o" else "tenda_couro"
+		for k in 4:
+			var a := k * PI * 0.5 + 0.6
+			var tp := c + Vector2(cos(a), sin(a)) * 3.4
+			if map.walkable_grid(tp):
+				piece(tent, tp, tp - Vector2(0.65, 0.65), Vector2(1.3, 1.3), k % 2 == 1)
+		for k in 3:
+			var a2 := k * TAU / 3.0 + 1.3
+			var tt := c + Vector2(cos(a2), sin(a2)) * 1.9
+			if map.walkable_grid(tt):
+				piece("totem" if ch != "y" else "pedregulho", tt, tt - Vector2(0.15, 0.15), Vector2(0.3, 0.3), false, false)
+		if ch != "y":
+			var x0 := c.x - 6.0
+			while x0 < c.x + 5.0:
+				for yy in [c.y - 6.5, c.y + 6.0]:
+					var pp := Vector2(x0, yy)
+					if map.walkable_grid(pp + Vector2(1.0, 0)) and map.at(int(pp.x + 1.0), int(pp.y)) != ":":
+						piece("palicada", pp, pp, Vector2(1.8, 0.25), false, false)
+				x0 += 2.1
+
+
 ## Monstros fora da vila: esqueletos e carniçais nos campos, bandidos nas florestas,
 ## cultistas e golens nos morros de rocha ao norte. Posições fixas por tile.
 func _spawn_monsters() -> void:
@@ -425,7 +531,15 @@ func _spawn_monsters() -> void:
 			var r := map.tile_rand(x, y, 11)
 			var r2 := map.tile_rand(x, y, 12)
 			var t := ""
-			if ch == "f" and r < 0.035:
+			var reg := _region_for(ch, x, y)
+			if not reg.is_empty():
+				var dens: float = float(reg.get("dens", {}).get(ch, 0.0))
+				var tab: Array = reg.get("tabela", {}).get(ch, [])
+				if r < dens and not tab.is_empty():
+					t = str(tab[int(r2 * tab.size()) % tab.size()])
+			elif x >= 58 or y >= 58:
+				pass
+			elif ch == "f" and r < 0.035:
 				t = ["bandido", "goblin", "goblin_xama", "troll_jovem", "esqueleto"][int(r2 * 5.0)]
 			elif ch == "." and r < 0.016:
 				t = ["slime_verde", "slime_verde", "slime_agua", "goblin", "esqueleto", "esqueleto_arqueiro"][int(r2 * 6.0)]
@@ -439,6 +553,17 @@ func _spawn_monsters() -> void:
 			m.name = "Monstro_%d" % n
 			m.idx = n
 			entities.add_child(m)
+			n += 1
+	# chefes de cada região (posição fixa em regioes.json)
+	for reg in regioes:
+		for b in reg.get("chefes", []):
+			var bp := Vector2(float(b["pos"][0]), float(b["pos"][1]))
+			if not map.walkable_grid(bp):
+				bp = _free_tile(bp)
+			var bm := Monster.new().configure(str(b["tipo"]), Iso.to_screen(bp))
+			bm.name = "Chefe_%d" % n
+			bm.idx = n
+			entities.add_child(bm)
 			n += 1
 	# boneco de treino logo fora da vila (um só, fixo no lugar para treinar parado) (fora do calçamento, chão livre)
 	var placed: Array = []

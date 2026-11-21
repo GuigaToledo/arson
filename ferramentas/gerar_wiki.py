@@ -62,6 +62,7 @@ for k, m in mons_raw.items():
 monstros.sort(key=lambda x: x['xp'])
 
 regioes = json.load(open(f'{G}/data/regioes.json', encoding='utf-8')) if os.path.exists(f'{G}/data/regioes.json') else []
+regioes = [{'nome': r['nome'], 'desc': r['desc'], 'monstros': [m['nome'] for m in monstros if m['regiao'] == r['nome']]} for r in regioes]
 
 npcs = [
     {'nome': 'Guarda do Templo', 'local': 'Templo da vila', 'desc': 'Vigia a entrada do templo, onde todo aventureiro começa.'},

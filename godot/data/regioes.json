@@ -1,0 +1,200 @@
+[
+ {
+  "nome": "Ilha inicial",
+  "desc": "A ilha da vila e do templo, onde todo aventureiro começa. Bandidos e cultistas rondam as matas e as estradas.",
+  "chars": ""
+ },
+ {
+  "nome": "Morros de Pedra",
+  "desc": "Rochedos ao norte da ilha, guardados por golens de pedra.",
+  "chars": ""
+ },
+ {
+  "nome": "Campos de Brumavale",
+  "desc": "Planície verde do outro lado da ponte leste. Terra de slimes, goblins desgarrados, trolls jovens e esqueletos antigos: o primeiro passo fora da ilha.",
+  "chars": ".f",
+  "continente": true,
+  "dens": {
+   ".": 0.013,
+   "f": 0.02
+  },
+  "tabela": {
+   ".": [
+    "slime_verde",
+    "slime_verde",
+    "slime_agua",
+    "slime_agua",
+    "slime_magma",
+    "goblin",
+    "esqueleto",
+    "esqueleto_arqueiro",
+    "troll_jovem"
+   ],
+   "f": [
+    "lobo",
+    "goblin",
+    "goblin_lanceiro",
+    "troll_jovem",
+    "slime_verde"
+   ]
+  }
+ },
+ {
+  "nome": "Cemitério Esquecido",
+  "desc": "Ao norte dos campos, um cemitério de lápides tortas e névoa. Os mortos não descansam: zumbis, fantasmas e esqueletos guerreiros protegem a cripta do Necromante.",
+  "chars": "g",
+  "dens": {
+   "g": 0.035
+  },
+  "tabela": {
+   "g": [
+    "zumbi",
+    "zumbi",
+    "esqueleto_guerreiro",
+    "fantasma",
+    "carnical",
+    "esqueleto"
+   ]
+  },
+  "chefes": [
+   {
+    "tipo": "necromante",
+    "pos": [
+     86.5,
+     11.5
+    ]
+   }
+  ]
+ },
+ {
+  "nome": "Caverna Uivante",
+  "desc": "Maciço de rocha a nordeste, cheio de salões escuros. Morcegos nas entradas, lobos nos túneis e trolls de caverna nos salões do fundo.",
+  "chars": "k",
+  "dens": {
+   "k": 0.045
+  },
+  "tabela": {
+   "k": [
+    "morcego",
+    "morcego",
+    "morcego_vampiro",
+    "lobo",
+    "lobo",
+    "lobo_caverna",
+    "troll_caverna"
+   ]
+  },
+  "chefes": [
+   {
+    "tipo": "troll_caverna",
+    "pos": [
+     132.5,
+     22.5
+    ]
+   },
+   {
+    "tipo": "lobo_caverna",
+    "pos": [
+     138.5,
+     34.5
+    ]
+   }
+  ]
+ },
+ {
+  "nome": "Selva Rubra",
+  "desc": "Selva densa ao sul, de árvores enormes e samambaias. Ursos, panteras, onças e aranhas caçam entre as folhas; três acampamentos se escondem em clareiras.",
+  "chars": "j",
+  "dens": {
+   "j": 0.011
+  },
+  "tabela": {
+   "j": [
+    "urso",
+    "pantera",
+    "onca",
+    "aranha",
+    "aranha",
+    "aranha_gigante"
+   ]
+  }
+ },
+ {
+  "nome": "Acampamento Goblin",
+  "desc": "Clareira cercada de paliçadas e tendas de couro a sudoeste. Goblins, xamãs e lanceiros servem ao Rei Goblin.",
+  "chars": "b",
+  "dens": {
+   "b": 0.07
+  },
+  "tabela": {
+   "b": [
+    "goblin",
+    "goblin",
+    "goblin_xama",
+    "goblin_lanceiro"
+   ]
+  },
+  "chefes": [
+   {
+    "tipo": "rei_goblin",
+    "pos": [
+     78.5,
+     68.5
+    ]
+   }
+  ]
+ },
+ {
+  "nome": "Acampamento Orc",
+  "desc": "Fortim orc no coração da selva, com totens de guerra. Guerreiros e xamãs orcs obedecem ao Chefe Orc.",
+  "chars": "o",
+  "dens": {
+   "o": 0.06
+  },
+  "tabela": {
+   "o": [
+    "orc",
+    "orc",
+    "orc_xama"
+   ]
+  },
+  "chefes": [
+   {
+    "tipo": "chefe_orc",
+    "pos": [
+     126.5,
+     76.5
+    ]
+   }
+  ]
+ },
+ {
+  "nome": "Acampamento dos Ciclopes",
+  "desc": "Entre colinas de pedra no extremo sul, ciclopes empilham pedregulhos e arremessam rochas em quem se aproxima.",
+  "chars": "yr",
+  "continente": true,
+  "dens": {
+   "y": 0.045,
+   "r": 0.02
+  },
+  "tabela": {
+   "y": [
+    "ciclope_jovem",
+    "ciclope_jovem",
+    "ciclope"
+   ],
+   "r": [
+    "ciclope_jovem"
+   ]
+  },
+  "chefes": [
+   {
+    "tipo": "ciclope",
+    "pos": [
+     108.5,
+     106.5
+    ]
+   }
+  ]
+ }
+]

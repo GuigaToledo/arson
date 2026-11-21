@@ -76,15 +76,46 @@ func _ready() -> void:
 			_bounds.position.x = -_bounds.position.x - _bounds.size.x
 		_bounds.position += tex_foot
 		_bounds = _bounds.grow(-_bounds.size.x * 0.08)
-	set_process(fade_when_behind)
+	set_process(false)
+	if fade_when_behind or tex != null:
+		var k := _cell(global_position)
+		if not _cells.has(k):
+			_cells[k] = []
+		_cells[k].append(self)
 
 
-func _process(delta: float) -> void:
-	if _player == null:
-		_player = get_tree().get_first_node_in_group("player")
-		if _player == null:
-			return
-	var lp := _player.global_position - global_position
+## Transparência central: só as peças perto do jogador são testadas a cada quadro
+## (antes cada árvore rodava o próprio _process, pesado com o mapa grande).
+static var _cells := {}
+const CELL := 512.0
+
+
+static func _cell(p: Vector2) -> Vector2i:
+	return Vector2i(floori(p.x / CELL), floori(p.y / CELL))
+
+
+static func update_fades(pl: Node2D, delta: float) -> void:
+	if pl == null or not is_instance_valid(pl):
+		return
+	var c := _cell(pl.global_position)
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var arr = _cells.get(c + Vector2i(dx, dy))
+			if arr == null:
+				continue
+			for pr in arr:
+				if is_instance_valid(pr) and pr.fade_when_behind:
+					pr._fade_step(pl, delta)
+
+
+func _exit_tree() -> void:
+	var arr = _cells.get(_cell(global_position))
+	if arr != null:
+		arr.erase(self)
+
+
+func _fade_step(pl: Node2D, delta: float) -> void:
+	var lp := pl.global_position - global_position
 	var behind := lp.y < 0.0 and _bounds.grow(6).has_point(lp + Vector2(0, -35))
 	_fade = move_toward(_fade, 0.35 if behind else 1.0, delta * 3.0)
 	modulate.a = _fade

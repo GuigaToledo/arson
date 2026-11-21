@@ -338,6 +338,132 @@ def tree(name, base, seed, pine=False):
     c.save(name)
 
 
+def habitat_pieces(stone, stone_l, dark, wood_h, iron):
+    """Peças das regiões novas: cemitério, caverna, selva e acampamentos."""
+    moss = (0.28, 0.3, 0.22)
+    grave = photo_tex('godot/assets/textures/stone_c.jpg', 0.55)
+    # lápides
+    for k in range(2):
+        c = Canvas(120, 150, (60, 120))
+        c.box(-0.3, -0.12, 0, 0.6, 0.24, 0.12, grave)
+        if k == 0:
+            c.box(-0.22, -0.07, 0.12, 0.44, 0.14, 0.7, grave)
+            c.cylinder(0, 0, 0.72, 0.22, 0.1, grave)
+        else:
+            c.box(-0.06, -0.06, 0.12, 0.12, 0.12, 0.95, grave)
+            c.box(-0.28, -0.06, 0.62, 0.56, 0.12, 0.12, grave)
+
+        c.save('lapide' if k == 0 else 'lapide_cruz')
+    # cruz de madeira torta
+    c = Canvas(110, 160, (55, 130))
+    c.box(-0.05, -0.05, 0, 0.1, 0.1, 1.1, dark)
+    c.box(-0.3, -0.04, 0.72, 0.6, 0.08, 0.08, dark)
+    c.save('cruz')
+    # cerca de ferro
+    c = Canvas(260, 170, (40, 125))
+    for i in range(9):
+        c.box(i * 0.4, 0, 0, 0.05, 0.05, 1.0 + 0.15 * (i % 2), iron)
+    c.box(-0.05, 0.0, 0.25, 3.35, 0.05, 0.06, iron)
+    c.box(-0.05, 0.0, 0.85, 3.35, 0.05, 0.06, iron)
+    c.save('cerca_ferro')
+    # cripta (mausoléu)
+    c = Canvas(330, 330, (165, 200))
+    L, D = 2.6, 2.2
+    c.box(0, 0, 0, L, D, 0.3, grave, uv_side=(2, 1))
+    c.box(0.1, 0.1, 0.3, L - 0.2, D - 0.2, 1.9, stone, uv_side=(2, 2))
+    c.face((L / 2 - 0.4, D - 0.09, 1.75), (0.8, 0, 0), (0, 0, -1.45), np.zeros((4, 4, 3)) + 0.02, 1.0)
+    for px in (L / 2 - 0.7, L / 2 + 0.55):
+        c.box(px, D - 0.15, 0.3, 0.16, 0.16, 1.9, stone_l)
+    slate = shingles(base=(0.12, 0.12, 0.14), seed=81, rows=8)
+    c.roof(-0.15, -0.15, 2.2, L + 0.3, D + 0.3, 0.8, slate, stone)
+    c.box(L / 2 - 0.05, D / 2 - 0.05, 3.0, 0.1, 0.1, 0.6, stone_l)
+    c.box(L / 2 - 0.22, D / 2 - 0.05, 3.35, 0.44, 0.1, 0.1, stone_l)
+    c.glow((L / 2, D, 1.0), 26, (0.45, 0.9, 0.55), 0.6)
+
+    c.save('cripta')
+    # árvore morta (galhos secos)
+    c = Canvas(220, 280, (110, 250))
+    bark = noise_tex(64, 128, (0.17, 0.14, 0.12), 0.3, 3, 90, 0.2)
+    c.cylinder(0, 0, 0, 0.22, 2.4, bark, bulge=-0.05)
+    r = np.random.default_rng(91)
+    for i in range(6):
+        ang = i / 6 * 2 * np.pi + r.random() * 0.5
+        z = 1.4 + r.random() * 1.0
+        for j in range(14):
+            d = 0.12 + j * 0.06
+            c.blob(np.cos(ang) * d, np.sin(ang) * d, z + j * 0.055 + (j / 14) ** 2 * 0.3, 0.07 - j * 0.0035, bark, rough=0.05)
+    c.save('arvore_morta')
+    # ossos no chão
+    c = Canvas(130, 80, (65, 50))
+    bone = noise_tex(32, 32, (0.78, 0.74, 0.62), 0.15, 3, 95)
+    c.box(-0.4, -0.04, 0, 0.8, 0.08, 0.07, bone)
+    c.box(0.0, -0.3, 0, 0.07, 0.6, 0.07, bone)
+    c.blob(0.3, 0.25, 0.1, 0.14, bone, rough=0.08)
+    c.save('ossos')
+    # caverna: rochedo grande, estalagmite e cristal
+    cave = noise_tex(128, 128, (0.3, 0.28, 0.26), 0.3, 5, 99, 0.25)
+    for k in range(2):
+        c = Canvas(300, 320, (150, 230))
+        r = np.random.default_rng(100 + k)
+        for i in range(5):
+            c.blob(r.random() * 1.0 - 0.5, r.random() * 1.0 - 0.5, 0.5 + r.random() * 1.2 + i * 0.25, 0.7 + r.random() * 0.4, cave, ry=0.75, rough=0.12)
+        c.save('rochedo' if k == 0 else 'rochedo2')
+    c = Canvas(120, 220, (60, 190))
+    for i in range(6):
+        c.cylinder(0, 0, i * 0.3, 0.3 - i * 0.045, 0.32, cave)
+    c.save('estalagmite')
+    c = Canvas(130, 170, (65, 140))
+    crys = noise_tex(32, 32, (0.35, 0.55, 0.85), 0.25, 3, 110)
+    for (x, y, h) in ((0, 0, 1.1), (0.22, 0.1, 0.7), (-0.2, 0.12, 0.6)):
+        c.box(x - 0.08, y - 0.08, 0, 0.16, 0.16, h, crys, light=1.3)
+    c.glow((0, 0, 0.6), 30, (0.4, 0.7, 1.0), 0.9)
+    c.save('cristal')
+    # selva: árvore grande com copa larga, palmeira-de-folhas e samambaia
+    tree('arvore_selva', (0.08, 0.2, 0.07), 120)
+    tree('arvore_selva2', (0.15, 0.22, 0.05), 121)
+    c = Canvas(220, 160, (110, 120))
+    lv = leaves((0.12, 0.26, 0.08), 130)
+    r = np.random.default_rng(131)
+    for i in range(7):
+        a = i / 7 * 2 * np.pi
+        c.blob(np.cos(a) * 0.5, np.sin(a) * 0.5, 0.25 + r.random() * 0.2, 0.42, lv, ry=0.5, rough=0.3)
+    c.blob(0, 0, 0.45, 0.45, lv, ry=0.6, rough=0.3)
+    c.save('samambaia')
+    # acampamentos: paliçada, tenda de couro, totem
+    logs = wood_tex(seed=140, base=(0.24, 0.17, 0.1), planks=1)
+    c = Canvas(260, 220, (40, 170))
+    for i in range(7):
+        h = 1.6 + 0.2 * math.sin(i * 1.7)
+        c.cylinder(i * 0.45, 0, 0, 0.2, h, logs)
+        c.cylinder(i * 0.45, 0, h, 0.12, 0.2, logs)
+    c.box(-0.1, 0.15, 0.9, 3.1, 0.06, 0.1, dark)
+    c.save('palicada')
+    hide = noise_tex(128, 128, (0.42, 0.3, 0.2), 0.25, 5, 150, 0.1)
+    for k, base in enumerate([(0.42, 0.3, 0.2), (0.3, 0.32, 0.22)]):
+        hide = noise_tex(128, 128, base, 0.25, 5, 150 + k, 0.1)
+        c = Canvas(260, 260, (130, 190))
+        top = (0, 0, 2.3)
+        b = [(-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)]
+        for (p, q, sh) in ((b[0], b[3], 0.55), (b[3], b[2], 0.8), (b[2], b[1], 0.5)):
+            c.face((p[0], p[1], 0), (q[0] - p[0], q[1] - p[1], 0), (top[0] - p[0], top[1] - p[1], 2.3), hide, sh, tri=True)
+        c.face((-0.25, 1.0, 0.9), (0.5, 0, 0), (0, 0, -0.9), np.zeros((4, 4, 3)) + 0.04, 1.0)
+        for (x, y) in ((0.15, 0.1), (-0.12, 0.12)):
+            c.box(x - 0.03, y - 0.03, 2.2, 0.06, 0.06, 0.55, dark)
+        c.save('tenda_couro' if k == 0 else 'tenda_orc')
+    c = Canvas(130, 300, (65, 270))
+    tot = wood_tex(seed=160, base=(0.3, 0.2, 0.12), planks=1)
+    c.cylinder(0, 0, 0, 0.26, 2.8, tot, bands=(0.3, 0.55, 0.8), band_tex=noise_tex(16, 16, (0.55, 0.15, 0.1), 0.2, 2, 161))
+    c.box(-0.6, -0.08, 2.2, 1.2, 0.16, 0.2, tot)
+    c.blob(0, 0, 3.0, 0.24, noise_tex(32, 32, (0.78, 0.74, 0.62), 0.15, 3, 162), rough=0.1)
+    c.save('totem')
+    # rochas de ciclope (pedra rolada gigante)
+    c = Canvas(280, 260, (140, 190))
+    rk = noise_tex(128, 128, (0.4, 0.37, 0.33), 0.3, 5, 170, 0.25)
+    c.blob(0, 0, 0.9, 1.1, rk, ry=0.85, rough=0.1)
+    c.blob(0.7, 0.5, 0.4, 0.5, rk, ry=0.8, rough=0.1)
+    c.save('pedregulho')
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     wood = wood_tex(seed=1)
@@ -491,6 +617,8 @@ def main():
         for i in range(3 + k):
             c.blob(r.random() * 0.8 - 0.4, r.random() * 0.8 - 0.4, 0.25 + r.random() * 0.2, 0.45 + r.random() * 0.35, stone, ry=0.7, rough=0.25)
         c.save('pedra' if k == 0 else 'pedra2')
+
+    habitat_pieces(stone, stone_l, dark, wood_h, iron)
 
     import json
     json.dump(ANCHORS, open(os.path.join(OUT, 'ancoras.json'), 'w'), indent=1)

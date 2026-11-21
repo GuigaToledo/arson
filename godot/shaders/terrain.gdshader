@@ -1,6 +1,6 @@
 shader_type canvas_item;
 // Chão da ilha: mistura texturas reais (ambientCG, CC0) conforme o mapa em texto.
-// w0 = grama, terra, areia, calçamento | w1 = floresta, rocha, água, -
+// w0 = grama, terra, areia, calçamento | w1 = floresta, rocha, água, terra amaldiçoada (cemitério)
 
 uniform vec2 map_size = vec2(56.0, 56.0);
 uniform sampler2D w0 : filter_linear, repeat_disable;
@@ -32,7 +32,7 @@ void fragment() {
 	float n = vnoise(g * 2.7) * 0.6 + vnoise(g * 8.0) * 0.4;
 	vec4 a = pow(texture(w0, wuv) * (0.7 + n * 0.6), vec4(3.0));
 	vec4 b = pow(texture(w1, wuv) * (0.7 + n * 0.6), vec4(3.0));
-	float sum = a.r + a.g + a.b + a.a + b.r + b.g + b.b + 0.0001;
+	float sum = a.r + a.g + a.b + a.a + b.r + b.g + b.b + b.a + 0.0001;
 	a /= sum;
 	b /= sum;
 
@@ -42,7 +42,8 @@ void fragment() {
 		+ texture(cores, vec3(uv, 2.0)).rgb * a.b
 		+ texture(cores, vec3(uv, 3.0)).rgb * a.a
 		+ texture(cores, vec3(uv, 4.0)).rgb * b.r
-		+ texture(cores, vec3(uv * 0.7, 5.0)).rgb * b.g;
+		+ texture(cores, vec3(uv * 0.7, 5.0)).rgb * b.g
+		+ mix(texture(cores, vec3(uv, 1.0)).rgb, texture(cores, vec3(uv, 0.0)).rgb, 0.35) * vec3(0.42, 0.4, 0.47) * b.a;
 
 	float t = TIME;
 	vec3 water = mix(vec3(0.04, 0.11, 0.13), vec3(0.10, 0.22, 0.23), vnoise(g * 1.6 + vec2(t * 0.25, t * 0.15)));
@@ -52,7 +53,7 @@ void fragment() {
 	col *= 1.0 - 0.35 * smoothstep(0.05, 0.5, b.b) * (1.0 - b.b);
 
 	vec3 nm = texture(normais, vec3(uv, 0.0)).rgb * (a.r + b.r)
-		+ texture(normais, vec3(uv, 1.0)).rgb * (a.g + a.b)
+		+ texture(normais, vec3(uv, 1.0)).rgb * (a.g + a.b + b.a)
 		+ texture(normais, vec3(uv, 2.0)).rgb * (a.a + b.g)
 		+ vec3(0.5, 0.5, 1.0) * b.b;
 	COLOR = vec4(col, 1.0);

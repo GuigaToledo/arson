@@ -35,6 +35,7 @@ var info: Dictionary = {}
 var hp := 1.0
 var max_hp := 1.0
 var home := Vector2.ZERO
+var _far := false
 var foe: Node2D = null
 var dead := false
 var hurt_t := 0.0
@@ -141,8 +142,11 @@ func _physics_process(delta: float) -> void:
 	if foe == null and _scan <= 0.0:
 		_scan = 0.4
 		var p := _player()
+		_far = p == null or Rules.gdist(global_position, p.global_position) > 24.0
 		if _valid_foe(p) and Rules.gdist(global_position, p.global_position) < float(info.aggro):
 			foe = p
+	if foe == null and _far:
+		return  # longe de todos: dorme (mapa grande, muitos monstros)
 	var d := Vector2.ZERO
 	var running := false
 	if foe != null:
