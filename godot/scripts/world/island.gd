@@ -747,6 +747,29 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 			break
 	ui.toggle()
 	gm.toggle()
+	gm._show(1)
+	# teste da barra: põe uma magia em cada uma das 8 casas tocando na tela de verdade
+	var tr: SpellTree = gm._tree
+	var res := []
+	for j in 8:
+		tr._sel_id = "luz:1" if j % 2 else "%s:1" % player.elem_a()
+		var want := tr._sel_id
+		for f in 3:
+			await get_tree().process_frame
+		if tr._slots.size() < 8:
+			res.append("sem casas")
+			break
+		var r: Rect2 = tr._slots[j]
+		var ev := InputEventScreenTouch.new()
+		ev.pressed = true
+		ev.position = tr.get_global_transform_with_canvas() * r.get_center()
+		get_viewport().push_input(ev)
+		var ev2: InputEventScreenTouch = ev.duplicate()
+		ev2.pressed = false
+		get_viewport().push_input(ev2)
+		await get_tree().process_frame
+		res.append("%d:%s" % [j + 1, "ok" if j < player.bar.size() and player.bar[j] == want else "FALHOU(%s)" % str(r)])
+	print("TESTE barra ", res, " arvore=", tr.get_global_rect(), " tela=", get_viewport().get_visible_rect().size)
 	gm.toggle()
 	var lv := {}
 	for m in get_tree().get_nodes_in_group("monsters"):

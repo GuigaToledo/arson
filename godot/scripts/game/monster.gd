@@ -205,12 +205,17 @@ func _physics_process(delta: float) -> void:
 		return
 	if foe != null and (not _valid_foe(foe) or Rules.gdist(global_position, foe.global_position) > 12.0):
 		foe = null
-	if foe == null and _scan <= 0.0:
+	if _scan <= 0.0:
 		_scan = 0.4
 		var p := _player()
 		_far = p == null or Rules.gdist(global_position, p.global_position) > 24.0
-		if _valid_foe(p) and Rules.gdist(global_position, p.global_position) < float(info.aggro):
-			foe = p
+		if foe == null:
+			if _valid_foe(p) and Rules.gdist(global_position, p.global_position) < float(info.aggro):
+				foe = p
+		elif p != null and p != foe and not info.get("dummy", false):
+			# sempre vira para quem estiver mais perto (jogador, amigo ou invocação)
+			if Rules.gdist(global_position, p.global_position) + 0.25 < Rules.gdist(global_position, foe.global_position):
+				foe = p
 	if foe == null and _far:
 		return  # longe de todos: dorme (mapa grande, muitos monstros)
 	var d := Vector2.ZERO

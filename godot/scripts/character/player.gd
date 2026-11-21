@@ -53,6 +53,11 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	get_tree().create_timer(2.5).timeout.connect(func():
+		if spells_migrated:
+			spells_migrated = false
+			CombatText.add(global_position + Vector2(0, -160), "Magias reorganizadas: %s nível %d" % [Rules.skill_name(elem_a()), elem_level(elem_a())], Color(1, 0.85, 0.45), true)
+			save())
 	super()
 	add_to_group("player")
 	spawn_pos = position
@@ -191,7 +196,9 @@ func _load() -> void:
 				sk[elem_a()] = sk.magia
 			for k in skills:
 				if sk.get(k) is Array and sk[k].size() == 2:
-					skills[k] = [maxi(1, int(sk[k][0])), float(sk[k][1])]
+					skills[k] = [maxi(0 if k == elem_b() else 1, int(sk[k][0])), float(sk[k][1])]
+		if int(c.get_value("jogador", "magias_v", 1)) < 2:
+			_migrate_spells()
 	level = Rules.level_for(xp)
 	_recalc()
 	hp = max_hp
@@ -210,6 +217,7 @@ func save() -> void:
 	c.set_value("jogador", "nome", Chars.nome)
 	c.set_value("jogador", "xp", xp)
 	c.set_value("jogador", "xp_v", 2)
+	c.set_value("jogador", "magias_v", 2)
 	c.set_value("jogador", "ouro", gold)
 	c.set_value("jogador", "nivel", level)
 	c.set_value("jogador", "pocao_vida", hp_pot)
@@ -499,6 +507,42 @@ func _reset_skills() -> void:
 	skills["luz"] = [1, 0.0]
 	skills["defesa"] = [1, 0.0]
 	bar = Spells.default_bar(classe)
+
+
+## Saves de antes do esquema novo: soma todos os pontos de magia já ganhos nos dois elementos
+## e redistribui na ordem certa (primeiro elemento até o 31, o resto no segundo).
+## A barra volta para a padrão e as melhorias passam a vir do nível.
+var spells_migrated := false
+
+
+static func _pts_of(k: String, sk: Array) -> float:
+	var t := float(sk[1])
+	for l in range(1, int(sk[0])):
+		t += Rules.skill_need(k, l)
+	return t
+
+
+func _migrate_spells() -> void:
+	var a := elem_a()
+	var b := elem_b()
+	var total := _pts_of(a, skills[a]) + (_pts_of(b, skills[b]) if int(skills[b][0]) > 0 else 0.0)
+	var la := 1
+	while la < 31 and total >= Rules.skill_need(a, la):
+		total -= Rules.skill_need(a, la)
+		la += 1
+	if la < 31:
+		skills[a] = [la, total]
+		skills[b] = [0, 0.0]
+	else:
+		skills[a] = [31, 0.0]
+		var lb := 1
+		while total >= Rules.skill_need(b, lb):
+			total -= Rules.skill_need(b, lb)
+			lb += 1
+		skills[b] = [lb, total]
+	spell_pts = {}
+	bar = Spells.default_bar(classe)
+	spells_migrated = true
 
 
 func elem_a() -> String:
