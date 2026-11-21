@@ -171,7 +171,7 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 		limb(ci, p.shR, p.elbowR, p.handR, 4.8, 4.0, under.darkened(0.1))
 	ci.draw_circle(p.handL, 2.3, skin)
 	ci.draw_circle(p.handR, 2.3, skin)
-	ci.draw_line(p.neck, p.head + Vector2(0, 4), skin.darkened(0.2), 3.5, true)
+	ci.draw_line(p.neck, p.head + Vector2(0, 4), skin.darkened(0.2), 3.5, SpellArt.AA)
 	ci.draw_circle(p.head, 5.6, hair)
 	if not p.away:
 		ci.draw_circle(p.head + fwd(p, 1.8) + Vector2(0, 1.0), 4.6, skin)
@@ -189,28 +189,28 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 
 ## Membro com duas partes (braço: ombro-cotovelo-mão), afinando na ponta, juntas redondas.
 static func limb(ci: CanvasItem, a: Vector2, j: Vector2, b: Vector2, w1: float, w2: float, col: Color) -> void:
-	ci.draw_line(a, j, col.darkened(0.35), w1 + 1.4, true)
-	ci.draw_line(j, b, col.darkened(0.35), w2 + 1.4, true)
-	ci.draw_line(a, j, col, w1, true)
-	ci.draw_line(j, b, col.lightened(0.04), w2, true)
+	ci.draw_line(a, j, col.darkened(0.35), w1 + 1.4, SpellArt.AA)
+	ci.draw_line(j, b, col.darkened(0.35), w2 + 1.4, SpellArt.AA)
+	ci.draw_line(a, j, col, w1, SpellArt.AA)
+	ci.draw_line(j, b, col.lightened(0.04), w2, SpellArt.AA)
 	ci.draw_circle(j, w1 * 0.5, col)
 	# realce do lado da luz (alto à esquerda)
 	var hl := Vector2(-0.5, -0.6)
-	ci.draw_line(a + hl * w1 * 0.3, j + hl * w1 * 0.3, Color(col.lightened(0.35), 0.55), maxf(1.0, w1 * 0.3), true)
-	ci.draw_line(j + hl * w2 * 0.3, b + hl * w2 * 0.3, Color(col.lightened(0.3), 0.5), maxf(1.0, w2 * 0.3), true)
+	ci.draw_line(a + hl * w1 * 0.3, j + hl * w1 * 0.3, Color(col.lightened(0.35), 0.55), maxf(1.0, w1 * 0.3), SpellArt.AA)
+	ci.draw_line(j + hl * w2 * 0.3, b + hl * w2 * 0.3, Color(col.lightened(0.3), 0.5), maxf(1.0, w2 * 0.3), SpellArt.AA)
 
 
 ## Perna (quadril-joelho-pé) com o pé apontando para a frente.
 static func leg(ci: CanvasItem, a: Vector2, j: Vector2, b: Vector2, col: Color, p: Dictionary) -> void:
 	limb(ci, a, j, b + Vector2(0, -1.5), 6.5, 5.2, col)
-	ci.draw_line(b + Vector2(0, -1.5), b + fwd(p, 4.0) + Vector2(0, -0.5), col.darkened(0.25), 3.6, true)
+	ci.draw_line(b + Vector2(0, -1.5), b + fwd(p, 4.0) + Vector2(0, -0.5), col.darkened(0.25), 3.6, SpellArt.AA)
 
 
 static func outline(ci: CanvasItem, poly: PackedVector2Array, col: Color) -> void:
 	if poly.size() > 2:
 		var o := poly.duplicate()
 		o.append(poly[0])
-		ci.draw_polyline(o, Color(col, 0.6), 1.0, true)
+		ci.draw_polyline(o, Color(col, 0.6), 1.0, SpellArt.AA)
 
 
 static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
@@ -259,8 +259,8 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 		"boots":
 			ellipse(ci, p.footL + Vector2(0, -1.5), 3.6, 2.4, col)
 			ellipse(ci, p.footR + Vector2(0, -1.5), 3.6, 2.4, col)
-			ci.draw_line(p.footL + Vector2(0, -2), p.footL.lerp(p.kneeL, 0.4), col, 5.6, true)
-			ci.draw_line(p.footR + Vector2(0, -2), p.footR.lerp(p.kneeR, 0.4), col, 5.6, true)
+			ci.draw_line(p.footL + Vector2(0, -2), p.footL.lerp(p.kneeL, 0.4), col, 5.6, SpellArt.AA)
+			ci.draw_line(p.footR + Vector2(0, -2), p.footR.lerp(p.kneeR, 0.4), col, 5.6, SpellArt.AA)
 		"cape":
 			var bot: Vector2 = Vector2(0, -3) + p.cape
 			draw_cloth(ci, p, p.shC + Vector2(0, 1) - fwd(p, 3), bot - fwd(p, 6), p.w, p.w * 1.35, col)
@@ -282,7 +282,7 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 			ellipse(ci, p.head + Vector2(0, -4), 11.0, 4.0, col.darkened(0.2))
 			var tip: Vector2 = p.head + Vector2(0, -26) - fwd(p, 6) + lat(p, 3)
 			SpellArt.poly(ci, PackedVector2Array([p.head + lat(p, -6.5) + Vector2(0, -5), p.head + lat(p, 6.5) + Vector2(0, -5), tip]), col)
-			ci.draw_line(p.head + lat(p, -6) + Vector2(0, -6), p.head + lat(p, 6) + Vector2(0, -6), acc, 2.0, true)
+			ci.draw_line(p.head + lat(p, -6) + Vector2(0, -6), p.head + lat(p, 6) + Vector2(0, -6), acc, 2.0, SpellArt.AA)
 			ci.draw_circle(tip, 1.5, acc)
 			if p.toward:
 				ci.draw_circle(p.head + fwd(p, 2.4) + Vector2(0, 1.0), 4.3, Color(0.03, 0.02, 0.02, 0.5))
@@ -294,38 +294,38 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 				ci.draw_circle(p.head + fwd(p, 5) + Vector2(0, -5), 1.8, acc)
 		"circlet":
 			ellipse(ci, p.head + Vector2(0, -3), 6.2, 2.4, Color(0, 0, 0, 0))
-			ci.draw_arc(p.head + Vector2(0, -3), 6.0, PI * 0.05, PI * 0.95, 12, col, 1.6, true)
+			ci.draw_arc(p.head + Vector2(0, -3), 6.0, PI * 0.05, PI * 0.95, 12, col, 1.6, SpellArt.AA)
 			if p.toward:
 				ci.draw_circle(p.head + fwd(p, 5) + Vector2(0, -4), 1.7, acc)
 		"kilt":
 			SpellArt.spoly(ci, vol(p, p.hipC + Vector2(0, -3), p.w * 0.6, 5.0, p.kneeC + Vector2(0, -2), p.w * 1.05, 7.0), col)
 			for i in 5:
 				var tk := (i + 0.5) / 5.0
-				ci.draw_line((p.hipL as Vector2).lerp(p.hipR, tk), ((p.kneeL as Vector2) + lat(p, -3)).lerp((p.kneeR as Vector2) + lat(p, 3), tk), col.darkened(0.3), 1.0, true)
+				ci.draw_line((p.hipL as Vector2).lerp(p.hipR, tk), ((p.kneeL as Vector2) + lat(p, -3)).lerp((p.kneeR as Vector2) + lat(p, 3), tk), col.darkened(0.3), 1.0, SpellArt.AA)
 		"sandals":
 			for q in [p.footL, p.footR]:
 				ellipse(ci, q + Vector2(0, -1), 3.6, 1.8, col)
-				ci.draw_line(q + Vector2(-2, -2), q + Vector2(2, -4), acc, 1.0, true)
+				ci.draw_line(q + Vector2(-2, -2), q + Vector2(2, -4), acc, 1.0, SpellArt.AA)
 		"wand":
 			var hb: Vector2 = p.handR
 			var wt: Vector2 = hb + Vector2(0, -14) + fwd(p, 5)
-			ci.draw_line(hb + Vector2(0, 3), wt, col, 2.4, true)
-			ci.draw_line(hb + Vector2(0, 3), wt, col.lightened(0.25), 0.8, true)
+			ci.draw_line(hb + Vector2(0, 3), wt, col, 2.4, SpellArt.AA)
+			ci.draw_line(hb + Vector2(0, 3), wt, col.lightened(0.25), 0.8, SpellArt.AA)
 			ci.draw_circle(wt, 3.6, Color(acc, 0.25))
 			SpellArt.poly(ci, PackedVector2Array([wt + Vector2(0, -4), wt + Vector2(2.2, 0), wt + Vector2(0, 2.5), wt + Vector2(-2.2, 0)]), acc)
 		"rod":
 			var top2 := staff_top(p)
 			var base2: Vector2 = p.handR + Vector2(0, 24) + fwd(p, 2)
-			ci.draw_line(base2, top2, col, 3.2, true)
-			ci.draw_line(base2, top2, col.lightened(0.3), 1.0, true)
+			ci.draw_line(base2, top2, col, 3.2, SpellArt.AA)
+			ci.draw_line(base2, top2, col.lightened(0.3), 1.0, SpellArt.AA)
 			for s2 in [-1.0, 1.0]:
-				ci.draw_line(top2 + Vector2(0, 6), top2 + lat(p, s2 * 5) + Vector2(0, -2), col, 1.6, true)
+				ci.draw_line(top2 + Vector2(0, 6), top2 + lat(p, s2 * 5) + Vector2(0, -2), col, 1.6, SpellArt.AA)
 			ci.draw_circle(top2, 7.5, Color(acc, 0.22))
 			SpellArt.poly(ci, PackedVector2Array([top2 + Vector2(0, -6), top2 + Vector2(3.5, 0), top2 + Vector2(0, 5), top2 + Vector2(-3.5, 0)]), acc)
 			ci.draw_circle(top2 + Vector2(-1, -1.5), 1.2, Color(1, 1, 1, 0.9))
 		"ring":
 			ci.draw_circle(p.handR, 3.2, Color(acc, 0.35))
-			ci.draw_arc(p.handR, 2.0, 0, TAU, 10, col, 1.2, true)
+			ci.draw_arc(p.handR, 2.0, 0, TAU, 10, col, 1.2, SpellArt.AA)
 			ci.draw_circle(p.handR + Vector2(0, -1.5), 1.0, acc)
 		"wolfcape":
 			draw_wolfcape_back(ci, p, it)
@@ -359,7 +359,7 @@ static func draw_cloth(ci: CanvasItem, p: Dictionary, top: Vector2, bot: Vector2
 	outline(ci, poly, col.darkened(0.5))
 	for i in 4:
 		var k2 := (i + 1) / 5.0
-		ci.draw_line(top.lerp(top + lat(p, (k2 - 0.5) * w_top * 2), 1.0), bot + lat(p, (k2 - 0.5) * w_bot * 2) + Vector2(0, sin(t * 3.0 + i) * 1.2), Color(col.darkened(0.35), 0.7), 1.0, true)
+		ci.draw_line(top.lerp(top + lat(p, (k2 - 0.5) * w_top * 2), 1.0), bot + lat(p, (k2 - 0.5) * w_bot * 2) + Vector2(0, sin(t * 3.0 + i) * 1.2), Color(col.darkened(0.35), 0.7), 1.0, SpellArt.AA)
 
 
 static func staff_top(p: Dictionary) -> Vector2:
@@ -415,12 +415,12 @@ static func draw_book(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 	var col := it.placeholder_color
 	var acc := it.placeholder_accent
 	SpellArt.poly(ci, PackedVector2Array([c + Vector2(-hw, -hh), c + Vector2(hw, -hh + 1), c + Vector2(hw, hh), c + Vector2(-hw, hh - 1)]), col)
-	ci.draw_line(c + Vector2(-hw, -hh), c + Vector2(-hw, hh - 1), col.darkened(0.4), 2.0, true)
+	ci.draw_line(c + Vector2(-hw, -hh), c + Vector2(-hw, hh - 1), col.darkened(0.4), 2.0, SpellArt.AA)
 	if p.toward and face > 0.5:
 		# aberto: páginas e runa
 		SpellArt.poly(ci, PackedVector2Array([c + Vector2(-hw + 1.5, -hh + 2), c + Vector2(hw - 1.5, -hh + 3), c + Vector2(hw - 1.5, hh - 2), c + Vector2(-hw + 1.5, hh - 3)]), Color(0.86, 0.8, 0.66))
 		ci.draw_line(c + Vector2(0, -hh + 2), c + Vector2(0, hh - 2), Color(0.5, 0.42, 0.3), 1.0)
-		ci.draw_arc(c + Vector2(hw * 0.45, 0), 2.6, 0, TAU, 10, acc, 1.2, true)
+		ci.draw_arc(c + Vector2(hw * 0.45, 0), 2.6, 0, TAU, 10, acc, 1.2, SpellArt.AA)
 		ci.draw_circle(c + Vector2(hw * 0.45, 0), 4.5, Color(acc, 0.2))
 	for q in [Vector2(-hw, -hh), Vector2(hw, -hh + 1), Vector2(hw, hh), Vector2(-hw, hh - 1)]:
 		ci.draw_circle(c + q, 1.2, acc.lerp(Color(0.8, 0.7, 0.4), 0.6))

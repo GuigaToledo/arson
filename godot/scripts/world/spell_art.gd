@@ -7,6 +7,8 @@ extends RefCounted
 const RX := 90.5  # raio de 1 tile na tela (semieixo x da elipse isométrica)
 ## Melhorias da magia sendo lançada (0 a 5): mais partículas e efeitos extras.
 static var boost := 0
+## Linhas suavizadas: na web a imagem já é desenhada com o dobro de pixels, então não precisa (e pesa).
+static var AA := not OS.has_feature("web")
 
 
 ## Efeito extra das melhorias: 1 anel de brilho, 2 dois anéis, 3 faíscas subindo, 4 runa no chão, 5 onda de choque e clarão.
@@ -23,7 +25,7 @@ static func upgrade_fx(parent: Node, pos: Vector2, col: Color, up: int) -> void:
 			ellipse(n, Vector2.ZERO, RX * 1.2, Color(col, 0.6 * a), false, 2.0)
 			for i in 6:
 				var t := TAU * i / 6.0 + k * 2.0
-				n.draw_line(Vector2(cos(t), sin(t) * 0.5) * RX * 1.2, Vector2(cos(t + 2.1), sin(t + 2.1) * 0.5) * RX * 1.2, Color(col.lightened(0.3), a * 0.8), 1.5, true))
+				n.draw_line(Vector2(cos(t), sin(t) * 0.5) * RX * 1.2, Vector2(cos(t + 2.1), sin(t + 2.1) * 0.5) * RX * 1.2, Color(col.lightened(0.3), a * 0.8), 1.5, SpellArt.AA))
 	if up >= 5:
 		fx(parent, pos, 0.6, func(n: DrawFx, k: float): ellipse(n, Vector2.ZERO, RX * (0.5 + k * 2.5), Color(1, 1, 1, (1.0 - k) * 0.7), false, 4.0 * (1.0 - k)))
 		SpellFx.flash(parent, pos + Vector2(0, -30), col, 3.0, 2.0, 0.5)
@@ -154,7 +156,7 @@ static func ellipse(n: CanvasItem, c: Vector2, rx: float, col: Color, filled := 
 	if filled:
 		poly(n, pts, col)
 	else:
-		n.draw_polyline(pts, col, w, true)
+		n.draw_polyline(pts, col, w, SpellArt.AA)
 
 
 ## Polígono de pedra irregular (mesmo formato para a mesma semente).
@@ -165,7 +167,7 @@ static func rock(n: CanvasItem, c: Vector2, r: float, col: Color, sd: int, rot :
 		var h := fposmod(sin(float(sd) * 12.9898 + i * 78.233) * 43758.5453, 1.0)
 		pts.append(c + Vector2(cos(a), sin(a)) * r * (0.7 + h * 0.35))
 	poly(n, pts, col)
-	n.draw_polyline(pts + PackedVector2Array([pts[0]]), col.darkened(0.45), 1.2, true)
+	n.draw_polyline(pts + PackedVector2Array([pts[0]]), col.darkened(0.45), 1.2, SpellArt.AA)
 	n.draw_line(c + Vector2(-r * 0.3, -r * 0.4), c + Vector2(r * 0.25, -r * 0.5), col.lightened(0.35), 1.2)
 
 
@@ -174,16 +176,16 @@ static func jag(n: CanvasItem, a: Vector2, b: Vector2, col: Color, w: float, seg
 	for k in range(1, segs):
 		pts.append(a.lerp(b, float(k) / segs) + Vector2(randf_range(-amp, amp), randf_range(-amp, amp)))
 	pts.append(b)
-	n.draw_polyline(pts, Color(col, col.a * 0.35), w * 3.0, true)
-	n.draw_polyline(pts, col, w, true)
-	n.draw_polyline(pts, Color(1, 1, 1, col.a), maxf(1.0, w * 0.4), true)
+	n.draw_polyline(pts, Color(col, col.a * 0.35), w * 3.0, SpellArt.AA)
+	n.draw_polyline(pts, col, w, SpellArt.AA)
+	n.draw_polyline(pts, Color(1, 1, 1, col.a), maxf(1.0, w * 0.4), SpellArt.AA)
 
 
 static func thorn(n: CanvasItem, base: Vector2, tip: Vector2, w: float, col: Color) -> void:
 	var d := (tip - base).normalized()
 	var s := Vector2(-d.y, d.x) * w
 	poly(n, PackedVector2Array([base + s, tip, base - s]), col)
-	n.draw_line(base, tip, col.lightened(0.3), 1.0, true)
+	n.draw_line(base, tip, col.lightened(0.3), 1.0, SpellArt.AA)
 
 
 ## Raiz/trepadeira crescendo: curva de `base` até altura h (k = quanto já cresceu).
@@ -194,8 +196,8 @@ static func root(n: CanvasItem, base: Vector2, h: float, bend: float, k: float, 
 		var f := float(i) / steps * k
 		pts.append(base + Vector2(sin(f * 3.0) * bend * f, -h * f))
 	if pts.size() > 1:
-		n.draw_polyline(pts, col.darkened(0.3), w + 1.5, true)
-		n.draw_polyline(pts, col, w, true)
+		n.draw_polyline(pts, col.darkened(0.3), w + 1.5, SpellArt.AA)
+		n.draw_polyline(pts, col, w, SpellArt.AA)
 		for i in range(2, pts.size(), 2):
 			thorn(n, pts[i], pts[i] + Vector2(5 if i % 4 == 0 else -5, -2), 1.3, col.lightened(0.25))
 
@@ -293,19 +295,19 @@ class Proj:
 				for q in _trail:
 					pts.append(q - global_position + Vector2(0, sin(_t * 20 + pts.size()) * 2.0))
 				if pts.size() > 1:
-					draw_polyline(pts, Color(0.25, 0.55, 1, 0.5), 9 * s, true)
-					draw_polyline(pts, Color(0.6, 0.85, 1, 0.9), 4 * s, true)
+					draw_polyline(pts, Color(0.25, 0.55, 1, 0.5), 9 * s, SpellArt.AA)
+					draw_polyline(pts, Color(0.6, 0.85, 1, 0.9), 4 * s, SpellArt.AA)
 				draw_circle(c, 5 * s, Color(0.85, 0.95, 1))
 			"gelo":
 				var n := Vector2(-dir.y, dir.x)
 				var tip := c + dir * 13 * s
 				SpellArt.poly(self, PackedVector2Array([tip, c + n * 5 * s, c - dir * 10 * s, c - n * 5 * s]), Color(0.75, 0.92, 1, 0.95))
-				draw_line(c - dir * 9 * s, tip, Color(1, 1, 1), 1.5, true)
+				draw_line(c - dir * 9 * s, tip, Color(1, 1, 1), 1.5, SpellArt.AA)
 				draw_circle(c, 10 * s, Color(0.6, 0.85, 1, 0.2))
 			"vento":
 				var a0 := dir.angle() - 1.2
 				for r in [12.0, 9.0]:
-					draw_arc(c, r * s, a0 + _t * 8.0, a0 + 2.4 + _t * 8.0, 16, Color(0.85, 1, 0.95, 0.8 if r > 10 else 0.5), 3.0, true)
+					draw_arc(c, r * s, a0 + _t * 8.0, a0 + 2.4 + _t * 8.0, 16, Color(0.85, 1, 0.95, 0.8 if r > 10 else 0.5), 3.0, SpellArt.AA)
 			"terra":
 				SpellArt.rock(self, c, 9 * s, Color(0.45, 0.38, 0.3), 3, _t * 9.0)
 			"natureza":
@@ -363,7 +365,7 @@ static func impact(parent: Node, pos: Vector2, el: String, big := false) -> void
 		"gelo": parts(parent, pos + Vector2(0, -36), int(24 * s), 130.0, 0.7, 0.05, Color(1, 1, 1), Color(0.6, 0.85, 1), 380.0, 90.0)
 		"vento": fx(parent, pos + Vector2(0, -36), 0.4, func(n: DrawFx, k: float):
 			for i in 3:
-				n.draw_arc(Vector2.ZERO, (10 + i * 8) * (0.5 + k) * s, k * 6 + i, k * 6 + i + 2.2, 14, Color(0.85, 1, 0.95, 1.0 - k), 2.0, true))
+				n.draw_arc(Vector2.ZERO, (10 + i * 8) * (0.5 + k) * s, k * 6 + i, k * 6 + i + 2.2, 14, Color(0.85, 1, 0.95, 1.0 - k), 2.0, SpellArt.AA))
 		"terra":
 			parts(parent, pos + Vector2(0, -30), int(20 * s), 150.0, 0.7, 0.06, Color(0.6, 0.5, 0.4), Color(0.35, 0.3, 0.25), 520.0, 80.0, Vector2.UP, false)
 			for i in int(4 * s):
@@ -390,7 +392,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 				ellipse(n, Vector2.ZERO, rx * 0.7, Color(1, 0.7, 0.2, a * 0.8), false, 2.0)
 				for i in 6:
 					var t := TAU * i / 6.0 + k * 1.5
-					n.draw_line(Vector2(cos(t), sin(t) * 0.5) * rx * 0.7, Vector2(cos(t + 2.1), sin(t + 2.1) * 0.5) * rx * 0.7, Color(1, 0.8, 0.3, a), 2.0, true))
+					n.draw_line(Vector2(cos(t), sin(t) * 0.5) * rx * 0.7, Vector2(cos(t + 2.1), sin(t + 2.1) * 0.5) * rx * 0.7, Color(1, 0.8, 0.3, a), 2.0, SpellArt.AA))
 			parts(parent, center, 40, 40.0, 1.2, 0.06, Color(1, 0.8, 0.3), Color(0.8, 0.1, 0), -90.0, 180.0)
 		"lava":  # Poça de Lava borbulhando
 			fxg(parent, center, 3.0, func(n: DrawFx, k: float):
@@ -403,7 +405,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 				for i in 7:
 					var p := Vector2(rng.randf_range(-0.7, 0.7) * rx, rng.randf_range(-0.3, 0.3) * rx)
 					var b := fmod(k * 4.0 + i * 0.37, 1.0)
-					n.draw_arc(p, 3 + b * 6, PI, TAU, 10, Color(1, 0.85, 0.4, (1.0 - b) * a), 1.5, true))
+					n.draw_arc(p, 3 + b * 6, PI, TAU, 10, Color(1, 0.85, 0.4, (1.0 - b) * a), 1.5, SpellArt.AA))
 		"agua":  # Maré Sufocante: redemoinho
 			fx(parent, center, 1.6, func(n: DrawFx, k: float):
 				var a := 1.0 - k
@@ -413,7 +415,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 					for j in 20:
 						var t := k * 9.0 + i + j * 0.25
 						pts.append(Vector2(cos(t) * r * (j / 20.0 + 0.3), sin(t) * r * 0.5 * (j / 20.0 + 0.3)))
-					n.draw_polyline(pts, Color(0.5, 0.8, 1, a * 0.8), 3.0, true))
+					n.draw_polyline(pts, Color(0.5, 0.8, 1, a * 0.8), 3.0, SpellArt.AA))
 			parts(parent, center + Vector2(0, -10), 40, 120.0, 0.9, 0.045, Color(0.8, 0.95, 1), Color(0.2, 0.45, 1), 420.0, 60.0)
 		"gelo":  # Congelar: cristais de gelo saem do chão
 			fx(parent, center, 1.6, func(n: DrawFx, k: float):
@@ -432,7 +434,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 				for i in 12:
 					var t := TAU * i / 12.0
 					var d := Vector2(cos(t), sin(t) * 0.5)
-					n.draw_line(d * rx * k * 0.6, d * rx * (0.3 + k), Color(0.85, 1, 0.95, 1.0 - k), 2.5, true))
+					n.draw_line(d * rx * k * 0.6, d * rx * (0.3 + k), Color(0.85, 1, 0.95, 1.0 - k), 2.5, SpellArt.AA))
 			parts(parent, center, 40, 260.0, 0.6, 0.05, Color(0.75, 0.7, 0.6), Color(0.5, 0.45, 0.4), 0.0, 180.0, Vector2.UP, false)
 		"raio":  # Paralisia: campo elétrico que estala
 			fx(parent, center, 1.2, func(n: DrawFx, k: float):
@@ -456,7 +458,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 						t += rng.randf_range(-0.5, 0.5)
 						p += Vector2(cos(t), sin(t) * 0.5) * rx * 0.28 * minf(1.0, k * 4.0)
 						pts.append(p)
-					n.draw_polyline(pts, Color(0.08, 0.06, 0.04, a), 3.0, true))
+					n.draw_polyline(pts, Color(0.08, 0.06, 0.04, a), 3.0, SpellArt.AA))
 			impact(parent, center, "terra", true)
 		"natureza":  # Raízes brotam do chão
 			fxn(parent, center, 3.0, func(n: DrawFx, k: float):
@@ -487,8 +489,8 @@ static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, hal
 				for i in 17:
 					var t := base - half_ang + 2.0 * half_ang * i / 16.0
 					pts.append(Vector2(cos(t) * r, sin(t) * r * 0.55) + Vector2(0, -12 - sin(i * 0.8 + k * 12) * 6))
-				n.draw_polyline(pts, Color(0.3, 0.55, 1, 0.55 * (1.0 - k * 0.5)), 16.0, true)
-				n.draw_polyline(pts, Color(0.85, 0.95, 1, 1.0 - k * 0.5), 4.0, true))
+				n.draw_polyline(pts, Color(0.3, 0.55, 1, 0.55 * (1.0 - k * 0.5)), 16.0, SpellArt.AA)
+				n.draw_polyline(pts, Color(0.85, 0.95, 1, 1.0 - k * 0.5), 4.0, SpellArt.AA))
 			parts(parent, o + dir * length_px * 0.5, 50, 160.0, 0.8, 0.045, Color(0.8, 0.95, 1), Color(0.2, 0.45, 1), 450.0, rad_to_deg(half_ang), dir)
 		"gelo":
 			SpellFx.cone(parent, pos, dir, length_px, half_ang, Color(1, 1, 1), Color(0.5, 0.8, 1))
@@ -504,7 +506,7 @@ static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, hal
 					var t := dir.angle() - half_ang + 2.0 * half_ang * randf()
 					var d2 := Vector2(cos(t), sin(t) * 0.55)
 					var r0 := length_px * k * randf_range(0.3, 1.0)
-					n.draw_line(d2 * r0 + Vector2(0, -30), d2 * (r0 + 40) + Vector2(0, -30), Color(0.85, 1, 0.95, (1.0 - k) * 0.8), 2.0, true))
+					n.draw_line(d2 * r0 + Vector2(0, -30), d2 * (r0 + 40) + Vector2(0, -30), Color(0.85, 1, 0.95, (1.0 - k) * 0.8), 2.0, SpellArt.AA))
 			parts(parent, o, 40, length_px * 2.0, 0.6, 0.05, Color(0.75, 0.7, 0.6), Color(0.5, 0.45, 0.4), 0.0, rad_to_deg(half_ang), dir, false)
 		"natureza":  # Trepadeiras chicoteando no cone
 			fxn(parent, pos, 1.0, func(n: DrawFx, k: float):
@@ -516,8 +518,8 @@ static func cone(parent: Node, pos: Vector2, dir: Vector2, length_px: float, hal
 					for j in 12:
 						var f := j / 11.0 * g
 						pts.append(d2 * length_px * f + Vector2(-d2.y, d2.x) * sin(f * 9 + i) * 10 + Vector2(0, -10 - f * 20))
-					n.draw_polyline(pts, Color(0.2, 0.4, 0.1, 1.0 - maxf(0, k - 0.7) / 0.3), 4.0, true)
-					n.draw_polyline(pts, Color(0.4, 0.75, 0.25, 1.0 - maxf(0, k - 0.7) / 0.3), 2.0, true))
+					n.draw_polyline(pts, Color(0.2, 0.4, 0.1, 1.0 - maxf(0, k - 0.7) / 0.3), 4.0, SpellArt.AA)
+					n.draw_polyline(pts, Color(0.4, 0.75, 0.25, 1.0 - maxf(0, k - 0.7) / 0.3), 2.0, SpellArt.AA))
 		_:
 			SpellFx.cone(parent, pos, dir, length_px, half_ang, c.lightened(0.4), c)
 
@@ -534,9 +536,9 @@ static func line(parent: Node, a: Vector2, b: Vector2, el: String) -> void:
 					var f := i / 15.0 * g
 					pts.append(d * f + Vector2(-d.normalized().y, d.normalized().x) * sin(f * 10) * 6)
 				if pts.size() > 1:
-					n.draw_polyline(pts, Color(0.25, 0.05, 0.02, al), 18.0, true)
-					n.draw_polyline(pts, Color(1, 0.35, 0.05, al), 11.0, true)
-					n.draw_polyline(pts, Color(1, 0.8, 0.3, al), 4.0, true))
+					n.draw_polyline(pts, Color(0.25, 0.05, 0.02, al), 18.0, SpellArt.AA)
+					n.draw_polyline(pts, Color(1, 0.35, 0.05, al), 11.0, SpellArt.AA)
+					n.draw_polyline(pts, Color(1, 0.8, 0.3, al), 4.0, SpellArt.AA))
 			for i in 6:
 				parts(parent, a + d * (i + 1) / 6.0 + Vector2(0, -6), 8, 60.0, 0.8, 0.05, Color(1, 0.6, 0.15), Color(0.4, 0.05, 0), 300.0, 40.0)
 		"raio":  # Corrente Elétrica
@@ -554,7 +556,7 @@ static func line(parent: Node, a: Vector2, b: Vector2, el: String) -> void:
 					var f := i / 13.0 * g
 					pts.append(d * f + nrm * (i % 2 * 2 - 1) * 5)
 				if pts.size() > 1:
-					n.draw_polyline(pts, Color(0.05, 0.03, 0.02, al), 7.0, true)
+					n.draw_polyline(pts, Color(0.05, 0.03, 0.02, al), 7.0, SpellArt.AA)
 				for i in 6:
 					var f := (i + 0.5) / 6.0
 					if f <= g:
@@ -631,7 +633,7 @@ static func area(parent: Node, center: Vector2, radius: float, el: String, on_im
 					var y := -i * 11.0
 					var r := rx * (0.25 + i * 0.05)
 					var t := k * 22.0 + i * 0.7
-					n.draw_arc(Vector2(sin(k * 6 + i * 0.3) * 6, y), r, t, t + 4.0, 20, Color(0.85, 1, 0.95, 0.55 * a), 2.5, true)
+					n.draw_arc(Vector2(sin(k * 6 + i * 0.3) * 6, y), r, t, t + 4.0, 20, Color(0.85, 1, 0.95, 0.55 * a), 2.5, SpellArt.AA)
 					if fused and i % 4 == 0:
 						jag(n, Vector2(cos(t) * r, y), Vector2(cos(t + 1) * r, y - 14), Color(0.8, 0.8, 1, a), 1.5, 3, 5.0))
 			parts(parent, center, 50, 200.0, 1.2, 0.05, Color(0.75, 0.7, 0.6), Color(0.5, 0.45, 0.4), -60.0, 180.0, Vector2.UP, false)
@@ -656,9 +658,9 @@ static func area(parent: Node, center: Vector2, radius: float, el: String, on_im
 					for i in 7:
 						var p := Vector2(rng.randf_range(-1, 1) * rx * 0.75, rng.randf_range(-0.38, 0.38) * rx)
 						var h := rng.randf_range(40, 70) * g
-						n.draw_line(p, p + Vector2(0, -h), Color(0.45, 0.42, 0.4, al), 6.0, true)
+						n.draw_line(p, p + Vector2(0, -h), Color(0.45, 0.42, 0.4, al), 6.0, SpellArt.AA)
 						for j in 3:
-							n.draw_line(p + Vector2(0, -h * (0.5 + j * 0.2)), p + Vector2((j % 2 * 2 - 1) * 14 * g, -h * (0.7 + j * 0.15)), Color(0.5, 0.47, 0.44, al), 3.0, true)
+							n.draw_line(p + Vector2(0, -h * (0.5 + j * 0.2)), p + Vector2((j % 2 * 2 - 1) * 14 * g, -h * (0.7 + j * 0.15)), Color(0.5, 0.47, 0.44, al), 3.0, SpellArt.AA)
 						ellipse(n, p + Vector2(0, -h), 12 * g, Color(0.35, 0.5, 0.25, 0.8 * al)))
 			tree.create_timer(0.25).timeout.connect(on_impact)
 		"natureza":  # Chuva de Espinhos
@@ -679,7 +681,7 @@ static func area(parent: Node, center: Vector2, radius: float, el: String, on_im
 static func _fall(parent: Node, p: Vector2, col: Color, dur: float, el: String) -> void:
 	var f: DrawFx = fx(parent, p, dur, func(n: DrawFx, k: float):
 		var q := Vector2(60, -380) * (1.0 - k)
-		n.draw_line(q + Vector2(30, -190) * 0.2, q, Color(col, 0.4), 6.0, true)
+		n.draw_line(q + Vector2(30, -190) * 0.2, q, Color(col, 0.4), 6.0, SpellArt.AA)
 		n.draw_circle(q, 7, col)
 		n.draw_circle(q, 3.5, Color(1, 1, 0.9)))
 	f.tree_exited.connect(func():

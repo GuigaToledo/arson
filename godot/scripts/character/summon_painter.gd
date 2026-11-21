@@ -67,7 +67,7 @@ static func _golem(ci: CanvasItem, p: Dictionary, el: String) -> void:
 				SpellArt.rock(ci, q, 6.4, stone.darkened(0.05 * (k % 2)), sd)
 			sd += 7
 		if seam.a > 0.0:
-			ci.draw_line(a, e, Color(seam, 0.55), 1.6, true)
+			ci.draw_line(a, e, Color(seam, 0.55), 1.6, SpellArt.AA)
 	# punhos e pés de pedra maiores
 	for q in [p.handL, p.handR]:
 		SpellArt.rock(ci, q, 5.5, stone.lightened(0.05), 41)
@@ -88,7 +88,7 @@ static func _golem(ci: CanvasItem, p: Dictionary, el: String) -> void:
 		var cc: Vector2 = p.shC.lerp(p.hipC, 0.4)
 		for k2 in 4:
 			var ang := TAU * k2 / 4.0 + 0.5
-			ci.draw_line(cc, cc + Vector2(cos(ang) * 8, sin(ang) * 6), seam, 1.6, true)
+			ci.draw_line(cc, cc + Vector2(cos(ang) * 8, sin(ang) * 6), seam, 1.6, SpellArt.AA)
 		ci.draw_circle(cc, 3.5, seam)
 	if el == "terra":
 		for q4 in [p.shL + Vector2(0, -6), p.head + Vector2(-3, -5), p.hipC + Vector2(4, 0)]:
@@ -118,7 +118,7 @@ static func _crystal(ci: CanvasItem, c: Vector2, r: float, col: Color, sd: int) 
 		var rr := r * (1.3 if i % 2 == 0 else 0.75) * rng.randf_range(0.85, 1.1)
 		pts.append(c + Vector2(cos(a) * rr * 0.8, sin(a) * rr))
 	SpellArt.poly(ci, pts, col)
-	ci.draw_line(c + Vector2(-r * 0.3, -r * 0.6), c + Vector2(r * 0.2, r * 0.3), Color(1, 1, 1, 0.7), 1.0, true)
+	ci.draw_line(c + Vector2(-r * 0.3, -r * 0.6), c + Vector2(r * 0.2, r * 0.3), Color(1, 1, 1, 0.7), 1.0, SpellArt.AA)
 
 
 # ------------------------------------------------------------ fogo: chamas flutuando
@@ -132,8 +132,8 @@ static func _fire(ci: CanvasItem, p: Dictionary) -> void:
 	var t: float = p.t
 	# pernas de chama (forma humanoide para os chutes)
 	for b in [[p.hipL, p.kneeL], [p.kneeL, p.footL], [p.hipR, p.kneeR], [p.kneeR, p.footR]]:
-		ci.draw_line(b[0], b[1], Color(1, 0.35, 0.05, 0.65), 6.5, true)
-		ci.draw_line(b[0], b[1], Color(1, 0.8, 0.3, 0.95), 2.8, true)
+		ci.draw_line(b[0], b[1], Color(1, 0.35, 0.05, 0.65), 6.5, SpellArt.AA)
+		ci.draw_line(b[0], b[1], Color(1, 0.8, 0.3, 0.95), 2.8, SpellArt.AA)
 	for q in [p.footL, p.footR]:
 		_flame(ci, q + Vector2(0, 2), 9, 4, t, q.x)
 	# tronco de chamas
@@ -144,8 +144,8 @@ static func _fire(ci: CanvasItem, p: Dictionary) -> void:
 	for b in arms(p):
 		var a: Vector2 = b[0]
 		var e: Vector2 = b[1]
-		ci.draw_line(a, e, Color(1, 0.35, 0.05, 0.6), 6.0, true)
-		ci.draw_line(a, e, Color(1, 0.8, 0.3, 0.95), 2.5, true)
+		ci.draw_line(a, e, Color(1, 0.35, 0.05, 0.6), 6.0, SpellArt.AA)
+		ci.draw_line(a, e, Color(1, 0.8, 0.3, 0.95), 2.5, SpellArt.AA)
 		_flame(ci, e, 8, 3.5, t, e.x)
 	# cabeça: chama com olhos brancos
 	_flame(ci, p.head + Vector2(0, 5), 20, 6, t, 9.0)
@@ -165,15 +165,15 @@ static func _wind(ci: CanvasItem, p: Dictionary) -> void:
 		for k0 in 6:
 			var q0: Vector2 = (b[0] as Vector2).lerp(b[1], k0 / 5.0)
 			pts0.append(q0 + Vector2(sin(t * 9 + k0) * 2.0, 0))
-		ci.draw_polyline(pts0, Color(0.9, 1, 0.95, 0.75), 2.4, true)
+		ci.draw_polyline(pts0, Color(0.9, 1, 0.95, 0.75), 2.4, SpellArt.AA)
 	for q in [p.footL, p.footR]:
-		ci.draw_arc(q + Vector2(0, -2), 5.0, t * 10, t * 10 + 4.0, 12, col, 1.6, true)
+		ci.draw_arc(q + Vector2(0, -2), 5.0, t * 10, t * 10 + 4.0, 12, col, 1.6, SpellArt.AA)
 	# tronco: fitas girando
 	for i in 5:
 		var y2: float = lerpf(p.shC.y, p.hipC.y, i / 4.0)
 		var r2 := lerpf(10.0, 7.0, i / 4.0)
 		ci.draw_set_transform(Vector2(0, y2), 0.0, Vector2(1.0, 0.45))
-		ci.draw_arc(Vector2.ZERO, r2, t * 7 + i, t * 7 + i + 4.5, 18, Color(0.9, 1, 0.95, 0.7), 2.2, true)
+		ci.draw_arc(Vector2.ZERO, r2, t * 7 + i, t * 7 + i + 4.5, 18, Color(0.9, 1, 0.95, 0.7), 2.2, SpellArt.AA)
 		ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for b in arms(p):
 		var a: Vector2 = b[0]
@@ -182,9 +182,9 @@ static func _wind(ci: CanvasItem, p: Dictionary) -> void:
 		for k in 7:
 			var q: Vector2 = a.lerp(e, k / 6.0)
 			pts.append(q + Vector2(sin(t * 9 + k) * 2.5, cos(t * 9 + k) * 1.5))
-		ci.draw_polyline(pts, Color(0.9, 1, 0.95, 0.8), 2.5, true)
+		ci.draw_polyline(pts, Color(0.9, 1, 0.95, 0.8), 2.5, SpellArt.AA)
 	ci.draw_circle(p.head, 6.0, Color(0.85, 1, 0.95, 0.35))
-	ci.draw_arc(p.head, 5.0, t * 6, t * 6 + 4.0, 14, Color(1, 1, 1, 0.8), 1.5, true)
+	ci.draw_arc(p.head, 5.0, t * 6, t * 6 + 4.0, 14, Color(1, 1, 1, 0.8), 1.5, SpellArt.AA)
 	if p.toward:
 		for s in [-1.0, 1.0]:
 			ci.draw_circle(p.head + lat(p, s * 2.0) + fwd(p, 2.5), 1.0, Color(1, 1, 1))
@@ -217,8 +217,8 @@ static func _water(ci: CanvasItem, p: Dictionary) -> void:
 	var col := Color(0.25, 0.55, 0.95, 0.75)
 	var hi := Color(0.75, 0.92, 1, 0.9)
 	for b in bones(p):
-		ci.draw_line(b[0], b[1], col, 6.0, true)
-		ci.draw_line(b[0] + Vector2(-1, -1), b[1] + Vector2(-1, -1), hi, 1.2, true)
+		ci.draw_line(b[0], b[1], col, 6.0, SpellArt.AA)
+		ci.draw_line(b[0] + Vector2(-1, -1), b[1] + Vector2(-1, -1), hi, 1.2, SpellArt.AA)
 	# tronco: gota ondulando
 	var pts := PackedVector2Array()
 	var cc: Vector2 = p.shC.lerp(p.hipC, 0.5)
@@ -227,9 +227,9 @@ static func _water(ci: CanvasItem, p: Dictionary) -> void:
 		var rr := 10.0 + sin(a * 3 + t * 4.0) * 1.2
 		pts.append(cc + Vector2(cos(a) * rr, sin(a) * rr * 1.45))
 	SpellArt.poly(ci, pts, col)
-	ci.draw_arc(cc + Vector2(-3, -6), 5, PI, PI * 1.6, 8, hi, 1.5, true)
+	ci.draw_arc(cc + Vector2(-3, -6), 5, PI, PI * 1.6, 8, hi, 1.5, SpellArt.AA)
 	ci.draw_circle(p.head, 6.0, col)
-	ci.draw_arc(p.head + Vector2(-1.5, -1.5), 3.5, PI, PI * 1.6, 8, hi, 1.2, true)
+	ci.draw_arc(p.head + Vector2(-1.5, -1.5), 3.5, PI, PI * 1.6, 8, hi, 1.2, SpellArt.AA)
 	# gotas caindo das mãos
 	for q in [p.handL, p.handR]:
 		var y := fmod(t * 40.0 + q.x, 16.0)
@@ -248,7 +248,7 @@ static func _strands(ci: CanvasItem, a: Vector2, b: Vector2, n: int, w: float, c
 		for k in 7:
 			var f := k / 6.0
 			pts.append(a + d * f + nrm * sin(f * 7.0 + s * 2.1) * w)
-		ci.draw_polyline(pts, col.darkened(0.15 * s), 2.0, true)
+		ci.draw_polyline(pts, col.darkened(0.15 * s), 2.0, SpellArt.AA)
 
 
 static func _roots(ci: CanvasItem, p: Dictionary) -> void:

@@ -1143,8 +1143,8 @@ class StatusAura:
 				draw_set_transform(c, 0.0, Vector2(1.0, 1.25))
 				draw_circle(Vector2.ZERO, 30, Color(0.3, 0.6, 1, 0.12))
 				for i in 2:
-					draw_arc(Vector2.ZERO, 30 - i * 3 + sin(_t * 4 + i) * 1.5, 0, TAU, 40, Color(0.6, 0.85, 1, 0.45), 2.0, true)
-				draw_arc(Vector2(-10, -12), 8, PI, PI * 1.5, 10, Color(1, 1, 1, 0.6), 2.0, true)
+					draw_arc(Vector2.ZERO, 30 - i * 3 + sin(_t * 4 + i) * 1.5, 0, TAU, 40, Color(0.6, 0.85, 1, 0.45), 2.0, SpellArt.AA)
+				draw_arc(Vector2(-10, -12), 8, PI, PI * 1.5, 10, Color(1, 1, 1, 0.6), 2.0, SpellArt.AA)
 				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			"gelo":  # Armadura de Gelo: cristais em volta
 				for i in 9:
@@ -1156,7 +1156,7 @@ class StatusAura:
 				for i in 3:
 					var a0 := _t * 5.0 + i * 2.1
 					draw_set_transform(c, 0.0, Vector2(1.0, 1.25))
-					draw_arc(Vector2.ZERO, 26 + i * 3, a0, a0 + 2.0, 16, Color(0.85, 1, 0.95, 0.55), 2.0, true)
+					draw_arc(Vector2.ZERO, 26 + i * 3, a0, a0 + 2.0, 16, Color(0.85, 1, 0.95, 0.55), 2.0, SpellArt.AA)
 					draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			"raio":  # arcos elétricos
 				for i in 3:
