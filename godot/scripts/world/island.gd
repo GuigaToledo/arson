@@ -773,6 +773,8 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 	var mpa := player.mp
 	player._auto_play(0.2)
 	print("TESTE treino gastou=", mpa - player.mp)
+	var bon := get_tree().get_nodes_in_group("monsters").filter(func(q): return q.mtype == "boneco")
+	print("TESTE bonecos=", bon.size(), " em ", bon.map(func(q): return Iso.to_grid(q.global_position).round()))
 	Settings.auto["treino"] = false
 	for mq in get_tree().get_nodes_in_group("monsters"):
 		if not mq.info.get("dummy", false):
