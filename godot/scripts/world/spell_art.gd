@@ -303,6 +303,8 @@ static func flame(n: CanvasItem, base: Vector2, h: float, w: float, t: float, sd
 ## fiapos e faíscas, cada uma com seu ritmo, de trás para a frente (as da frente por cima).
 ## g = quanto já cresceu (0..1), rx = raio em px.
 static func flames_in(n: CanvasItem, rx: float, count: int, h: float, t: float, g: float, a: float, sd: int) -> void:
+	if Settings.level_now <= 3:
+		count = maxi(2, int(count * 0.6))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sd
 	var arr := []
@@ -1142,6 +1144,8 @@ static func _rs(sd: int) -> RandomNumberGenerator:
 
 ## Respingo em coroa: gotas de tamanhos diferentes em arco, com gravidade.
 static func splash(parent: Node, pos: Vector2, count: int, spread: float, col := Color(0.6, 0.85, 1.0, 0.9), h := 30.0, life := 0.65) -> void:
+	if Settings.level_now <= 3:
+		count = maxi(3, int(count * 0.6))
 	fxn(parent, pos, life, func(n: DrawFx, k: float):
 		var rng := _rs(n.seed_v)
 		var tt := k * life
@@ -1163,6 +1167,8 @@ static func splash(parent: Node, pos: Vector2, count: int, spread: float, col :=
 
 ## Pedaços que voam e caem (gelo, pedra, folhas, lascas).
 static func debris(parent: Node, pos: Vector2, kind: String, count: int, spread: float, life := 0.9, up := 220.0) -> void:
+	if Settings.level_now <= 3:
+		count = maxi(2, int(count * 0.6))
 	fxn(parent, pos, life, func(n: DrawFx, k: float): _debris_draw(n, k, kind, count, spread, life, up))
 
 
@@ -1193,6 +1199,8 @@ static func _debris_draw(n: DrawFx, k: float, kind: String, count: int, spread: 
 
 ## Nuvem de poeira, névoa ou vapor que se espalha e some.
 static func cloud(parent: Node, pos: Vector2, rx: float, col: Color, count := 7, life := 1.2, rise := 18.0) -> void:
+	if Settings.level_now <= 3:
+		count = maxi(2, count / 2)
 	fxn(parent, pos, life, func(n: DrawFx, k: float):
 		var rng := _rs(n.seed_v)
 		for i in count:

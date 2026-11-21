@@ -762,6 +762,9 @@ class NameTags:
 				continue
 			var h := 92.0 * (float(mon.info.scale) if mon else 1.0)
 			var pos := actor.get_global_transform_with_canvas() * Vector2(0, -h)
+			# fora da tela: nem calcula o nome
+			if pos.x < -80.0 or pos.y < -40.0 or pos.x > size.x + 80.0 or pos.y > size.y + 140.0:
+				continue
 			var col := Color(0.92, 0.88, 0.78) if actor is Npc else Color(0.35, 0.95, 0.35)
 			var fs := 13
 			var txt := actor.display_name

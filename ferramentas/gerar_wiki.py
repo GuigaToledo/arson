@@ -87,7 +87,7 @@ regras = [
     'As misturas dos dois elementos são as magias supremas: escudo fundido no nível 11 do segundo elemento, invocação fundida no 21, ataque supremo no 26 e área suprema no 30.',
     'A Defesa sobe quando você leva golpes.',
     'Monstros dão experiência e ouro e podem deixar itens. Cada região tem os seus monstros.',
-    'Cada monstro tem um nível. Nome verde: até 4 níveis acima do seu (normal). Laranja: 5 a 9 acima, bate 20x mais e dá 50% mais experiência. Vermelho: 10 ou mais acima, bate 50x mais e dá o dobro de experiência.',
+    'Cada monstro tem um nível. Nome verde: até 4 níveis acima do seu (normal). Laranja: 5 a 9 acima, bate 2x mais e dá 50% mais experiência. Vermelho: 10 ou mais acima, bate 5x mais e dá o dobro de experiência.',
     'Qualquer monstro comum pode nascer Elite (aura dourada): 2,6x vida, mais dano, 3x experiência e ouro e mais saque.',
     'Cada região tem um chefe (aura vermelha). Ele demora alguns minutos para voltar, deixa um troféu valioso e pode deixar um equipamento único.',
     'O saque das criaturas (peles, ossos, gosmas...) vai para a bolsa de saque e é vendido ao Brann, na vila.',

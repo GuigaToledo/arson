@@ -7,14 +7,24 @@ extends RefCounted
 const CRYSTAL_COLS := [Color(0.35, 0.8, 1.0), Color(1.0, 0.35, 0.85), Color(0.4, 1.0, 0.5), Color(1.0, 0.72, 0.25), Color(0.65, 0.45, 1.0), Color(1.0, 0.3, 0.3)]
 
 
+## Desliga o processamento (animação e piscar da luz) quando sai da tela.
+static func cull(n: Node2D, r: Rect2) -> void:
+	var en := VisibleOnScreenEnabler2D.new()
+	en.rect = r
+	n.add_child(en)
+
+
 static func mushrooms(parent: Node, pos: Vector2, sd: int) -> Node2D:
 	var m := Mushrooms.new()
 	m.sd = sd
 	m.position = pos
 	parent.add_child(m)
-	var l := LightKit.make(Color(0.35, 1.0, 0.45), 0.8, 0.75, false, 0.04)
-	l.position = Vector2(0, -12)
-	m.add_child(l)
+	# luz só em 1 de cada 3 grupos (cada luz 2D pesa bastante no celular); todos brilham
+	if sd % 3 == 0:
+		var l := LightKit.make(Color(0.35, 1.0, 0.45), 0.9, 0.9, false, 0.0)
+		l.position = Vector2(0, -12)
+		m.add_child(l)
+	cull(m, Rect2(-60, -80, 120, 110))
 	return m
 
 
@@ -24,9 +34,10 @@ static func crystal(parent: Node, pos: Vector2, sd: int) -> Node2D:
 	c.col = CRYSTAL_COLS[sd % CRYSTAL_COLS.size()]
 	c.position = pos
 	parent.add_child(c)
-	var l := LightKit.make(c.col, 1.0, 1.1, false, 0.06)
+	var l := LightKit.make(c.col, 1.0, 1.1, false, 0.0)
 	l.position = Vector2(0, -30)
 	c.add_child(l)
+	cull(c, Rect2(-60, -100, 120, 130))
 	return c
 
 
@@ -39,6 +50,7 @@ static func lava_pool(parent: Node, pos: Vector2, sd: int, r := 52.0) -> Node2D:
 	var l := LightKit.make(Color(1.0, 0.45, 0.12), 1.4, 1.6 * r / 52.0, false, 0.18)
 	l.position = Vector2(0, -10)
 	p.add_child(l)
+	cull(p, Rect2(-r * 1.4, -r, r * 2.8, r * 1.6))
 	return p
 
 
@@ -59,7 +71,7 @@ class Mushrooms:
 
 	func _process(d: float) -> void:
 		_t += d
-		if Engine.get_process_frames() % 6 == 0 and GlowProps.on_screen(self):
+		if Engine.get_process_frames() % 6 == 0:
 			queue_redraw()
 
 	func _draw() -> void:
@@ -100,7 +112,7 @@ class Crystal:
 
 	func _process(d: float) -> void:
 		_t += d
-		if Engine.get_process_frames() % 6 == 0 and GlowProps.on_screen(self):
+		if Engine.get_process_frames() % 6 == 0:
 			queue_redraw()
 
 	func _draw() -> void:
@@ -153,7 +165,7 @@ class LavaPool:
 
 	func _process(d: float) -> void:
 		_t += d
-		if Engine.get_process_frames() % 3 == 0 and GlowProps.on_screen(self, 200.0):
+		if Engine.get_process_frames() % 3 == 0:
 			queue_redraw()
 			if randf() < 0.05:
 				SpellArt.parts(get_parent(), global_position + Vector2(randf_range(-r, r) * 0.5, -4), 3, 30.0, 1.4, 0.035, Color(1, 0.75, 0.3), Color(0.6, 0.1, 0.0), -60.0, 30.0)

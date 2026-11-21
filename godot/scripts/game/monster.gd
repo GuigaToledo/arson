@@ -152,6 +152,7 @@ func _ready() -> void:
 		au.r = 34.0 * float(info.scale)
 		add_child(au)
 		move_child(au, 0)
+		GlowProps.cull(au, Rect2(-au.r * 1.4, -au.r, au.r * 2.8, au.r * 2.0))
 	for c in get_children():
 		if c is CollisionShape2D:
 			_col = c
@@ -191,8 +192,17 @@ func _physics_process(delta: float) -> void:
 		if _respawn <= 0.0:
 			_revive()
 		return
-	_atk_cd -= delta
 	_scan -= delta
+	# dormindo longe de todos: só confere de vez em quando se alguém chegou perto
+	if _far and foe == null and hurt_t <= 0.0 and _dot_t <= 0.0 and _st_t <= 0.0:
+		if _scan > 0.0:
+			return
+		_scan = 0.6 + randf() * 0.3
+		var p0 := _player()
+		_far = p0 == null or Rules.gdist(global_position, p0.global_position) > 24.0
+		if _far:
+			return
+	_atk_cd -= delta
 	if hurt_t > 0.0:
 		hurt_t -= delta
 		visual.modulate = Color(1, 0.45, 0.4).lerp(Color.WHITE, 1.0 - hurt_t / 0.25)
@@ -670,6 +680,8 @@ func _tint(delta: float) -> void:
 		_sfx = StatusFx.new()
 		_sfx.m = self
 		add_child(_sfx)
+	if not _sfx.is_processing() and (_st_t > 0.0 or _root_t > 0.0 or _stun_t > 0.0 or _dot_t > 0.0):
+		_sfx.set_process(true)
 	if _st_t <= 0.0:
 		return
 	_st_t -= delta
@@ -788,6 +800,7 @@ class StatusFx:
 		_t += d
 		visible = m._st_t > 0.0 or m._root_t > 0.0 or m._stun_t > 0.0 or m._dot_t > 0.0 or not _smoke.is_empty()
 		if not visible:
+			set_process(false)  # volta quando o monstro recebe outro efeito
 			return
 		var el: String = m._st_el
 		var burning: bool = m._dot_t > 0.0 and (el == "fogo" or el == "lava")

@@ -34,7 +34,7 @@ static func danger_color(g: int) -> Color:
 
 
 static func danger_dmg(g: int) -> float:
-	return [1.0, 20.0, 50.0][g]
+	return [1.0, 2.0, 5.0][g]
 
 
 static func danger_xp(g: int) -> float:
