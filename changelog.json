@@ -2,8 +2,14 @@
  {
   "versao": "0.5.0",
   "data": "2026-11-21",
-  "titulo": "Bestiário: slimes, goblins, trolls e mais",
+  "titulo": "Bestiário e o continente de Brumavale",
   "itens": [
+   "Ponte a leste da vila leva ao novo continente, quase 4x maior que a ilha",
+   "Campos de Brumavale: slimes, goblins, trolls jovens e esqueletos (área inicial)",
+   "Cemitério Esquecido com lápides, árvores mortas e a cripta do Necromante",
+   "Caverna Uivante: salões de rocha com cristais, morcegos, lobos e trolls de caverna",
+   "Selva Rubra: ursos, panteras, onças e aranhas entre árvores gigantes",
+   "Acampamentos Goblin, Orc e dos Ciclopes, cada um com seu chefe",
    "28 novos monstros desenhados por código: slimes, goblins, trolls, zumbis, fantasmas, morcegos, lobos, ursos, felinos, aranhas, orcs e ciclopes",
    "Corpos próprios para criaturas (slime, quadrúpede, morcego, aranha, fantasma) com animação de andar e bote",
    "Cada monstro tem magias e habilidades: salto, onda, disparo, dreno, cura, uivo e regeneração",
