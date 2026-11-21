@@ -734,6 +734,21 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 	ui.toggle()
 	ui._pick_loot(0)
 	ui._cycle(EquipSlot.Slot.HEAD)
+	# colar e anel: compra, sobe o nível e equipa pelo inventário
+	var lv0 := player.level
+	ui._cycle(EquipSlot.Slot.ACCESSORIES)
+	print("TESTE colar sem item: ", ui.info_label.text)
+	for idq in ["colar_protecao", "anel_energia"]:
+		player.give_item(idq)
+	ui._cycle(EquipSlot.Slot.ACCESSORIES)
+	print("TESTE colar nivel baixo: ", ui.info_label.text)
+	player.level = 15
+	ui._cycle(EquipSlot.Slot.ACCESSORIES)
+	ui._cycle(EquipSlot.Slot.HANDS)
+	var eqa := player.equipment.get_item(EquipSlot.Slot.ACCESSORIES)
+	var eqh := player.equipment.get_item(EquipSlot.Slot.HANDS)
+	print("TESTE colar/anel equipados: ", eqa.display_name if eqa else "nada", " / ", eqh.display_name if eqh else "nada")
+	player.level = lv0
 	player._roll_drop("Slime Rei")
 	player._roll_drop("Goblin Elite")
 	for n in get_tree().get_nodes_in_group("actors"):

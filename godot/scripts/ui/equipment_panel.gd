@@ -149,6 +149,19 @@ func toggle() -> void:
 
 func _cycle(slot: int) -> void:
 	var options := ItemDB.for_slot(slot).filter(func(it): return player.owns(String(it.id)) and player.level >= it.level_req)
+	if options.is_empty():
+		# tem o item mas não o nível: avisa em vez de não fazer nada
+		var locked := ItemDB.for_slot(slot).filter(func(it): return player.owns(String(it.id)))
+		_sel_loot = ""
+		if locked.is_empty():
+			info_label.text = "%s: você ainda não tem item para este espaço (compre no Brann ou cace)." % EquipSlot.slot_name(slot)
+		else:
+			var parts := PackedStringArray()
+			for it in locked:
+				parts.append("%s (nível %d)" % [it.display_name, it.level_req])
+			info_label.text = "Você é nível %d. Precisa de: %s" % [player.level, ", ".join(parts)]
+		_refresh()
+		return
 	var cur := player.equipment.get_item(slot)
 	var idx := options.find(cur)
 	if idx + 1 < options.size():

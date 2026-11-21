@@ -301,6 +301,8 @@ func _process(_d: float) -> void:
 		clock_lbl.text = ("Noite  " if DayNight.is_night_now() else "Dia  ") + DayNight.clock_text()
 	bars.hp = player.hp / player.max_hp
 	bars.mp = player.mp / player.max_mp
+	bars.hp_txt = "%d / %d" % [int(ceil(player.hp)), int(player.max_hp)]
+	bars.mp_txt = "%d / %d" % [int(player.mp), int(player.max_mp)]
 	bars.title = "%s · nível %d" % [player.display_name if player.display_name != "" else MageClass.info(player.classe).nome, player.level]
 	var a := Rules.xp_to_reach(player.level)
 	var b := Rules.xp_to_reach(player.level + 1)
@@ -656,6 +658,9 @@ class StatusBars:
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	var hp_txt := ""
+	var mp_txt := ""
+
 	func _bar(pos: Vector2, w: float, v: float, col: Color, label: String) -> void:
 		draw_rect(Rect2(pos, Vector2(w, 16)), Color(0, 0, 0, 0.6))
 		draw_rect(Rect2(pos + Vector2(2, 2), Vector2((w - 4) * clampf(v, 0, 1), 12)), col)
@@ -675,8 +680,8 @@ class StatusBars:
 		var font := ThemeDB.fallback_font
 		draw_string_outline(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color.BLACK)
 		draw_string(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.4, 0.95, 0.4))
-		_bar(Vector2(72, 19), 190, hp, Color(0.72, 0.08, 0.06), "Vida %d%%" % int(hp * 100))
-		_bar(Vector2(72, 39), 190, mp, Color(0.12, 0.22, 0.8), "Mana %d%%" % int(mp * 100))
+		_bar(Vector2(72, 19), 190, hp, Color(0.72, 0.08, 0.06), "Vida " + hp_txt)
+		_bar(Vector2(72, 39), 190, mp, Color(0.12, 0.22, 0.8), "Mana " + mp_txt)
 		# experiência (barra fina dourada) e ouro
 		draw_rect(Rect2(72, 58, 190, 5), Color(0, 0, 0, 0.6))
 		draw_rect(Rect2(73, 59, 188 * clampf(xp, 0, 1), 3), Color(0.95, 0.72, 0.2))
