@@ -2,7 +2,9 @@
 
 MMORPG online no navegador. Todos os jogadores ficam no mesmo mundo.
 
-**Jogar:** https://guigatoledo.github.io/arson/
+**Jogar:** https://guigatoledo.github.io/arson/ (versão Godot)
+
+**Versão 3D antiga (congelada):** https://guigatoledo.github.io/arson/3d/
 
 - Movimento livre (WASD / setas)
 - Espaço seleciona alvo · Numpad 1–6 lança magias · Q/E poções · Enter abre o chat
@@ -13,9 +15,8 @@ Rede: PeerJS. O primeiro jogador hospeda o mundo e, se ele sair, outro assume au
 
 ## Nova versão (Godot 4, 2D isométrico) — em construção
 
-**Demo da taverna:** https://guigatoledo.github.io/arson/jogo/
 
-- Projeto em `godot/` (abre no Godot 4.4+). Cada push em `godot/` é testado e exportado automaticamente para `/jogo/` pelo GitHub Actions.
+- Projeto em `godot/` (abre no Godot 4.4+). Cada push em `godot/` é testado e exportado automaticamente para a raiz do site (`/arson/`) pelo GitHub Actions.
 - Equipamentos: um arquivo `.tres` por item em `godot/data/items/` (slot, atributos, sprites por direção). Item novo = arquivo novo; o código do personagem não muda.
 - Personagem em camadas (corpo + 10 slots), 8 direções, camadas reordenadas por direção.
 - Estilo: 2.5D isométrico no estilo Diablo 2, tudo em 2D (ver `arte/LEIA-ME.md`). A arte atual dos personagens e casas é provisória.

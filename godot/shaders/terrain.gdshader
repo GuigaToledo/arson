@@ -5,15 +5,10 @@ shader_type canvas_item;
 uniform vec2 map_size = vec2(56.0, 56.0);
 uniform sampler2D w0 : filter_linear, repeat_disable;
 uniform sampler2D w1 : filter_linear, repeat_disable;
-uniform sampler2D tex_grass : source_color, filter_linear_mipmap, repeat_enable;
-uniform sampler2D tex_path : source_color, filter_linear_mipmap, repeat_enable;
-uniform sampler2D tex_sand : source_color, filter_linear_mipmap, repeat_enable;
-uniform sampler2D tex_stone : source_color, filter_linear_mipmap, repeat_enable;
-uniform sampler2D tex_forest : source_color, filter_linear_mipmap, repeat_enable;
-uniform sampler2D tex_rock : source_color, filter_linear_mipmap, repeat_enable;
-uniform sampler2D nrm_grass : hint_normal, filter_linear_mipmap, repeat_enable;
-uniform sampler2D nrm_path : hint_normal, filter_linear_mipmap, repeat_enable;
-uniform sampler2D nrm_stone : hint_normal, filter_linear_mipmap, repeat_enable;
+// Poucas unidades de textura (celulares e muitas placas só têm 16 no total):
+// cores = [grama, caminho, areia, pedra, floresta, rocha]; normais = [grama, caminho, pedra]
+uniform sampler2DArray cores : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2DArray normais : filter_linear_mipmap, repeat_enable;
 uniform float tex_scale = 0.5;
 
 varying vec2 grid;
@@ -42,12 +37,12 @@ void fragment() {
 	b /= sum;
 
 	vec2 uv = g * tex_scale;
-	vec3 col = texture(tex_grass, uv).rgb * a.r
-		+ texture(tex_path, uv).rgb * a.g
-		+ texture(tex_sand, uv).rgb * a.b
-		+ texture(tex_stone, uv).rgb * a.a
-		+ texture(tex_forest, uv).rgb * b.r
-		+ texture(tex_rock, uv * 0.7).rgb * b.g;
+	vec3 col = texture(cores, vec3(uv, 0.0)).rgb * a.r
+		+ texture(cores, vec3(uv, 1.0)).rgb * a.g
+		+ texture(cores, vec3(uv, 2.0)).rgb * a.b
+		+ texture(cores, vec3(uv, 3.0)).rgb * a.a
+		+ texture(cores, vec3(uv, 4.0)).rgb * b.r
+		+ texture(cores, vec3(uv * 0.7, 5.0)).rgb * b.g;
 
 	float t = TIME;
 	vec3 water = mix(vec3(0.04, 0.11, 0.13), vec3(0.10, 0.22, 0.23), vnoise(g * 1.6 + vec2(t * 0.25, t * 0.15)));
@@ -56,9 +51,9 @@ void fragment() {
 	// beira molhada da areia perto da água
 	col *= 1.0 - 0.35 * smoothstep(0.05, 0.5, b.b) * (1.0 - b.b);
 
-	vec3 nm = texture(nrm_grass, uv).rgb * (a.r + b.r)
-		+ texture(nrm_path, uv).rgb * (a.g + a.b)
-		+ texture(nrm_stone, uv).rgb * (a.a + b.g)
+	vec3 nm = texture(normais, vec3(uv, 0.0)).rgb * (a.r + b.r)
+		+ texture(normais, vec3(uv, 1.0)).rgb * (a.g + a.b)
+		+ texture(normais, vec3(uv, 2.0)).rgb * (a.a + b.g)
 		+ vec3(0.5, 0.5, 1.0) * b.b;
 	COLOR = vec4(col, 1.0);
 	NORMAL_MAP = nm;

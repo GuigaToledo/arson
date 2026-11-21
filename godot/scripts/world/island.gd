@@ -77,9 +77,8 @@ func _build_ground() -> void:
 	mat.set_shader_parameter("map_size", Vector2(map.w, map.h))
 	mat.set_shader_parameter("w0", w[0])
 	mat.set_shader_parameter("w1", w[1])
-	for pair in [["tex_grass", "grass_c"], ["tex_path", "path_c"], ["tex_sand", "sand_c"], ["tex_stone", "stone_c"],
-			["tex_forest", "forest_c"], ["tex_rock", "ash_c"], ["nrm_grass", "grass_n"], ["nrm_path", "path_n"], ["nrm_stone", "stone_n"]]:
-		mat.set_shader_parameter(pair[0], load(TEX + pair[1] + ".jpg"))
+	mat.set_shader_parameter("cores", _tex_array(["grass_c", "path_c", "sand_c", "stone_c", "forest_c", "ash_c"]))
+	mat.set_shader_parameter("normais", _tex_array(["grass_n", "path_n", "stone_n"]))
 	var ground := Node2D.new()
 	ground.name = "Chao"
 	ground.z_index = -20
@@ -91,6 +90,23 @@ func _build_ground() -> void:
 			p.polygon = PackedVector2Array([g(cx, cy), g(cx + CHUNK, cy), g(cx + CHUNK, cy + CHUNK), g(cx, cy + CHUNK)])
 			p.material = mat
 			ground.add_child(p)
+
+
+## Junta várias texturas do chão num Texture2DArray (1 unidade de textura em vez de várias).
+func _tex_array(names: Array) -> Texture2DArray:
+	var imgs: Array[Image] = []
+	for nm in names:
+		var im: Image = (load(TEX + nm + ".jpg") as Texture2D).get_image()
+		if im.is_compressed():
+			im.decompress()
+		im.convert(Image.FORMAT_RGBA8)
+		if im.get_width() != 512 or im.get_height() != 512:
+			im.resize(512, 512)
+		im.generate_mipmaps()
+		imgs.append(im)
+	var arr := Texture2DArray.new()
+	arr.create_from_images(imgs)
+	return arr
 
 
 const OBJ := "res://assets/objetos/"

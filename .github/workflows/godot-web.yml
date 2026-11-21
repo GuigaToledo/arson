@@ -1,7 +1,7 @@
 name: Godot - build web
 
 # A cada push que mexe no projeto Godot: importa, roda a cena por alguns
-# segundos para pegar erros de script, exporta para a web e publica em /jogo/.
+# segundos para pegar erros de script, exporta para a web e publica na raiz (/arson/).
 on:
   push:
     branches: [main]
@@ -52,16 +52,15 @@ jobs:
 
       - name: Exportar para web
         run: |
-          mkdir -p jogo
-          $HOME/godot --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/jogo/index.html" 2>&1 | tee export.log
-          test -f jogo/index.pck
-          cp godot/web/arson_net.js jogo/
+          $HOME/godot --headless --path godot --export-release "Web" "$GITHUB_WORKSPACE/index.html" 2>&1 | tee export.log
+          test -f index.pck
+          cp godot/web/arson_net.js .
 
-      - name: Publicar em /jogo/
+      - name: Publicar em /arson/
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add jogo godot/assets arte
+          git add index.html index.js index.pck index.wasm index.png index.icon.png index.apple-touch-icon.png index.audio.worklet.js index.audio.position.worklet.js arson_net.js godot/assets arte
           if git diff --cached --quiet; then echo "Nada mudou"; exit 0; fi
           git commit -m "build: jogo web (${GITHUB_SHA::7})"
           for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
