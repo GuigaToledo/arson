@@ -136,7 +136,7 @@ func _process(delta: float) -> void:
 			var rinfo := []
 			for rp in get_tree().get_nodes_in_group("remote_players"):
 				rinfo.append("%s:%s:hp%d:inv%d" % [rp.display_name, rp.classe, rp.hp_pct, rp._sm_puppets.size()])
-			print("ARSONDBG host=%s pronto=%s jogadores=%d monstros_vivos=%d %s outros=%s aliado=%d hot=%d" % [is_host, net_ready, online_count, alive, JSON.stringify(_dbg), rinfo, _dbg.get("aliado", 0), int(player.hot_t)])
+			print("ARSONDBG host=%s pronto=%s jogadores=%d monstros_vivos=%d %s outros=%s aliado=%d hot=%d janela=%s fps=%d" % [is_host, net_ready, online_count, alive, JSON.stringify(_dbg), rinfo, _dbg.get("aliado", 0), int(player.hot_t), get_window().size, Engine.get_frames_per_second()])
 	var d = JSON.parse_string(str(_net.poll()))
 	if typeof(d) != TYPE_DICTIONARY:
 		return

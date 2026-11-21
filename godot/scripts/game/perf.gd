@@ -37,7 +37,9 @@ func apply() -> void:
 	var lv := 6 if force_full else clampi(Settings.level_now, 1, 6)
 	_applied = lv
 	# bordas suaves (antisserrilhamento 4x) do nível 4 para cima; no celular e nos níveis baixos, desligado
-	win.msaa_2d = Viewport.MSAA_4X if lv >= 4 and not Settings.is_mobile() else Viewport.MSAA_DISABLED
+	# (no navegador o Godot não tem MSAA 2D: lá a suavidade vem da resolução dobrada no index.html)
+	if not OS.has_feature("web"):
+		win.msaa_2d = Viewport.MSAA_4X if lv >= 4 and not Settings.is_mobile() else Viewport.MSAA_DISABLED
 	_win = win.size
 	if lv >= 6:
 		win.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
