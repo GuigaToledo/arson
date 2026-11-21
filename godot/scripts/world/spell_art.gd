@@ -1163,29 +1163,32 @@ static func splash(parent: Node, pos: Vector2, count: int, spread: float, col :=
 
 ## Pedaços que voam e caem (gelo, pedra, folhas, lascas).
 static func debris(parent: Node, pos: Vector2, kind: String, count: int, spread: float, life := 0.9, up := 220.0) -> void:
-	fxn(parent, pos, life, func(n: DrawFx, k: float):
-		var rng := _rs(n.seed_v)
-		var tt := k * life
-		for i in count:
-			var v := Vector2(rng.randf_range(-1, 1) * spread, -rng.randf_range(up * 0.5, up))
-			var g := 120.0 if kind == "folha" else 640.0
-			var p := Vector2(0, -30) + v * tt + Vector2(0, 0.5 * g * tt * tt)
-			if kind == "folha":
-				p.x += sin(tt * 7.0 + i) * 14.0
-			if p.y > 2.0:
-				p.y = 2.0
-			var rot := rng.randf() * TAU + tt * rng.randf_range(-12, 12)
-			var sz := rng.randf_range(0.6, 1.4)
-			var a := 1.0 - maxf(0.0, k - 0.7) / 0.3
-			match kind:
-				"gelo":
-					ElemArt.shard(n, p, 10.0 * sz, 3.0 * sz, rot, a)
-				"pedra":
-					ElemArt.boulder(n, p, 4.5 * sz, rng.randi(), rot, Color(0.46, 0.39, 0.31), a)
-				"folha":
-					ElemArt.leaf(n, p, Vector2.from_angle(rot), 4.5 * sz, Color(0.32, 0.62, 0.2, a).lerp(Color(0.62, 0.72, 0.22, a), rng.randf()))
-				"lasca":
-					ElemArt.fan(n, PackedVector2Array([p, p + Vector2.from_angle(rot) * 7.0 * sz, p + Vector2.from_angle(rot + 2.4) * 3.0 * sz]), Color(0.55, 0.45, 0.28, a)))
+	fxn(parent, pos, life, func(n: DrawFx, k: float): _debris_draw(n, k, kind, count, spread, life, up))
+
+
+static func _debris_draw(n: DrawFx, k: float, kind: String, count: int, spread: float, life: float, up: float) -> void:
+	var rng := _rs(n.seed_v)
+	var tt := k * life
+	for i in count:
+		var v := Vector2(rng.randf_range(-1, 1) * spread, -rng.randf_range(up * 0.5, up))
+		var g := 120.0 if kind == "folha" else 640.0
+		var p := Vector2(0, -30) + v * tt + Vector2(0, 0.5 * g * tt * tt)
+		if kind == "folha":
+			p.x += sin(tt * 7.0 + i) * 14.0
+		if p.y > 2.0:
+			p.y = 2.0
+		var rot := rng.randf() * TAU + tt * rng.randf_range(-12, 12)
+		var sz := rng.randf_range(0.6, 1.4)
+		var a := 1.0 - maxf(0.0, k - 0.7) / 0.3
+		match kind:
+			"gelo":
+				ElemArt.shard(n, p, 10.0 * sz, 3.0 * sz, rot, a)
+			"pedra":
+				ElemArt.boulder(n, p, 4.5 * sz, rng.randi(), rot, Color(0.46, 0.39, 0.31), a)
+			"folha":
+				ElemArt.leaf(n, p, Vector2.from_angle(rot), 4.5 * sz, Color(0.32, 0.62, 0.2, a).lerp(Color(0.62, 0.72, 0.22, a), rng.randf()))
+			"lasca":
+				ElemArt.fan(n, PackedVector2Array([p, p + Vector2.from_angle(rot) * 7.0 * sz, p + Vector2.from_angle(rot + 2.4) * 3.0 * sz]), Color(0.55, 0.45, 0.28, a))
 
 
 ## Nuvem de poeira, névoa ou vapor que se espalha e some.
