@@ -24,6 +24,14 @@ static func roll(power: float, def := 0.0) -> int:
 	return maxi(1, int(round(power * randf_range(0.75, 1.0) - def)))
 
 
+## Habilidades: pontos para passar do nível l ao l+1 (Magia conta mana gasta; Defesa, golpes levados).
+const SKILL_NAMES := {"magia": "Magia", "defesa": "Defesa"}
+
+
+static func skill_need(k: String, l: int) -> int:
+	return int(round((30.0 if k == "magia" else 10.0) * pow(l, 1.5)))
+
+
 ## Zona segura: o calçamento da vila (ninguém ataca nem é atacado ali).
 static var safe_check: Callable = Callable()
 

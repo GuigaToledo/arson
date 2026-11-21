@@ -55,6 +55,8 @@ func _ready() -> void:
 	_spawn_monsters()
 	if "--teste-combate" in OS.get_cmdline_user_args():
 		_teste_combate()
+	if "--teste-boneco" in OS.get_cmdline_user_args():
+		_teste_boneco()
 	var net := NetSync.new()
 	net.name = "Rede"
 	add_child(net)
@@ -230,6 +232,25 @@ func _spawn_monsters() -> void:
 			m.idx = n
 			entities.add_child(m)
 			n += 1
+	# bonecos de treino logo fora da vila (fora do calçamento, chão livre)
+	var placed: Array = []
+	for rr in range(8, 13):
+		for y in map.h:
+			for x in map.w:
+				if placed.size() >= 4:
+					break
+				var gp2 := Vector2(x + 0.5, y + 0.5)
+				var dd := gp2.distance_to(map.spawn)
+				if dd < rr or dd >= rr + 1 or not ".:".contains(map.at(x, y)) or not map.walkable_grid(gp2):
+					continue
+				if placed.any(func(q): return q.distance_to(gp2) < 2.5):
+					continue
+				placed.append(gp2)
+				var dm := Monster.new().configure("boneco", Iso.to_screen(gp2))
+				dm.name = "Boneco_%d" % n
+				dm.idx = n
+				entities.add_child(dm)
+				n += 1
 
 
 ## Só para testes automáticos (godot ... -- --teste-combate): leva o jogador até
@@ -258,6 +279,23 @@ func _teste_combate() -> void:
 			player.mp = player.max_mp
 			player.cast_slot((i / 4) % Player.SPELLS.size())
 	print("TESTE nivel=", player.level, " xp=", player.xp, " ouro=", player.gold, " vida=", int(player.hp), " alvo_vivo=", player._alive_foe())
+
+
+func _teste_boneco() -> void:
+	await get_tree().create_timer(0.3).timeout
+	var dm: Monster = null
+	for c in get_tree().get_nodes_in_group("monsters"):
+		if c.mtype == "boneco":
+			dm = c
+			break
+	player.global_position = dm.home + Vector2(130, 30)
+	player.foe = dm
+	for i in 40:
+		await get_tree().create_timer(0.25).timeout
+		if i % 6 == 0:
+			player.mp = player.max_mp
+			player.cast_slot(0)
+	print("TESTE boneco vida=", dm.hp, "/", dm.max_hp, " morto=", dm.dead, " habilidades=", player.skills, " vida_jogador=", int(player.hp))
 
 
 func _spawn_characters() -> void:

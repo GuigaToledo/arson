@@ -21,6 +21,7 @@ var chat_input: LineEdit
 var rotate_msg: Label
 var names: NameTags
 var spellbar: SpellBar
+var skill_panel: SkillPanel
 var _joy_idx := -1
 var _lines: PackedStringArray = PackedStringArray()
 
@@ -117,6 +118,12 @@ func _build() -> void:
 	run_btn.offset_right = -138
 	run_btn.offset_bottom = -26
 	root.add_child(run_btn)
+
+	skill_panel = SkillPanel.new()
+	skill_panel.player = player
+	skill_panel.position = Vector2(8, 96)
+	skill_panel.size = Vector2(200, 46)
+	root.add_child(skill_panel)
 
 	# barra de magias e poções (teclas 1-6 / Numpad, Q e E; também tocável)
 	spellbar = SpellBar.new()
@@ -254,6 +261,7 @@ func _process(_d: float) -> void:
 	CombatText.step(get_process_delta_time())
 	names.foe = player.foe
 	spellbar.queue_redraw()
+	skill_panel.queue_redraw()
 	bars.queue_redraw()
 	fire_btn.enabled = player.mp >= Player.CAST_COST
 	fire_btn.queue_redraw()
@@ -264,6 +272,10 @@ func _process(_d: float) -> void:
 
 func _unhandled_input(ev: InputEvent) -> void:
 	var k := ev as InputEventKey
+	if k and k.pressed and not k.echo and k.physical_keycode == KEY_K and get_viewport().gui_get_focus_owner() == null:
+		skill_panel.visible = not skill_panel.visible
+		get_viewport().set_input_as_handled()
+		return
 	if k and k.pressed and not k.echo and (k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER) and not chat_input.visible:
 		_open_chat()
 		get_viewport().set_input_as_handled()
@@ -441,6 +453,33 @@ class SpellBar:
 			var lw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
 			draw_string_outline(font, Vector2(r.get_center().x - lw * 0.5, r.end.y - 3), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, 3, Color.BLACK)
 			draw_string(font, Vector2(r.get_center().x - lw * 0.5, r.end.y - 3), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.95, 0.9, 0.82))
+
+
+## Habilidades (Magia, Defesa) com nível e barra de progresso. K esconde/mostra.
+class SkillPanel:
+	extends Control
+	var player: Player
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		if player == null:
+			return
+		var font := ThemeDB.fallback_font
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.05, 0.04, 0.03, 0.7))
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.5, 0.38, 0.22, 0.8), false, 1.0)
+		var y := 15.0
+		for k in player.skills:
+			var sk: Array = player.skills[k]
+			var f := clampf(float(sk[1]) / float(Rules.skill_need(k, int(sk[0]))), 0, 1)
+			draw_string_outline(font, Vector2(8, y), Rules.SKILL_NAMES[k], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color.BLACK)
+			draw_string(font, Vector2(8, y), Rules.SKILL_NAMES[k], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.92, 0.88, 0.8))
+			draw_string_outline(font, Vector2(70, y), str(sk[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color.BLACK)
+			draw_string(font, Vector2(70, y), str(sk[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 0.82, 0.3))
+			draw_rect(Rect2(98, y - 8, 94, 5), Color(0, 0, 0, 0.7))
+			draw_rect(Rect2(99, y - 7, 92 * f, 3), Color(1, 0.65, 0.2))
+			y += 19.0
 
 
 ## Retrato + barras de vida e mana.

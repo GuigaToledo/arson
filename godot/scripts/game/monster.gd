@@ -29,6 +29,12 @@ const TYPES := {
 		"colors": {"skin": Color(0.5, 0.38, 0.3), "under": Color(0.25, 0.05, 0.04), "hair": Color(0.05, 0.04, 0.04), "eyes": Color(1, 0.4, 0.1), "glow_eyes": true},
 		"items": ["tunica_aprendiz", "capuz_aprendiz", "botas_couro"],
 	},
+	"boneco": {
+		"name": "Boneco de Treino", "hp": 1000, "atk": 1.0, "def": 0.0, "xp": 0, "gold": [0, 0], "speed": 0.0,
+		"range": 1.3, "aspd": 2.0, "aggro": 2.6, "scale": 1.0, "dummy": true,
+		"colors": {"skin": Color(0.78, 0.64, 0.36), "under": Color(0.6, 0.48, 0.25), "hair": Color(0.85, 0.72, 0.4), "eyes": Color(0.2, 0.15, 0.1)},
+		"items": ["avental_taverna"],
+	},
 	"golem": {
 		"name": "Golem de Pedra", "hp": 320, "atk": 24.0, "def": 6.0, "xp": 160, "gold": [30, 70], "speed": 52.0,
 		"range": 1.2, "aspd": 2.2, "aggro": 6.0, "scale": 1.55,
@@ -125,6 +131,10 @@ func _physics_process(delta: float) -> void:
 	if foe != null:
 		var dist := Rules.gdist(global_position, foe.global_position)
 		var reach := float(info.range) + 0.45
+		if info.get("dummy", false):
+			reach = 8.0
+			if dist > 9.0:
+				foe = null
 		if dist <= reach:
 			facing = Iso.dir_from_vector(foe.global_position - global_position)
 			if _atk_cd <= 0.0:
@@ -157,6 +167,18 @@ func _physics_process(delta: float) -> void:
 func _attack() -> void:
 	play_action("attack", 0.4)
 	var tgt := foe
+	if info.get("dummy", false):
+		if Rules.gdist(global_position, tgt.global_position) > float(info.range) + 0.6:
+			var b2 := Bolt.new()
+			b2.color = Color(0.85, 0.72, 0.4)
+			b2.speed = 420.0
+			b2.target = tgt
+			b2.global_position = global_position
+			b2.on_hit = func(): if _valid_foe(tgt): tgt.take_damage(1, display_name)
+			get_parent().add_child(b2)
+		elif _valid_foe(tgt):
+			tgt.take_damage(1, display_name)
+		return
 	if info.has("proj"):
 		var b := Bolt.new()
 		b.color = info.proj
@@ -226,6 +248,9 @@ func take_damage(n: int, by: Node2D, from_net := false) -> void:
 	CombatText.add(global_position + Vector2(0, -80 * float(info.scale)), str(n), Color(1, 0.35, 0.25))
 	if foe == null and _valid_foe(by):
 		foe = by
+	if info.get("dummy", false):
+		hp = max_hp  # imortal
+		return
 	if hp <= 0.0:
 		_die(by)
 

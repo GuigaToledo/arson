@@ -78,6 +78,11 @@ func _load() -> void:
 		gold = int(c.get_value("jogador", "ouro", 0))
 		hp_pot = int(c.get_value("jogador", "pocao_vida", 5))
 		mp_pot = int(c.get_value("jogador", "pocao_mana", 5))
+		var sk = c.get_value("jogador", "habilidades", {})
+		if sk is Dictionary:
+			for k in skills:
+				if sk.get(k) is Array and sk[k].size() == 2:
+					skills[k] = [maxi(1, int(sk[k][0])), float(sk[k][1])]
 	level = Rules.level_for(xp)
 	_recalc()
 	hp = max_hp
@@ -91,6 +96,7 @@ func save() -> void:
 	c.set_value("jogador", "nivel", level)
 	c.set_value("jogador", "pocao_vida", hp_pot)
 	c.set_value("jogador", "pocao_mana", mp_pot)
+	c.set_value("jogador", "habilidades", skills)
 	c.save(SAVE_PATH)
 
 
@@ -113,7 +119,9 @@ func gain_xp(n: int, g: int, _src: String) -> void:
 func take_damage(n: int, src: String) -> void:
 	if dead or Rules.is_safe(global_position):
 		return
+	n = maxi(1, int(round(n / (1.0 + 0.04 * int(skills.defesa[0])))))
 	hp -= n
+	skill_gain("defesa", 1.0)
 	CombatText.add(global_position + Vector2(0, -88), str(n), Color(1, 0.15, 0.1))
 	visual.modulate = Color(1, 0.5, 0.45)
 	create_tween().tween_property(visual, "modulate", Color.WHITE, 0.25)
@@ -191,6 +199,8 @@ const SPELLS := [
 	{"k": "cura", "nome": "Cura", "curto": "Cura", "lvl": 1, "mana": 25, "cd": 1.0, "type": "heal", "base": 30.0, "perL": 4.0},
 ]
 var cds := {}
+## Habilidades: nome -> [nível, pontos]. Sobem com o uso e sem limite.
+var skills := {"magia": [1, 0.0], "defesa": [1, 0.0]}
 var hp_pot := 5
 var mp_pot := 5
 var _pot_cd := 0.0
@@ -206,7 +216,19 @@ func cast_at(world_pos = null) -> void:
 
 
 func spell_power(s: Dictionary) -> float:
-	return float(s.base) + float(s.perL) * level
+	return (float(s.base) + float(s.perL) * level) * (1.0 + 0.06 * int(skills.magia[0]))
+
+
+func skill_gain(k: String, amt: float) -> void:
+	var sk: Array = skills[k]
+	sk[1] = float(sk[1]) + amt
+	var up := false
+	while float(sk[1]) >= Rules.skill_need(k, int(sk[0])):
+		sk[1] = float(sk[1]) - Rules.skill_need(k, int(sk[0]))
+		sk[0] = int(sk[0]) + 1
+		up = true
+	if up:
+		CombatText.add(global_position + Vector2(0, -118), "%s %d!" % [Rules.SKILL_NAMES[k], sk[0]], Color(0.6, 0.85, 1), true)
 
 
 ## Lança a magia `i`. Mira: no alvo se houver; senão na posição indicada; senão à frente.
@@ -300,6 +322,7 @@ func cast_slot(i: int, world_pos = null) -> void:
 		return
 	mp -= float(s.mana)
 	cds[s.k] = float(s.cd)
+	skill_gain("magia", float(s.mana))
 	if s.type != "heal":
 		facing = Iso.dir_from_vector(aim - global_position) if (aim - global_position).length() > 4.0 else facing
 	play_action("cast", 0.45)
@@ -365,7 +388,8 @@ func _auto_attack(delta: float) -> void:
 	b.global_position = global_position + Vector2(0, -2)
 	b.on_hit = func():
 		if is_instance_valid(tgt) and not tgt.dead:
-			tgt.take_damage(Rules.roll(9.0 + 1.3 * level, float(tgt.info.def)), self)
+			tgt.take_damage(Rules.roll((9.0 + 1.3 * level) * (1.0 + 0.06 * int(skills.magia[0])), float(tgt.info.def)), self)
+	skill_gain("magia", 3.0)
 	get_parent().add_child(b)
 
 
