@@ -4,7 +4,7 @@ extends CanvasLayer
 ## - joystick à esquerda embaixo (ou toque no chão para andar)
 ## - botão grande de Bola de Fogo e botão de Correr à direita embaixo
 ## - retrato com vida e mana no canto superior esquerdo
-## - menu (Menu, Equipamento, Chat, Tela cheia) no canto superior direito
+## - botão "Menu" (tudo junto: personagem, magias, equipamento, automação, gráficos, chat, tela cheia) no canto superior direito
 
 const EMU := InputEvent.DEVICE_ID_EMULATION
 const MOUSE_JOY := 999
@@ -87,10 +87,10 @@ func _build() -> void:
 	menu.offset_top = 8
 	menu.add_theme_constant_override("separation", 6)
 	root.add_child(menu)
-	menu.add_child(_menu_btn("Menu", func(): if game_menu: game_menu.toggle()))
-	menu.add_child(_menu_btn("Equip.", _toggle_panel))
-	menu.add_child(_menu_btn("Chat", _open_chat))
-	menu.add_child(_menu_btn("Tela cheia", _fullscreen))
+	var mb := _menu_btn("Menu", func(): if game_menu: game_menu.toggle())
+	mb.custom_minimum_size = Vector2(96, 44)
+	mb.add_theme_font_size_override("font_size", 16)
+	menu.add_child(mb)
 
 	joystick = Joystick.new()
 	joystick.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
@@ -124,7 +124,7 @@ func _build() -> void:
 	skill_panel = SkillPanel.new()
 	skill_panel.player = player
 	skill_panel.position = Vector2(8, 96)
-	skill_panel.size = Vector2(200, 46)
+	skill_panel.size = Vector2(200, 84)
 	root.add_child(skill_panel)
 
 	# barra de magias e poções (teclas 1-6 / Numpad, Q e E; também tocável)
@@ -475,8 +475,8 @@ class SkillPanel:
 		for k in player.skills:
 			var sk: Array = player.skills[k]
 			var f := clampf(float(sk[1]) / float(Rules.skill_need(k, int(sk[0]))), 0, 1)
-			draw_string_outline(font, Vector2(8, y), Rules.SKILL_NAMES[k], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color.BLACK)
-			draw_string(font, Vector2(8, y), Rules.SKILL_NAMES[k], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.92, 0.88, 0.8))
+			draw_string_outline(font, Vector2(8, y), Rules.skill_name(k), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color.BLACK)
+			draw_string(font, Vector2(8, y), Rules.skill_name(k), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.92, 0.88, 0.8))
 			draw_string_outline(font, Vector2(70, y), str(sk[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 3, Color.BLACK)
 			draw_string(font, Vector2(70, y), str(sk[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 0.82, 0.3))
 			draw_rect(Rect2(98, y - 8, 94, 5), Color(0, 0, 0, 0.7))

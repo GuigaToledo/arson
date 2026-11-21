@@ -126,6 +126,13 @@ func start_game(slot: int) -> void:
 	add_child(hud)
 	hud.bind(player, net, ui)
 	hud.game_menu = gm
+	gm.on_chat = hud._open_chat
+	gm.on_equip = hud._toggle_panel
+	gm.on_full = hud._fullscreen
+	for arg in OS.get_cmdline_user_args():
+		if str(arg).begins_with("--teste-vermenu="):
+			gm.toggle()
+			gm._show(int(str(arg).split("=")[1]))
 
 
 func _build_ground() -> void:
@@ -418,9 +425,11 @@ func _teste_menu() -> void:
 		if c is GameMenu: gm = c
 		if c is Perf: pf = c
 	gm.toggle()
-	for i in 4:
-		gm._tabs.current_tab = i
+	for i in [0, 1, 3, 4, 5]:
+		gm._show(i)
 		await get_tree().process_frame
+		await get_tree().process_frame
+	print("TESTE menu ok forca_max=", Perf.force_full, " habilidades=", player.skills.keys())
 	gm.toggle()
 	for lv in range(1, 7):
 		Settings.quality = lv

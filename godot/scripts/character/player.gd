@@ -75,6 +75,7 @@ func _recalc() -> void:
 
 
 func _load() -> void:
+	_reset_skills()
 	var c := ConfigFile.new()
 	if c.load(Chars.path()) == OK:
 		xp = int(c.get_value("jogador", "xp", 0))
@@ -83,6 +84,9 @@ func _load() -> void:
 		mp_pot = int(c.get_value("jogador", "pocao_mana", 5))
 		var sk = c.get_value("jogador", "habilidades", {})
 		if sk is Dictionary:
+			# saves antigos: a habilidade "magia" vira o elemento principal da classe
+			if sk.has("magia") and not sk.has(elem_a()):
+				sk[elem_a()] = sk.magia
 			for k in skills:
 				if sk.get(k) is Array and sk[k].size() == 2:
 					skills[k] = [maxi(1, int(sk[k][0])), float(sk[k][1])]
@@ -94,7 +98,6 @@ func _load() -> void:
 
 ## Recarrega o progresso do arquivo (depois de importar um código).
 func reload() -> void:
-	skills = {"magia": [1, 0.0], "defesa": [1, 0.0]}
 	_load()
 	foe = null
 
@@ -212,7 +215,34 @@ const SPELLS := [
 ]
 var cds := {}
 ## Habilidades: nome -> [nível, pontos]. Sobem com o uso e sem limite.
-var skills := {"magia": [1, 0.0], "defesa": [1, 0.0]}
+var skills := {}
+
+
+## Os 3 elementos da classe (A, B e Luz) e a Defesa, todos no nível 1.
+func _reset_skills() -> void:
+	skills = {}
+	for e in Spellbook.elements_of(classe):
+		skills[e] = [1, 0.0]
+	skills["luz"] = [1, 0.0]
+	skills["defesa"] = [1, 0.0]
+
+
+func elem_a() -> String:
+	return Spellbook.elements_of(classe)[0]
+
+
+func elem_b() -> String:
+	return Spellbook.elements_of(classe)[1]
+
+
+## Nível de um elemento (fogo, lava, ..., luz).
+func elem_level(el: String) -> int:
+	return int(skills[el][0]) if skills.has(el) else 0
+
+
+## Elemento de uma magia da barra (cura = Luz; as outras, por enquanto, o elemento principal).
+func spell_element(s: Dictionary) -> String:
+	return "luz" if s.type == "heal" else elem_a()
 var hp_pot := 5
 var mp_pot := 5
 var _pot_cd := 0.0
@@ -229,7 +259,7 @@ func cast_at(world_pos = null) -> void:
 
 
 func spell_power(s: Dictionary) -> float:
-	return (float(s.base) + float(s.perL) * level) * (1.0 + 0.06 * int(skills.magia[0]))
+	return (float(s.base) + float(s.perL) * level) * (1.0 + 0.06 * elem_level(spell_element(s)))
 
 
 func skill_gain(k: String, amt: float) -> void:
@@ -241,7 +271,7 @@ func skill_gain(k: String, amt: float) -> void:
 		sk[0] = int(sk[0]) + 1
 		up = true
 	if up:
-		CombatText.add(global_position + Vector2(0, -118), "%s %d!" % [Rules.SKILL_NAMES[k], sk[0]], Color(0.6, 0.85, 1), true)
+		CombatText.add(global_position + Vector2(0, -118), "%s %d!" % [Rules.skill_name(k), sk[0]], Color(0.6, 0.85, 1), true)
 
 
 ## Lança a magia `i`. Mira: no alvo se houver; senão na posição indicada; senão à frente.
@@ -335,7 +365,7 @@ func cast_slot(i: int, world_pos = null) -> void:
 		return
 	mp -= float(s.mana)
 	cds[s.k] = float(s.cd)
-	skill_gain("magia", float(s.mana))
+	skill_gain(spell_element(s), float(s.mana))
 	if s.type != "heal":
 		facing = Iso.dir_from_vector(aim - global_position) if (aim - global_position).length() > 4.0 else facing
 	play_action("cast", 0.45)
@@ -403,8 +433,8 @@ func _auto_attack(delta: float) -> void:
 	b.global_position = global_position + Vector2(0, -2)
 	b.on_hit = func():
 		if is_instance_valid(tgt) and not tgt.dead:
-			tgt.take_damage(Rules.roll((9.0 + 1.3 * level) * (1.0 + 0.06 * int(skills.magia[0])), float(tgt.info.def)), self)
-	skill_gain("magia", 3.0)
+			tgt.take_damage(Rules.roll((9.0 + 1.3 * level) * (1.0 + 0.06 * elem_level(elem_a())), float(tgt.info.def)), self)
+	skill_gain(elem_a(), 3.0)
 	get_parent().add_child(b)
 
 

@@ -24,12 +24,16 @@ static func roll(power: float, def := 0.0) -> int:
 	return maxi(1, int(round(power * randf_range(0.75, 1.0) - def)))
 
 
-## Habilidades: pontos para passar do nível l ao l+1 (Magia conta mana gasta; Defesa, golpes levados).
-const SKILL_NAMES := {"magia": "Magia", "defesa": "Defesa"}
+## Habilidades: pontos para passar do nível l ao l+1 (elementos contam mana gasta; Defesa, golpes levados).
+## Nome de uma habilidade: os elementos (fogo, lava, ..., luz) ou Defesa.
+static func skill_name(k: String) -> String:
+	if k == "defesa":
+		return "Defesa"
+	return str(Spellbook.ELEMENTS[k].nome) if Spellbook.ELEMENTS.has(k) else k.capitalize()
 
 
 static func skill_need(k: String, l: int) -> int:
-	return int(round((30.0 if k == "magia" else 10.0) * pow(l, 1.5)))
+	return int(round((10.0 if k == "defesa" else 30.0) * pow(l, 1.5)))
 
 
 ## Zona segura: o calçamento da vila (ninguém ataca nem é atacado ali).

@@ -1,0 +1,169 @@
+class_name SpellTree
+extends Control
+## Árvore de magias da classe: elemento A | fusões | elemento B | Luz.
+## Cada elemento libera a magia N no nível N. As fusões (escudo fundido, 7 e 8) ficam no meio,
+## ligadas aos dois elementos. Toque/passe o mouse num círculo para ver a descrição.
+
+var player: Player
+var _nodes: Array = []  # [pos, info]
+var _hover := -1
+var _t := 0.0
+
+const R := 16.0
+const TOP := 62.0
+const STEP := 41.0
+
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP
+
+
+func _process(d: float) -> void:
+	if is_visible_in_tree():
+		_t += d
+		queue_redraw()
+
+
+func _gui_input(e: InputEvent) -> void:
+	var p := Vector2(-1, -1)
+	if e is InputEventMouseMotion or (e is InputEventMouseButton and e.pressed):
+		p = e.position
+	elif e is InputEventScreenTouch and e.pressed:
+		p = e.position
+	if p.x < 0:
+		return
+	_hover = -1
+	for i in _nodes.size():
+		if p.distance_to(_nodes[i][0]) <= R + 6:
+			_hover = i
+
+
+func _row(t: int) -> float:
+	return TOP + (t - 1) * STEP
+
+
+func _draw() -> void:
+	if player == null:
+		return
+	_nodes.clear()
+	var font := ThemeDB.fallback_font
+	var els := Spellbook.elements_of(player.classe)
+	var ea: String = els[0]
+	var eb: String = els[1]
+	var la := player.elem_level(ea)
+	var lb := player.elem_level(eb)
+	var ll := player.elem_level("luz")
+	var w := size.x
+	var xa := w * 0.05 + R
+	var xf := w * 0.29
+	var xb := w * 0.53
+	var xl := w * 0.79
+	var ca: Color = Spellbook.ELEMENTS[ea].cor
+	var cb: Color = Spellbook.ELEMENTS[eb].cor
+	var cl: Color = Spellbook.ELEMENTS.luz.cor
+	var cf := ca.lerp(cb, 0.5)
+	var fus: Array = Spellbook.FUSOES[player.classe]
+
+	# divisória antes da Luz
+	draw_line(Vector2(xl - 28, 8), Vector2(xl - 28, _row(8) + 22), Color(0.4, 0.3, 0.18, 0.6), 1.0)
+
+	# cabeçalhos
+	_header(font, Vector2(xa - R, 20), Spellbook.ELEMENTS[ea].nome, la, player.skills[ea], ca, ea)
+	_header(font, Vector2(xb - R, 20), Spellbook.ELEMENTS[eb].nome, lb, player.skills[eb], cb, eb)
+	_header(font, Vector2(xl - R, 20), "Luz", ll, player.skills.luz, cl, "luz")
+	draw_string(font, Vector2(xf - 30, 20), "Fusões", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, cf.lightened(0.2))
+
+	# ligações
+	for t in range(1, 6):
+		_link(Vector2(xa, _row(t)), Vector2(xa, _row(t + 1)), ca, la >= t + 1)
+		_link(Vector2(xb, _row(t)), Vector2(xb, _row(t + 1)), cb, lb >= t + 1)
+	for t in range(1, 8):
+		_link(Vector2(xl, _row(t)), Vector2(xl, _row(t + 1)), cl, ll >= t + 1)
+	var same := la == lb and la >= 3
+	_link(Vector2(xa, _row(3)), Vector2(xf, _row(3)), ca, same)
+	_link(Vector2(xb, _row(3)), Vector2(xf, _row(3)), cb, same)
+	_link(Vector2(xa, _row(6)), Vector2(xf, _row(7)), ca, mini(la, lb) >= 7)
+	_link(Vector2(xb, _row(6)), Vector2(xf, _row(7)), cb, mini(la, lb) >= 7)
+	_link(Vector2(xf, _row(7)), Vector2(xf, _row(8)), cf, mini(la, lb) >= 8)
+
+	# nós
+	for t in range(1, 7):
+		_node(font, Vector2(xa, _row(t)), t, Spellbook.ELEMENTS[ea].magias[t - 1], ca, la >= t,
+			{"el": ea, "t": t, "req": "%s nível %d" % [Spellbook.ELEMENTS[ea].nome, t]})
+		_node(font, Vector2(xb, _row(t)), t, Spellbook.ELEMENTS[eb].magias[t - 1], cb, lb >= t,
+			{"el": eb, "t": t, "req": "%s nível %d" % [Spellbook.ELEMENTS[eb].nome, t]})
+	for t in range(1, 9):
+		_node(font, Vector2(xl, _row(t)), t, Spellbook.ELEMENTS.luz.magias[t - 1], cl, ll >= t,
+			{"el": "luz", "t": t, "req": "Luz nível %d" % t})
+	var both := "%s e %s" % [Spellbook.ELEMENTS[ea].nome, Spellbook.ELEMENTS[eb].nome]
+	_node(font, Vector2(xf, _row(3)), 3, fus[0], cf, same,
+		{"fus": 3, "nome": fus[0], "req": "%s no MESMO nível (3 ou mais)" % both,
+		"desc": "Os dois escudos se fundem num só, mais forte."})
+	_node(font, Vector2(xf, _row(7)), 7, fus[1], cf, mini(la, lb) >= 7,
+		{"fus": 7, "nome": fus[1], "req": "%s, os dois no nível 7" % both,
+		"desc": "Mistura dos dois elementos num ataque de alvo único, com os dois efeitos."})
+	_node(font, Vector2(xf, _row(8)), 8, fus[2], cf, mini(la, lb) >= 8,
+		{"fus": 8, "nome": fus[2], "req": "%s, os dois no nível 8" % both,
+		"desc": "Mistura dos dois elementos em área, com os dois efeitos."})
+
+	# descrição do círculo escolhido
+	var box := Rect2(0, size.y - 54, size.x, 54)
+	draw_rect(box, Color(0.04, 0.03, 0.02, 0.85))
+	draw_rect(box, Color(0.4, 0.3, 0.18, 0.7), false, 1.0)
+	if _hover < 0 or _hover >= _nodes.size():
+		draw_string(font, box.position + Vector2(10, 22), "Toque ou passe o mouse numa magia para ver o que ela faz.", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.72, 0.66, 0.58))
+		draw_string(font, box.position + Vector2(10, 42), "Cada elemento sobe de nível sozinho, quando você usa as magias dele.", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.6, 0.55, 0.48))
+		return
+	var n: Dictionary = _nodes[_hover][1]
+	var title := ""
+	var desc := ""
+	if n.has("fus"):
+		title = "%s — %s" % [n.nome, "Escudo fundido" if n.fus == 3 else Spellbook.TIER_KIND[n.fus]]
+		desc = n.desc
+	else:
+		var el: Dictionary = Spellbook.ELEMENTS[n.el]
+		title = "%s — %s %d" % [el.magias[n.t - 1], el.nome, n.t]
+		if n.el != "luz":
+			title += " · " + Spellbook.TIER_KIND[n.t]
+		desc = Spellbook.spell_desc(n.el, n.t)
+	var col := Color(0.5, 1, 0.55) if n.ok else Color(1, 0.55, 0.4)
+	draw_string(font, box.position + Vector2(10, 21), title, HORIZONTAL_ALIGNMENT_LEFT, size.x * 0.62, 15, Color(1, 0.88, 0.6))
+	draw_string(font, box.position + Vector2(size.x * 0.64, 21), ("Liberada" if n.ok else "Requer: " + n.req), HORIZONTAL_ALIGNMENT_LEFT, size.x * 0.36 - 8, 13, col)
+	draw_string(font, box.position + Vector2(10, 43), desc, HORIZONTAL_ALIGNMENT_LEFT, size.x - 20, 13, Color(0.85, 0.8, 0.72))
+
+
+func _header(font: Font, p: Vector2, name: String, lv: int, sk: Array, c: Color, k: String) -> void:
+	draw_string(font, p, "%s  nv %d" % [name, lv], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, c.lightened(0.2))
+	var f := clampf(float(sk[1]) / float(Rules.skill_need(k, int(sk[0]))), 0, 1)
+	draw_rect(Rect2(p + Vector2(0, 7), Vector2(120, 4)), Color(0, 0, 0, 0.7))
+	draw_rect(Rect2(p + Vector2(0, 7), Vector2(120 * f, 4)), c)
+
+
+func _link(a: Vector2, b: Vector2, c: Color, on: bool) -> void:
+	if on:
+		draw_line(a, b, Color(c.r, c.g, c.b, 0.25), 7.0)
+		draw_line(a, b, c, 2.0)
+	else:
+		draw_line(a, b, Color(0.3, 0.27, 0.24, 0.7), 2.0)
+
+
+func _node(font: Font, p: Vector2, t: int, name: String, c: Color, ok: bool, info: Dictionary) -> void:
+	info["ok"] = ok
+	var i := _nodes.size()
+	_nodes.append([p, info])
+	var hov := i == _hover
+	if ok:
+		var pulse := 0.5 + 0.5 * sin(_t * 2.5 + t)
+		draw_circle(p, R + 6 + pulse * 2, Color(c.r, c.g, c.b, 0.12))
+		draw_circle(p, R, c.darkened(0.55))
+		draw_circle(p, R - 4, c.darkened(0.15))
+		draw_arc(p, R, 0, TAU, 32, c.lightened(0.3), 2.0)
+	else:
+		draw_circle(p, R, Color(0.1, 0.09, 0.08))
+		draw_arc(p, R, 0, TAU, 32, Color(0.35, 0.3, 0.26), 2.0)
+	if hov:
+		draw_arc(p, R + 4, 0, TAU, 32, Color(1, 0.9, 0.6), 2.0)
+	var num := str(t)
+	var tw := font.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+	draw_string(font, p + Vector2(-tw / 2, 5), num, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 1, 1) if ok else Color(0.5, 0.46, 0.42))
+	draw_string(font, p + Vector2(R + 6, 5), name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.95, 0.9, 0.8) if ok else Color(0.5, 0.46, 0.42))

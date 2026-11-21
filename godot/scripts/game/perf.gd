@@ -16,6 +16,8 @@ var _win := Vector2i.ZERO
 var _ceil := 6
 var _ceil_t := 0.0
 static var fps := 60.0
+## Menu aberto: desenha tudo em resolução máxima (texto nítido).
+static var force_full := false
 
 
 func _ready() -> void:
@@ -32,7 +34,7 @@ func apply() -> void:
 	if Settings.quality != 0:
 		Settings.level_now = Settings.quality
 	var win := get_window()
-	var lv := clampi(Settings.level_now, 1, 6)
+	var lv := 6 if force_full else clampi(Settings.level_now, 1, 6)
 	_applied = lv
 	_win = win.size
 	if lv >= 6:
@@ -61,7 +63,7 @@ func _process(delta: float) -> void:
 	fps = _frames / _acc
 	_acc = 0.0
 	_frames = 0
-	if Settings.quality != 0:
+	if Settings.quality != 0 or force_full:
 		return
 	# automática: 2 medições ruins seguidas baixam; 8 boas seguidas (16 s) sobem
 	if fps < 42.0:
