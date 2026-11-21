@@ -1,0 +1,16 @@
+{
+  "fonte": "arte/referencias/vila_principal_original.png",
+  "pecas": {
+    "casa": [10, 0, 690, 400],
+    "fogueira": [605, 400, 785, 548],
+    "estatua": [1250, 8, 1475, 312],
+    "carroca_coberta": [265, 635, 400, 775],
+    "carroca": [420, 690, 615, 865],
+    "arvore_outono": [690, 0, 905, 250],
+    "arvore_vermelha": [0, 425, 235, 860],
+    "lampiao": [815, 210, 885, 312],
+    "banco": [645, 525, 762, 602],
+    "caixotes": [712, 292, 795, 362],
+    "ponte": [935, 575, 1525, 835]
+  }
+}
