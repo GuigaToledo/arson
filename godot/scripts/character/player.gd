@@ -5,6 +5,9 @@ extends Actor
 
 var target = null
 var run_toggle := false
+## Direção do joystick virtual (o HUD preenche).
+var joy := Vector2.ZERO
+var marker: TapMarker
 var camera: Camera2D
 var max_hp := 100.0
 var hp := 100.0
@@ -41,6 +44,10 @@ func _ready() -> void:
 	aura.position = Vector2(0, -30)
 	aura.height = 60.0
 	add_child(aura)
+	marker = TapMarker.new()
+	marker.top_level = true
+	marker.z_index = -5
+	add_child(marker)
 
 
 ## Magia: gasta mana; vira para a direção indicada (posição no mundo).
@@ -48,9 +55,15 @@ func cast_at(world_pos = null) -> void:
 	if mp < CAST_COST or _action_time > 0.0:
 		return
 	mp -= CAST_COST
-	if world_pos != null:
-		facing = Iso.dir_from_vector(world_pos - global_position)
-	play_action("cast", 0.6)
+	var d := Iso.dir_vector(facing)
+	if world_pos != null and (world_pos - global_position).length() > 4.0:
+		d = (world_pos - global_position).normalized()
+		facing = Iso.dir_from_vector(d)
+	play_action("cast", 0.5)
+	var fb := Fireball.new()
+	fb.dir = d
+	fb.global_position = global_position + Iso.ground_velocity(d, 1.0) * 18.0
+	get_parent().add_child(fb)
 
 
 func _process(delta: float) -> void:
@@ -62,6 +75,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 	var mb := ev as InputEventMouseButton
 	if mb and mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
 		target = get_global_mouse_position()
+		marker.show_at(target)
 	if mb and mb.pressed and mb.button_index == MOUSE_BUTTON_RIGHT:
 		cast_at(get_global_mouse_position())
 	var mm := ev as InputEventMouseMotion
@@ -80,6 +94,8 @@ func _physics_process(delta: float) -> void:
 		if Input.is_physical_key_pressed(KEY_D): d.x += 1
 		if Input.is_physical_key_pressed(KEY_W): d.y -= 1
 		if Input.is_physical_key_pressed(KEY_S): d.y += 1
+	if joy.length() > 0.15:
+		d = joy
 	if d != Vector2.ZERO:
 		target = null
 	elif target != null:
@@ -93,3 +109,29 @@ func _physics_process(delta: float) -> void:
 	move(d, run_toggle or Input.is_physical_key_pressed(KEY_SHIFT), delta)
 	if target != null and velocity == Vector2.ZERO:
 		target = null
+
+
+## Marcador no chão onde você tocou para andar.
+class TapMarker:
+	extends Node2D
+	var _t := 1.0
+
+	func show_at(p: Vector2) -> void:
+		global_position = p
+		_t = 0.0
+		queue_redraw()
+
+	func _process(delta: float) -> void:
+		if _t < 1.0:
+			_t += delta * 1.8
+			queue_redraw()
+
+	func _draw() -> void:
+		if _t >= 1.0:
+			return
+		var a := 1.0 - _t
+		var r := 10.0 + _t * 10.0
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
+		draw_arc(Vector2.ZERO, r, 0, TAU, 24, Color(1, 0.75, 0.35, a), 2.0)
+		draw_arc(Vector2.ZERO, r * 0.5, 0, TAU, 16, Color(1, 0.75, 0.35, a * 0.6), 1.5)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

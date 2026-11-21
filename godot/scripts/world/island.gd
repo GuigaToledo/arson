@@ -45,12 +45,13 @@ func _ready() -> void:
 	net.name = "Rede"
 	add_child(net)
 	net.setup(player, entities)
-	var hud := Hud.new()
-	add_child(hud)
-	hud.bind(player, net)
 	var ui := EquipmentPanel.new()
+	ui.layer = 2
 	add_child(ui)
 	ui.bind(player)
+	var hud := Hud.new()
+	add_child(hud)
+	hud.bind(player, net, ui)
 
 
 func _build_ground() -> void:

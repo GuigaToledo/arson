@@ -41,32 +41,28 @@ func _build() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 
-	var toggle := Button.new()
-	toggle.text = "Equipamento"
-	toggle.add_theme_font_size_override("font_size", 15)
-	toggle.focus_mode = Control.FOCUS_NONE
-	toggle.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	toggle.offset_left = -160
-	toggle.offset_right = -10
-	toggle.offset_top = 10
-	toggle.offset_bottom = 50
-	toggle.pressed.connect(func(): panel.visible = not panel.visible)
-	root.add_child(toggle)
-
 	panel = PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _style(Color(0.07, 0.05, 0.04, 0.88), Color(0.45, 0.32, 0.18)))
 	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	panel.offset_left = -340
 	panel.offset_right = -10
-	panel.offset_top = 58
+	panel.offset_top = 64
 	root.add_child(panel)
 	var vb := VBoxContainer.new()
 	panel.add_child(vb)
+	var top := HBoxContainer.new()
+	vb.add_child(top)
 	var title := Label.new()
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.text = "Mago das Chamas — equipamento"
 	title.add_theme_color_override("font_color", Color(1, 0.7, 0.35))
-	vb.add_child(title)
+	top.add_child(title)
+	var close := Button.new()
+	close.text = "  X  "
+	close.focus_mode = Control.FOCUS_NONE
+	close.pressed.connect(func(): panel.visible = false)
+	top.add_child(close)
 	var portrait := TextureRect.new()
 	portrait.texture = load("res://assets/ui/retrato_mago.jpg")
 	portrait.custom_minimum_size = Vector2(0, 120)
@@ -106,7 +102,7 @@ func _build() -> void:
 	stats_label.custom_minimum_size = Vector2(300, 0)
 	vb.add_child(stats_label)
 
-	panel.visible = not DisplayServer.is_touchscreen_available()
+	panel.visible = false
 
 
 func _unhandled_input(ev: InputEvent) -> void:
@@ -149,3 +145,7 @@ func _stats_text(d: Dictionary) -> String:
 	for k in d:
 		parts.append("%s +%d" % [k, d[k]])
 	return ", ".join(parts)
+
+
+func toggle() -> void:
+	panel.visible = not panel.visible

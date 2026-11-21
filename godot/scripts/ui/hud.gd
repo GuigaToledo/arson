@@ -1,25 +1,33 @@
 class_name Hud
 extends CanvasLayer
-## HUD no estilo Diablo 2: globo de vida (esquerda), globo de mana (direita),
-## barra de pedra com atalhos no centro, nomes sobre os personagens e chat.
+## Controles pensados para o celular (e que também funcionam no PC):
+## - joystick à esquerda embaixo (ou toque no chão para andar)
+## - botão grande de Bola de Fogo e botão de Correr à direita embaixo
+## - retrato com vida e mana no canto superior esquerdo
+## - menu (Equipamento, Chat, Tela cheia) no canto superior direito
+
+const EMU := InputEvent.DEVICE_ID_EMULATION
+const MOUSE_JOY := 999
 
 var player: Player
 var net: NetSync
-var status: Label
+var panel: EquipmentPanel
+var bars: StatusBars
+var joystick: Joystick
+var fire_btn: RoundButton
+var run_btn: RoundButton
 var chat_log: Label
 var chat_input: LineEdit
 var rotate_msg: Label
 var names: NameTags
-var life: Globe
-var mana: Globe
+var _joy_idx := -1
 var _lines: PackedStringArray = PackedStringArray()
 
-const BAR_H := 92.0
 
-
-func bind(p: Player, n: NetSync) -> void:
+func bind(p: Player, n: NetSync, eq_panel: EquipmentPanel = null) -> void:
 	player = p
 	net = n
+	panel = eq_panel
 	_build()
 	net.chat_received.connect(_on_chat)
 
@@ -34,24 +42,21 @@ func _label(size: int, col: Color) -> Label:
 	return l
 
 
-func _slot(text: String, cb: Callable, toggle := false) -> Button:
+func _menu_btn(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
-	b.toggle_mode = toggle
-	b.custom_minimum_size = Vector2(64, 62)
-	b.add_theme_font_size_override("font_size", 12)
-	b.add_theme_color_override("font_color", Color(0.85, 0.75, 0.55))
+	b.custom_minimum_size = Vector2(78, 40)
+	b.add_theme_font_size_override("font_size", 13)
+	b.add_theme_color_override("font_color", Color(0.92, 0.82, 0.6))
 	for st in ["normal", "hover", "pressed"]:
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.09, 0.07, 0.06) if st == "normal" else (Color(0.16, 0.11, 0.07) if st == "hover" else Color(0.3, 0.12, 0.05))
-		sb.border_color = Color(0.42, 0.34, 0.22)
+		sb.bg_color = Color(0.08, 0.06, 0.05, 0.85) if st != "pressed" else Color(0.3, 0.12, 0.05, 0.9)
+		sb.border_color = Color(0.5, 0.38, 0.22)
 		sb.set_border_width_all(2)
+		sb.set_corner_radius_all(8)
 		b.add_theme_stylebox_override(st, sb)
-	if toggle:
-		b.toggled.connect(cb)
-	else:
-		b.pressed.connect(cb)
+	b.pressed.connect(cb)
 	return b
 
 
@@ -66,57 +71,58 @@ func _build() -> void:
 	names.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(names)
 
-	status = _label(12, Color(0.8, 0.72, 0.6))
-	status.position = Vector2(10, 6)
-	root.add_child(status)
+	bars = StatusBars.new()
+	bars.position = Vector2(8, 8)
+	bars.size = Vector2(280, 84)
+	bars.portrait = load("res://assets/ui/retrato_mago.jpg")
+	root.add_child(bars)
 
-	# barra de pedra
-	var bar := Panel.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.11, 0.1, 0.09, 0.96)
-	sb.border_color = Color(0.36, 0.3, 0.22)
-	sb.border_width_top = 3
-	bar.add_theme_stylebox_override("panel", sb)
-	bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	bar.offset_top = -BAR_H + 22
-	bar.mouse_filter = Control.MOUSE_FILTER_STOP
-	root.add_child(bar)
+	var menu := HBoxContainer.new()
+	menu.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	menu.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	menu.offset_right = -8
+	menu.offset_top = 8
+	menu.add_theme_constant_override("separation", 6)
+	root.add_child(menu)
+	menu.add_child(_menu_btn("Equip.", _toggle_panel))
+	menu.add_child(_menu_btn("Chat", _open_chat))
+	menu.add_child(_menu_btn("Tela cheia", _fullscreen))
 
-	var slots := HBoxContainer.new()
-	slots.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	slots.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	slots.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	slots.offset_bottom = -4
-	slots.add_theme_constant_override("separation", 4)
-	root.add_child(slots)
-	slots.add_child(_slot("Correr", func(on): player.run_toggle = on, true))
-	slots.add_child(_slot("Magia\n(1)", func(): player.cast_at()))
-	slots.add_child(_slot("Chat", _open_chat))
-	slots.add_child(_slot("Tela\ncheia", _fullscreen))
+	joystick = Joystick.new()
+	joystick.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	joystick.offset_left = 10
+	joystick.offset_top = -190
+	joystick.offset_right = 190
+	joystick.offset_bottom = -10
+	joystick.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(joystick)
 
-	life = Globe.new()
-	life.fill = Color(0.75, 0.05, 0.04)
-	life.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	life.offset_left = 6
-	life.offset_top = -BAR_H - 4
-	life.offset_right = 6 + BAR_H
-	life.offset_bottom = -4
-	root.add_child(life)
-	mana = Globe.new()
-	mana.fill = Color(0.1, 0.18, 0.8)
-	mana.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	mana.offset_left = -6 - BAR_H
-	mana.offset_top = -BAR_H - 4
-	mana.offset_right = -6
-	mana.offset_bottom = -4
-	root.add_child(mana)
+	fire_btn = RoundButton.new()
+	fire_btn.text = "Bola de\nfogo"
+	fire_btn.color = Color(0.75, 0.22, 0.05)
+	fire_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	fire_btn.offset_left = -128
+	fire_btn.offset_top = -128
+	fire_btn.offset_right = -18
+	fire_btn.offset_bottom = -18
+	root.add_child(fire_btn)
+
+	run_btn = RoundButton.new()
+	run_btn.text = "Correr"
+	run_btn.color = Color(0.35, 0.3, 0.22)
+	run_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	run_btn.offset_left = -200
+	run_btn.offset_top = -88
+	run_btn.offset_right = -138
+	run_btn.offset_bottom = -26
+	root.add_child(run_btn)
 
 	chat_log = _label(13, Color(0.95, 0.9, 0.6))
-	chat_log.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	chat_log.offset_left = BAR_H + 14
-	chat_log.offset_top = -BAR_H - 130
-	chat_log.offset_bottom = -BAR_H + 10
-	chat_log.offset_right = 520
+	chat_log.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	chat_log.offset_left = -220
+	chat_log.offset_right = 220
+	chat_log.offset_top = -170
+	chat_log.offset_bottom = -60
 	chat_log.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	chat_log.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(chat_log)
@@ -124,11 +130,11 @@ func _build() -> void:
 	chat_input = LineEdit.new()
 	chat_input.placeholder_text = "Escreva e aperte Enter"
 	chat_input.max_length = 120
-	chat_input.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	chat_input.offset_left = BAR_H + 14
-	chat_input.offset_right = 520
-	chat_input.offset_top = -BAR_H - 36 + 10
-	chat_input.offset_bottom = -BAR_H + 4
+	chat_input.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	chat_input.offset_left = -220
+	chat_input.offset_right = 220
+	chat_input.offset_top = -54
+	chat_input.offset_bottom = -16
 	chat_input.visible = false
 	chat_input.text_submitted.connect(_on_submit)
 	root.add_child(chat_input)
@@ -141,17 +147,89 @@ func _build() -> void:
 	root.add_child(rotate_msg)
 
 
+# ------------------------------------------------------------ toque e mouse
+func _input(ev: InputEvent) -> void:
+	if player == null:
+		return
+	var st := ev as InputEventScreenTouch
+	if st:
+		if st.pressed:
+			if _start(st.position, st.index):
+				get_viewport().set_input_as_handled()
+		elif st.index == _joy_idx:
+			_release_joy()
+			get_viewport().set_input_as_handled()
+		return
+	var sd := ev as InputEventScreenDrag
+	if sd:
+		if sd.index == _joy_idx:
+			_move_joy(sd.position)
+			get_viewport().set_input_as_handled()
+		return
+	var mb := ev as InputEventMouseButton
+	if mb and mb.button_index == MOUSE_BUTTON_LEFT:
+		if mb.device == EMU:
+			if mb.pressed and _over_controls(mb.position):
+				get_viewport().set_input_as_handled()
+			return
+		if mb.pressed and _start(mb.position, MOUSE_JOY):
+			get_viewport().set_input_as_handled()
+		elif not mb.pressed and _joy_idx == MOUSE_JOY:
+			_release_joy()
+			get_viewport().set_input_as_handled()
+		return
+	var mm := ev as InputEventMouseMotion
+	if mm:
+		if mm.device == EMU and _joy_idx >= 0:
+			get_viewport().set_input_as_handled()
+		elif mm.device != EMU and _joy_idx == MOUSE_JOY:
+			_move_joy(mm.position)
+			get_viewport().set_input_as_handled()
+
+
+func _over_controls(pos: Vector2) -> bool:
+	return joystick.hit(pos) or fire_btn.hit(pos) or run_btn.hit(pos)
+
+
+func _start(pos: Vector2, idx: int) -> bool:
+	if fire_btn.hit(pos):
+		fire_btn.flash()
+		player.cast_at()
+		return true
+	if run_btn.hit(pos):
+		player.run_toggle = not player.run_toggle
+		run_btn.active = player.run_toggle
+		run_btn.queue_redraw()
+		return true
+	if joystick.hit(pos) and _joy_idx == -1:
+		_joy_idx = idx
+		_move_joy(pos)
+		return true
+	return false
+
+
+func _move_joy(pos: Vector2) -> void:
+	player.joy = joystick.set_point(pos)
+	player.target = null
+
+
+func _release_joy() -> void:
+	_joy_idx = -1
+	joystick.reset()
+	player.joy = Vector2.ZERO
+
+
 func _process(_d: float) -> void:
 	if player == null:
 		return
 	var online := ("%d online%s" % [net.online_count, " · anfitrião" if net.is_host else ""]) if net.enabled else ""
-	status.text = "%s  %s\nPC: clique anda · botão direito/1 magia · Shift corre · I equipamento · Enter chat" % [net.status, online]
-	life.ratio = player.hp / player.max_hp
-	mana.ratio = player.mp / player.max_mp
-	life.label = "%d" % player.hp
-	mana.label = "%d" % player.mp
-	life.queue_redraw()
-	mana.queue_redraw()
+	bars.hp = player.hp / player.max_hp
+	bars.mp = player.mp / player.max_mp
+	bars.title = player.display_name if player.display_name != "" else "Mago das Chamas"
+	bars.sub = "%s %s" % [net.status, online]
+	bars.queue_redraw()
+	fire_btn.enabled = player.mp >= Player.CAST_COST
+	fire_btn.queue_redraw()
 	var vs := get_viewport().get_visible_rect().size
 	rotate_msg.visible = vs.y > vs.x * 1.1
 	names.queue_redraw()
@@ -162,6 +240,11 @@ func _unhandled_input(ev: InputEvent) -> void:
 	if k and k.pressed and not k.echo and (k.keycode == KEY_ENTER or k.keycode == KEY_KP_ENTER) and not chat_input.visible:
 		_open_chat()
 		get_viewport().set_input_as_handled()
+
+
+func _toggle_panel() -> void:
+	if panel:
+		panel.toggle()
 
 
 func _open_chat() -> void:
@@ -180,7 +263,7 @@ func _on_submit(text: String) -> void:
 
 func _on_chat(who: String, text: String) -> void:
 	_lines.append("%s: %s" % [who, text])
-	while _lines.size() > 6:
+	while _lines.size() > 5:
 		_lines.remove_at(0)
 	chat_log.text = "\n".join(_lines)
 
@@ -192,35 +275,115 @@ func _fullscreen() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 
-## Globo de vida/mana: esfera de vidro com líquido no nível atual.
-class Globe:
+## Joystick virtual: base redonda e "pino" que segue o dedo.
+class Joystick:
 	extends Control
-	var fill := Color.RED
-	var ratio := 1.0
-	var label := ""
+	const R := 62.0
+	var knob := Vector2.ZERO
+
+	func center() -> Vector2:
+		return get_global_rect().get_center()
+
+	func hit(pos: Vector2) -> bool:
+		return pos.distance_to(center()) < R * 1.6
+
+	func set_point(pos: Vector2) -> Vector2:
+		knob = (pos - center()).limit_length(R)
+		queue_redraw()
+		return knob / R
+
+	func reset() -> void:
+		knob = Vector2.ZERO
+		queue_redraw()
+
+	func _draw() -> void:
+		var c := size * 0.5
+		draw_circle(c, R, Color(0, 0, 0, 0.35))
+		draw_arc(c, R, 0, TAU, 48, Color(0.85, 0.7, 0.45, 0.5), 2.5)
+		for a in 4:
+			var d := Vector2.RIGHT.rotated(a * PI / 2) * (R - 10)
+			draw_circle(c + d, 3, Color(0.85, 0.7, 0.45, 0.4))
+		draw_circle(c + knob, 26, Color(0.55, 0.42, 0.28, 0.85))
+		draw_arc(c + knob, 26, 0, TAU, 32, Color(1, 0.85, 0.55, 0.8), 2.0)
+
+
+## Botão redondo de ação.
+class RoundButton:
+	extends Control
+	var text := ""
+	var color := Color.RED
+	var active := false
+	var enabled := true
+	var _flash := 0.0
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	func hit(pos: Vector2) -> bool:
+		var r := get_global_rect()
+		return pos.distance_to(r.get_center()) < r.size.x * 0.55
+
+	func flash() -> void:
+		_flash = 1.0
+
+	func _process(delta: float) -> void:
+		if _flash > 0.0:
+			_flash = maxf(0.0, _flash - delta * 4.0)
+			queue_redraw()
+
 	func _draw() -> void:
 		var c := size * 0.5
-		var r := minf(size.x, size.y) * 0.5 - 4.0
-		draw_circle(c, r + 4.0, Color(0.3, 0.25, 0.18))
-		draw_circle(c, r + 1.5, Color(0.05, 0.04, 0.04))
-		var level := c.y + r - 2.0 * r * clampf(ratio, 0.0, 1.0)
-		var y := c.y - r
-		while y <= c.y + r:
-			if y >= level:
-				var dx := sqrt(maxf(0.0, r * r - (y - c.y) * (y - c.y)))
-				var shade := 0.55 + 0.45 * (1.0 - absf(y - c.y) / r)
-				draw_line(Vector2(c.x - dx, y), Vector2(c.x + dx, y), fill * shade, 1.2)
-			y += 1.0
-		draw_circle(c + Vector2(-r * 0.35, -r * 0.4), r * 0.22, Color(1, 1, 1, 0.12))
-		draw_arc(c, r + 1.5, 0, TAU, 48, Color(0.55, 0.45, 0.3), 2.0)
+		var r := minf(size.x, size.y) * 0.5
+		var col := color if enabled else color.darkened(0.6)
+		if active:
+			col = col.lightened(0.35)
+		draw_circle(c, r, Color(0, 0, 0, 0.45))
+		draw_circle(c, r - 4, col.lerp(Color(1, 0.9, 0.6), _flash * 0.6))
+		draw_arc(c, r - 2, 0, TAU, 48, Color(0.95, 0.8, 0.5, 0.9), 3.0)
 		var font := ThemeDB.fallback_font
-		var w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
-		draw_string_outline(font, c + Vector2(-w * 0.5, 5), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color.BLACK)
-		draw_string(font, c + Vector2(-w * 0.5, 5), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.95, 0.9, 0.8))
+		var lines := text.split("\n")
+		for i in lines.size():
+			var w := font.get_string_size(lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
+			var y := c.y + 5 + (i - (lines.size() - 1) * 0.5) * 16
+			draw_string_outline(font, Vector2(c.x - w * 0.5, y), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, 4, Color.BLACK)
+			draw_string(font, Vector2(c.x - w * 0.5, y), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1, 0.95, 0.85))
+
+
+## Retrato + barras de vida e mana.
+class StatusBars:
+	extends Control
+	var portrait: Texture2D
+	var hp := 1.0
+	var mp := 1.0
+	var title := ""
+	var sub := ""
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _bar(pos: Vector2, w: float, v: float, col: Color, label: String) -> void:
+		draw_rect(Rect2(pos, Vector2(w, 16)), Color(0, 0, 0, 0.6))
+		draw_rect(Rect2(pos + Vector2(2, 2), Vector2((w - 4) * clampf(v, 0, 1), 12)), col)
+		draw_rect(Rect2(pos + Vector2(2, 2), Vector2((w - 4) * clampf(v, 0, 1), 4)), col.lightened(0.3))
+		draw_rect(Rect2(pos, Vector2(w, 16)), Color(0.6, 0.48, 0.3), false, 1.5)
+		var font := ThemeDB.fallback_font
+		draw_string_outline(font, pos + Vector2(6, 13), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, 3, Color.BLACK)
+		draw_string(font, pos + Vector2(6, 13), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1, 0.95, 0.9))
+
+	func _draw() -> void:
+		draw_rect(Rect2(0, 0, 64, 64), Color(0, 0, 0, 0.6))
+		if portrait:
+			var ts := portrait.get_size()
+			var side := minf(ts.x, ts.y * 0.66)
+			draw_texture_rect_region(portrait, Rect2(2, 2, 60, 60), Rect2((ts.x - side) * 0.5, 0, side, side))
+		draw_rect(Rect2(0, 0, 64, 64), Color(0.7, 0.55, 0.32), false, 2.0)
+		var font := ThemeDB.fallback_font
+		draw_string_outline(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color.BLACK)
+		draw_string(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.4, 0.95, 0.4))
+		_bar(Vector2(72, 19), 190, hp, Color(0.72, 0.08, 0.06), "Vida %d%%" % int(hp * 100))
+		_bar(Vector2(72, 39), 190, mp, Color(0.12, 0.22, 0.8), "Mana %d%%" % int(mp * 100))
+		draw_string_outline(font, Vector2(72, 72), sub, HORIZONTAL_ALIGNMENT_LEFT, 210, 10, 3, Color.BLACK)
+		draw_string(font, Vector2(72, 72), sub, HORIZONTAL_ALIGNMENT_LEFT, 210, 10, Color(0.85, 0.78, 0.65))
 
 
 ## Nomes sobre as cabeças (verde para jogadores; branco para NPCs).
@@ -233,7 +396,7 @@ class NameTags:
 			var actor := a as Actor
 			if actor == null or actor.display_name == "":
 				continue
-			var pos := actor.get_global_transform_with_canvas() * Vector2(0, -90)
+			var pos := actor.get_global_transform_with_canvas() * Vector2(0, -92)
 			var col := Color(0.92, 0.88, 0.78) if actor is Npc else Color(0.35, 0.95, 0.35)
 			var w := font.get_string_size(actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
 			var at := pos + Vector2(-w * 0.5, 0)
