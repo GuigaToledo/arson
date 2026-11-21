@@ -21,6 +21,10 @@ func g(x: float, y: float) -> Vector2:
 func _ready() -> void:
 	map = WorldMap.load_file(MAP_PATH)
 	Actor.walkable = map.walkable
+	# zona segura: calçamento e construções da vila
+	Rules.safe_check = func(pos: Vector2) -> bool:
+		var gp := Iso.to_grid(pos)
+		return "#TH".contains(map.at(int(floor(gp.x)), int(floor(gp.y))))
 	var cm := CanvasModulate.new()
 	cm.color = Color(0.34, 0.31, 0.32)
 	add_child(cm)
@@ -41,6 +45,9 @@ func _ready() -> void:
 	_build_details()
 	_build_lights()
 	_spawn_characters()
+	_spawn_monsters()
+	if "--teste-combate" in OS.get_cmdline_user_args():
+		_teste_combate()
 	var net := NetSync.new()
 	net.name = "Rede"
 	add_child(net)
@@ -186,6 +193,58 @@ func _build_lights() -> void:
 	var fl := LightKit.make(Color(1.0, 0.55, 0.2), 1.3, 2.4, true, 0.2)
 	fl.position = camp.tex_foot + Vector2(0, -12)
 	camp.add_child(fl)
+
+
+## Monstros fora da vila: esqueletos e carniçais nos campos, bandidos nas florestas,
+## cultistas e golens nos morros de rocha ao norte. Posições fixas por tile.
+func _spawn_monsters() -> void:
+	var n := 0
+	for y in map.h:
+		for x in map.w:
+			var ch := map.at(x, y)
+			var gp := Vector2(x + 0.5, y + 0.5)
+			if gp.distance_to(map.spawn) < 10.0 or not map.walkable_grid(gp):
+				continue
+			var r := map.tile_rand(x, y, 11)
+			var r2 := map.tile_rand(x, y, 12)
+			var t := ""
+			if ch == "f" and r < 0.035:
+				t = "bandido" if r2 < 0.6 else "esqueleto"
+			elif ch == "." and r < 0.014:
+				t = "carnical" if r2 < 0.45 else "esqueleto"
+			elif ch == "r" and r < 0.03:
+				t = "golem" if r2 < 0.25 else "cultista"
+			elif ch == ":" and r < 0.01 and gp.distance_to(map.spawn) > 14.0:
+				t = "cultista"
+			if t == "":
+				continue
+			var m := Monster.new().configure(t, Iso.to_screen(gp))
+			m.name = "Monstro_%d" % n
+			entities.add_child(m)
+			n += 1
+
+
+## Só para testes automáticos (godot ... -- --teste-combate): leva o jogador até
+## monstros, mira e ataca sozinho, e escreve o resultado no console.
+func _teste_combate() -> void:
+	await get_tree().create_timer(0.3).timeout
+	var mons := get_tree().get_nodes_in_group("monsters")
+	print("TESTE monstros=", mons.size())
+	var m: Monster = null
+	for c in mons:
+		if c.mtype == "esqueleto" or c.mtype == "carnical":
+			m = c
+			break
+	if m == null:
+		return
+	player.global_position = m.home + Vector2(120, 40)
+	for i in 30:
+		await get_tree().create_timer(0.25).timeout
+		if not player._alive_foe():
+			player.target_nearest()
+		if i % 4 == 0:
+			player.cast_at()
+	print("TESTE nivel=", player.level, " xp=", player.xp, " ouro=", player.gold, " vida=", int(player.hp), " alvo_vivo=", player._alive_foe())
 
 
 func _spawn_characters() -> void:

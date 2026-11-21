@@ -225,8 +225,14 @@ func _process(_d: float) -> void:
 	var online := ("%d online%s" % [net.online_count, " · anfitrião" if net.is_host else ""]) if net.enabled else ""
 	bars.hp = player.hp / player.max_hp
 	bars.mp = player.mp / player.max_mp
-	bars.title = player.display_name if player.display_name != "" else "Mago das Chamas"
+	bars.title = "%s · nível %d" % [player.display_name if player.display_name != "" else "Mago das Chamas", player.level]
+	var a := Rules.xp_to_reach(player.level)
+	var b := Rules.xp_to_reach(player.level + 1)
+	bars.xp = float(player.xp - a) / float(maxi(1, b - a))
+	bars.gold = player.gold
 	bars.sub = "%s %s" % [net.status, online]
+	CombatText.step(get_process_delta_time())
+	names.foe = player.foe
 	bars.queue_redraw()
 	fire_btn.enabled = player.mp >= Player.CAST_COST
 	fire_btn.queue_redraw()
@@ -357,6 +363,8 @@ class StatusBars:
 	var mp := 1.0
 	var title := ""
 	var sub := ""
+	var xp := 0.0
+	var gold := 0
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -382,23 +390,63 @@ class StatusBars:
 		draw_string(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.4, 0.95, 0.4))
 		_bar(Vector2(72, 19), 190, hp, Color(0.72, 0.08, 0.06), "Vida %d%%" % int(hp * 100))
 		_bar(Vector2(72, 39), 190, mp, Color(0.12, 0.22, 0.8), "Mana %d%%" % int(mp * 100))
-		draw_string_outline(font, Vector2(72, 72), sub, HORIZONTAL_ALIGNMENT_LEFT, 210, 10, 3, Color.BLACK)
-		draw_string(font, Vector2(72, 72), sub, HORIZONTAL_ALIGNMENT_LEFT, 210, 10, Color(0.85, 0.78, 0.65))
+		# experiência (barra fina dourada) e ouro
+		draw_rect(Rect2(72, 58, 190, 5), Color(0, 0, 0, 0.6))
+		draw_rect(Rect2(73, 59, 188 * clampf(xp, 0, 1), 3), Color(0.95, 0.72, 0.2))
+		var gs := "%d ouro" % gold
+		draw_string_outline(font, Vector2(268, 63), gs, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, 3, Color.BLACK)
+		draw_string(font, Vector2(268, 63), gs, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1, 0.85, 0.35))
+		draw_string_outline(font, Vector2(72, 76), sub, HORIZONTAL_ALIGNMENT_LEFT, 210, 10, 3, Color.BLACK)
+		draw_string(font, Vector2(72, 76), sub, HORIZONTAL_ALIGNMENT_LEFT, 210, 10, Color(0.85, 0.78, 0.65))
 
 
-## Nomes sobre as cabeças (verde para jogadores; branco para NPCs).
+## Nomes sobre as cabeças (verde para jogadores; branco para NPCs; monstros com barra de
+## vida), anel no alvo selecionado e números de dano/experiência.
 class NameTags:
 	extends Control
+	var foe: Node2D = null
 
 	func _draw() -> void:
 		var font := ThemeDB.fallback_font
+		var ct := get_viewport().get_canvas_transform()
+		var zoom := ct.get_scale().x
+		# anel no chão do alvo
+		if foe != null and is_instance_valid(foe) and not foe.dead:
+			var c: Vector2 = ct * foe.global_position
+			var r := 20.0 * float(foe.info.scale) * zoom
+			draw_set_transform(c, 0.0, Vector2(1, 0.5))
+			draw_arc(Vector2.ZERO, r, 0, TAU, 40, Color(1, 0.2, 0.12, 0.95), 2.5)
+			draw_arc(Vector2.ZERO, r + 3, 0, TAU, 40, Color(1, 0.4, 0.2, 0.35), 4.0)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		for a in get_tree().get_nodes_in_group("actors"):
 			var actor := a as Actor
-			if actor == null or actor.display_name == "":
+			if actor == null or actor.display_name == "" or not actor.visible:
 				continue
-			var pos := actor.get_global_transform_with_canvas() * Vector2(0, -92)
+			var mon := actor as Monster
+			if mon != null and mon.dead:
+				continue
+			var h := 92.0 * (float(mon.info.scale) if mon else 1.0)
+			var pos := actor.get_global_transform_with_canvas() * Vector2(0, -h)
 			var col := Color(0.92, 0.88, 0.78) if actor is Npc else Color(0.35, 0.95, 0.35)
+			if mon:
+				col = Color(1, 0.55, 0.45) if mon == foe else Color(0.9, 0.78, 0.7)
 			var w := font.get_string_size(actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
 			var at := pos + Vector2(-w * 0.5, 0)
 			draw_string_outline(font, at, actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color(0, 0, 0, 0.9))
 			draw_string(font, at, actor.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, col)
+			if mon:
+				var f := clampf(mon.hp / mon.max_hp, 0, 1)
+				var bc := Color(0.25, 0.85, 0.25) if f > 0.6 else (Color(0.9, 0.75, 0.2) if f > 0.3 else Color(0.9, 0.2, 0.15))
+				draw_rect(Rect2(pos + Vector2(-20, 4), Vector2(40, 5)), Color(0, 0, 0, 0.8))
+				draw_rect(Rect2(pos + Vector2(-19, 5), Vector2(38 * f, 3)), bc)
+		# números de dano, cura e experiência
+		for it in CombatText.items:
+			var life := 1.6 if it.big else 1.0
+			var k: float = it.t / life
+			var p: Vector2 = ct * it.p + Vector2(0, -k * 36.0)
+			var sz := 18 if it.big else 14
+			var tw := font.get_string_size(it.text, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
+			var c2: Color = it.c
+			c2.a = 1.0 - k * k
+			draw_string_outline(font, p + Vector2(-tw * 0.5, 0), it.text, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, 4, Color(0, 0, 0, c2.a))
+			draw_string(font, p + Vector2(-tw * 0.5, 0), it.text, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, c2)

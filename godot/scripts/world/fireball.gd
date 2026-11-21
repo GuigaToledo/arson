@@ -7,6 +7,9 @@ const LIFE := 0.85
 const HEIGHT := 48.0
 
 var dir := Vector2.RIGHT
+## Dano e quem lançou (para dar a experiência).
+var power := 30.0
+var caster: Node2D = null
 var _t := 0.0
 var _done := false
 var _light: PointLight2D
@@ -57,6 +60,12 @@ func _process(delta: float) -> void:
 	if _t >= LIFE or (Actor.walkable.is_valid() and not Actor.walkable.call(nxt)):
 		_explode()
 		return
+	for m in get_tree().get_nodes_in_group("monsters"):
+		if not m.dead and (m.global_position - nxt).length() < 28.0 * float(m.info.scale):
+			m.take_damage(Rules.roll(power, float(m.info.def)), caster)
+			global_position = nxt
+			_explode()
+			return
 	global_position = nxt
 	queue_redraw()
 
