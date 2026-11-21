@@ -96,6 +96,34 @@ static func poly(n: CanvasItem, pts: PackedVector2Array, col: Color) -> void:
 	n.draw_colored_polygon(pts, col)
 
 
+## Polígono com volume: escurece do lado oposto à luz (vem do alto à esquerda) e clareia o lado da luz.
+static func spoly(n: CanvasItem, pts: PackedVector2Array, col: Color, k := 0.32) -> void:
+	if pts.size() < 3:
+		return
+	var area := 0.0
+	var cen := Vector2.ZERO
+	for i in pts.size():
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[(i + 1) % pts.size()]
+		area += a.x * b.y - b.x * a.y
+		cen += a
+	if absf(area) < 1.0:
+		return
+	if pts.size() > 3 and Geometry2D.triangulate_polygon(pts).is_empty():
+		pts = Geometry2D.convex_hull(pts)
+		if pts.size() < 4:
+			return
+		pts.remove_at(pts.size() - 1)
+	cen /= pts.size()
+	var L := Vector2(-0.6, -0.8)
+	var cols := PackedColorArray()
+	for q in pts:
+		var d := (q - cen)
+		var f := d.normalized().dot(L) if d.length() > 0.01 else 0.0
+		cols.append(col.lightened(f * k) if f > 0.0 else col.darkened(-f * k * 1.4))
+	n.draw_polygon(pts, cols)
+
+
 static func ellipse(n: CanvasItem, c: Vector2, rx: float, col: Color, filled := true, w := 2.0) -> void:
 	var pts := PackedVector2Array()
 	for i in 33:

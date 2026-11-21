@@ -163,7 +163,7 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 	if near_left:
 		limb(ci, p.shR, p.elbowR, p.handR, 4.8, 4.0, under.darkened(0.35))
 	var torso := vol(p, p.shC, p.w, 5.5, p.hipC, p.w * 0.55, 4.5)
-	SpellArt.poly(ci, torso, under)
+	SpellArt.spoly(ci, torso, under, 0.4)
 	outline(ci, torso, under.darkened(0.5))
 	if not near_right:
 		limb(ci, p.shL, p.elbowL, p.handL, 4.8, 4.0, under.darkened(0.1))
@@ -194,6 +194,10 @@ static func limb(ci: CanvasItem, a: Vector2, j: Vector2, b: Vector2, w1: float, 
 	ci.draw_line(a, j, col, w1, true)
 	ci.draw_line(j, b, col.lightened(0.04), w2, true)
 	ci.draw_circle(j, w1 * 0.5, col)
+	# realce do lado da luz (alto à esquerda)
+	var hl := Vector2(-0.5, -0.6)
+	ci.draw_line(a + hl * w1 * 0.3, j + hl * w1 * 0.3, Color(col.lightened(0.35), 0.55), maxf(1.0, w1 * 0.3), true)
+	ci.draw_line(j + hl * w2 * 0.3, b + hl * w2 * 0.3, Color(col.lightened(0.3), 0.5), maxf(1.0, w2 * 0.3), true)
 
 
 ## Perna (quadril-joelho-pé) com o pé apontando para a frente.
@@ -229,16 +233,16 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 		"robe":
 			var kL: Vector2 = Vector2(0, -6 + p.bob) + lat(p, -p.w * 1.15)
 			var kR: Vector2 = Vector2(0, -6 + p.bob) + lat(p, p.w * 1.15)
-			SpellArt.poly(ci, vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.kneeC + Vector2(0, 4), p.w * 1.15, 7.5), col)
+			SpellArt.spoly(ci, vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.kneeC + Vector2(0, 4), p.w * 1.15, 7.5), col)
 			ci.draw_line(p.hipL + Vector2(0, -2), p.hipR + Vector2(0, -2), acc, 2.0)
 			ci.draw_line((p.shL + p.shR) * 0.5, (kL + kR) * 0.5, acc.darkened(0.3), 1.0)
 			limb(ci, p.shL, p.elbowL, p.handL.lerp(p.elbowL, 0.15), 5.6, 5.0, col)
 			limb(ci, p.shR, p.elbowR, p.handR.lerp(p.elbowR, 0.15), 5.6, 5.0, col)
 		"vest":
-			SpellArt.poly(ci, vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.hipC + Vector2(0, 4), p.w * 0.6, 5.0), col)
+			SpellArt.spoly(ci, vol(p, p.shC + Vector2(0, -1), p.w, 6.0, p.hipC + Vector2(0, 4), p.w * 0.6, 5.0), col)
 			ci.draw_line(p.hipL + Vector2(0, 1), p.hipR + Vector2(0, 1), acc, 2.0)
 		"apron":
-			SpellArt.poly(ci, vol(p, p.shC, p.w, 6.0, p.hipC + Vector2(0, 2), p.w * 0.6, 5.0), acc)
+			SpellArt.spoly(ci, vol(p, p.shC, p.w, 6.0, p.hipC + Vector2(0, 2), p.w * 0.6, 5.0), acc)
 			if p.toward:
 				var a: Vector2 = (p.hipL + p.hipR) * 0.5 + fwd(p, 2)
 				SpellArt.poly(ci, PackedVector2Array([a + lat(p, -6) + Vector2(0, -12), a + lat(p, 6) + Vector2(0, -12), a + lat(p, 7) + Vector2(0, 20), a + lat(p, -7) + Vector2(0, 20)]), col)
@@ -294,7 +298,7 @@ static func draw_item(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> void:
 			if p.toward:
 				ci.draw_circle(p.head + fwd(p, 5) + Vector2(0, -4), 1.7, acc)
 		"kilt":
-			SpellArt.poly(ci, vol(p, p.hipC + Vector2(0, -3), p.w * 0.6, 5.0, p.kneeC + Vector2(0, -2), p.w * 1.05, 7.0), col)
+			SpellArt.spoly(ci, vol(p, p.hipC + Vector2(0, -3), p.w * 0.6, 5.0, p.kneeC + Vector2(0, -2), p.w * 1.05, 7.0), col)
 			for i in 5:
 				var tk := (i + 0.5) / 5.0
 				ci.draw_line((p.hipL as Vector2).lerp(p.hipR, tk), ((p.kneeL as Vector2) + lat(p, -3)).lerp((p.kneeR as Vector2) + lat(p, 3), tk), col.darkened(0.3), 1.0, true)
@@ -351,7 +355,7 @@ static func draw_cloth(ci: CanvasItem, p: Dictionary, top: Vector2, bot: Vector2
 		right.append(c + lat(p, ww) + fwd(p, -wv))
 	right.reverse()
 	var poly := left + right
-	SpellArt.poly(ci, poly, col)
+	SpellArt.spoly(ci, poly, col, 0.4)
 	outline(ci, poly, col.darkened(0.5))
 	for i in 4:
 		var k2 := (i + 1) / 5.0
@@ -451,7 +455,7 @@ static func draw_wolfcape_front(ci: CanvasItem, p: Dictionary, it: EquipmentItem
 	var h: Vector2 = p.head
 	var w: float = p.w
 	# manto de pelo nos ombros
-	SpellArt.poly(ci, vol(p, p.shC + Vector2(0, -3), w + 3.5, 7.0, p.shC + Vector2(0, 9), w + 1.0, 6.5), col)
+	SpellArt.spoly(ci, vol(p, p.shC + Vector2(0, -3), w + 3.5, 7.0, p.shC + Vector2(0, 9), w + 1.0, 6.5), col)
 	if p.toward:
 		fur_edge(ci, p.shL + Vector2(0, 8), (p.shL + p.shR) * 0.5 + Vector2(0, 6), 7.0, col.lightened(0.05), 5, 2.0)
 		fur_edge(ci, (p.shL + p.shR) * 0.5 + Vector2(0, 6), p.shR + Vector2(0, 8), 7.0, col.lightened(0.05), 5, 4.0)
@@ -480,7 +484,7 @@ static func draw_wolfskirt(ci: CanvasItem, p: Dictionary, it: EquipmentItem) -> 
 	limb(ci, p.hipR, p.kneeR, p.footR + Vector2(0, -3), 6.4, 5.4, Color(0.08, 0.07, 0.075))
 	var kl: Vector2 = Vector2(0, -12 + p.bob) + lat(p, -w * 1.2)
 	var kr: Vector2 = Vector2(0, -12 + p.bob) + lat(p, w * 1.2)
-	SpellArt.poly(ci, vol(p, p.hipC + Vector2(0, -4), w * 0.65, 5.5, p.kneeC, w * 1.2, 8.5), col)
+	SpellArt.spoly(ci, vol(p, p.hipC + Vector2(0, -4), w * 0.65, 5.5, p.kneeC, w * 1.2, 8.5), col)
 	ci.draw_line(p.hipL + Vector2(0, -3), p.hipR + Vector2(0, -3), Color(0.35, 0.28, 0.2), 2.0)
 	fur_edge(ci, kl, kr, 7.0, col, 9, 3.0)
 	for i in 6:

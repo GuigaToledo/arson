@@ -31,6 +31,7 @@ var _lines: PackedStringArray = PackedStringArray()
 
 
 func bind(p: Player, n: NetSync, eq_panel: EquipmentPanel = null) -> void:
+	layer = 2  # acima do pós-processamento
 	player = p
 	net = n
 	panel = eq_panel

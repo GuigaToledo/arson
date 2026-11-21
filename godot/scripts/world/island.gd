@@ -161,6 +161,10 @@ func start_game(slot: int) -> void:
 	gm.bind(player, perf)
 	if "--teste-celular" in OS.get_cmdline_user_args():
 		Settings._mobile = 1
+	var post := PostFx.new()
+	add_child(post)
+	post.player = player
+	post.setup_dust(entities)
 	var hud := Hud.new()
 	add_child(hud)
 	hud.bind(player, net, ui)
