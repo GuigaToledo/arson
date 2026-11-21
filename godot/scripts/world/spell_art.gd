@@ -471,6 +471,9 @@ class Proj:
 			R.append([q - nx * w, q - nx * w * 0.45])
 		for i in n - 1:
 			var f := 1.0 - float(i) / n
+			# pontos repetidos (projétil parado no primeiro quadro) não formam polígono
+			if (L[i][0] as Vector2).distance_to(L[i + 1][0]) < 0.6 or (L[i][0] as Vector2).distance_to(R[i][0]) < 0.6:
+				continue
 			draw_colored_polygon(PackedVector2Array([L[i][0], L[i + 1][0], R[i + 1][0], R[i][0]]), Color(col, col.a * f))
 			draw_colored_polygon(PackedVector2Array([L[i][1], L[i + 1][1], R[i + 1][1], R[i][1]]), Color(col2, col2.a * f))
 
