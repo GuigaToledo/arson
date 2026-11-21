@@ -83,7 +83,7 @@ static func lookup(nome: String) -> Dictionary:
 	return {"t": _by_name[base], "elite": el}
 
 
-func configure(t: String, at: Vector2, is_elite := false) -> Monster:
+func configure(t: String, at: Vector2, is_elite := false, cap := 999) -> Monster:
 	mtype = t
 	info = TYPES[t]
 	boss = bool(info.get("chefe", false))
@@ -100,6 +100,19 @@ func configure(t: String, at: Vector2, is_elite := false) -> Monster:
 		info["aggro"] = float(info.aggro) + 1.0
 		info["speed"] = float(info.speed) * 1.08
 		info["nivel"] = int(info.get("nivel", 1)) + 3
+	# perto da vila os monstros são mais fracos: nível limitado pela distância
+	var l0 := int(info.get("nivel", 1))
+	if l0 > cap and not info.get("dummy", false):
+		if not elite:
+			info = info.duplicate(true)
+		var l1 := maxi(1, cap)
+		info["nivel"] = l1
+		info["hp"] = float(info.hp) * Rules.mon_hp(l1) / Rules.mon_hp(l0)
+		info["atk"] = float(info.atk) * Rules.mon_atk(l1) / Rules.mon_atk(l0)
+		info["xp"] = int(round(float(info.xp) * Rules.mon_xp(l1) / Rules.mon_xp(l0)))
+		info["def"] = float(info.def) * float(l1) / float(l0)
+		var gk := Rules.mon_xp(l1) / Rules.mon_xp(l0)
+		info["gold"] = [int(float(info.gold[0]) * gk), maxi(1, int(float(info.gold[1]) * gk))]
 	level = int(info.get("nivel", 1))
 	display_name = info.name
 	body_colors = info.colors

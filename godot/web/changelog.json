@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.8.1",
+  "data": "2026-11-21",
+  "titulo": "Níveis pela distância da vila",
+  "itens": [
+   "Perto da vila só aparecem monstros até o nível 5; quanto mais longe, maior o nível (os chefes também)",
+   "Lava só nas colinas de pedra do continente, longe da cidade"
+  ]
+ },
+ {
   "versao": "0.8.0",
   "data": "2026-11-21",
   "titulo": "Níveis de monstro e jogo mais difícil",

@@ -457,7 +457,8 @@ func _build_glow() -> void:
 						GlowProps.crystal(entities, Iso.to_screen(gp), x * 17 + y * 3)
 						n[1] += 1
 				"r":
-					if r < 0.13 and Vector2(x, y).distance_to(map.spawn) > 6.0:
+					# lava só nas colinas de pedra do continente (longe da vila)
+					if r < 0.13 and (x >= 58 or y >= 58):
 						var inner := true
 						for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 							if map.at(x + d.x, y + d.y) != "r":
@@ -566,6 +567,7 @@ func _build_regions() -> void:
 ## Monstros fora da vila: esqueletos e carniçais nos campos, bandidos nas florestas,
 ## cultistas e golens nos morros de rocha ao norte. Posições fixas por tile.
 func _spawn_monsters() -> void:
+	Rules.town = map.spawn
 	var n := 0
 	for y in map.h:
 		for x in map.w:
@@ -594,7 +596,7 @@ func _spawn_monsters() -> void:
 				t = "cultista"
 			if t == "":
 				continue
-			var m := Monster.new().configure(t, Iso.to_screen(gp), map.tile_rand(x, y, 31) < Monster.ELITE_CHANCE)
+			var m := Monster.new().configure(t, Iso.to_screen(gp), map.tile_rand(x, y, 31) < Monster.ELITE_CHANCE, Rules.level_cap(gp))
 			m.name = "Monstro_%d" % n
 			m.idx = n
 			entities.add_child(m)
@@ -605,7 +607,7 @@ func _spawn_monsters() -> void:
 			var bp := Vector2(float(b["pos"][0]), float(b["pos"][1]))
 			if not map.walkable_grid(bp):
 				bp = _free_tile(bp)
-			var bm := Monster.new().configure(str(b["tipo"]), Iso.to_screen(bp))
+			var bm := Monster.new().configure(str(b["tipo"]), Iso.to_screen(bp), false, Rules.level_cap(bp))
 			bm.name = "Chefe_%d" % n
 			bm.idx = n
 			entities.add_child(bm)
@@ -748,6 +750,11 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 	ui.toggle()
 	gm.toggle()
 	gm.toggle()
+	var lv := {}
+	for m in get_tree().get_nodes_in_group("monsters"):
+		var d := int(Iso.to_grid(m.home).distance_to(map.spawn) / 20.0) * 20
+		lv[d] = maxi(int(lv.get(d, 0)), m.level)
+	print("niveis por distancia: ", lv)
 	print("TESTE UI ok: ouro=%d saque=%s" % [player.gold, player.loot])
 
 

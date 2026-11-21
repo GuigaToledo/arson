@@ -76,3 +76,26 @@ static var safe_check: Callable = Callable()
 
 static func is_safe(pos: Vector2) -> bool:
 	return safe_check.is_valid() and safe_check.call(pos)
+
+
+## Nível máximo dos monstros pela distância da vila (em tiles do ponto inicial):
+## até 14 tiles só nível 5; depois sobe 1 nível a cada 3,5 tiles.
+static var town := Vector2(27, 26)
+
+
+static func level_cap(grid_pos: Vector2) -> int:
+	var d := grid_pos.distance_to(town)
+	return 5 if d <= 14.0 else 5 + int((d - 14.0) / 3.5)
+
+
+## Curvas de vida, ataque e experiência por nível (as mesmas usadas em data/monstros.json).
+static func mon_hp(l: float) -> float:
+	return 30.0 + 22.0 * l + 1.1 * l * l
+
+
+static func mon_atk(l: float) -> float:
+	return 7.0 + 1.1 * l
+
+
+static func mon_xp(l: float) -> float:
+	return 10.0 + 4.0 * l + 0.6 * l * l
