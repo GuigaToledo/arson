@@ -5,7 +5,9 @@
   "titulo": "Edição de teste: nível 100",
   "itens": [
    "TEMPORÁRIO: todos os personagens entram no nível 100, com todos os elementos no nível 100 e todas as magias e misturas liberadas",
-   "O progresso real não é alterado: quando o modo teste for desligado, cada personagem volta ao nível em que estava"
+   "O progresso real não é alterado: quando o modo teste for desligado, cada personagem volta ao nível em que estava",
+   "Pedras e rochas: colisão do tamanho da pedra desenhada (não dá mais para entrar dentro delas)",
+   "Magias não atravessam mais paredes: não dá para mirar em monstro atrás de parede, projéteis explodem ao bater na parede e monstros também precisam ver você para usar magia à distância"
   ]
  },
  {

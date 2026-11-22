@@ -249,7 +249,7 @@ func _physics_process(delta: float) -> void:
 			pass
 		elif _root_t > 0.0 and dist > reach:
 			pass  # preso nas raízes: não anda, só ataca se alcançar
-		elif dist <= reach:
+		elif dist <= reach and (float(info.range) <= 2.0 or Rules.has_sight(global_position, foe.global_position)):
 			facing = Iso.dir_from_vector(foe.global_position - global_position)
 			if _atk_cd <= 0.0:
 				_atk_cd = float(info.aspd)
@@ -347,6 +347,9 @@ func _skill(dist: float) -> bool:
 				ok = _hurt_ally() != null
 			"uivo":
 				ok = _buff_t <= 0.0
+		# magia à distância precisa ver o alvo (não atravessa parede)
+		if ok and str(s.tipo) in ["salto", "disparo", "dreno"] and is_instance_valid(foe) and not Rules.has_sight(global_position, foe.global_position):
+			ok = false
 		if not ok:
 			continue
 		_scd[i] = float(s.get("cd", 6.0))

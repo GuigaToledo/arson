@@ -32,6 +32,7 @@ func _ready() -> void:
 	map = WorldMap.load_file(MAP_PATH)
 	Player.map_hash = FileAccess.get_file_as_string(MAP_PATH).hash()
 	Actor.walkable = map.walkable
+	Rules.sight_check = map.line_clear
 	# zona segura: calçamento e construções da vila
 	Rules.safe_check = func(pos: Vector2) -> bool:
 		var gp := Iso.to_grid(pos)
@@ -444,6 +445,16 @@ func piece(nm: String, og: Vector2, fpos: Vector2, fsize: Vector2, flip := false
 		var txt := FileAccess.get_file_as_string(OBJ + "ancoras.json")
 		var parsed = JSON.parse_string(txt) if txt != "" else null
 		anchors = parsed if parsed is Dictionary else {"_": 0}
+	# pedras e rochas: a colisão acompanha o tamanho da pedra desenhada (antes era um quadradinho
+	# fixo no meio e o personagem entrava dentro da pedra)
+	if nm.begins_with("pedra") or nm.begins_with("rochedo") or nm == "pedregulho":
+		var tex: Texture2D = load(OBJ + nm + ".png")
+		if tex:
+			var wpx := tex.get_width() * 0.5 * sc
+			# rochas das paredes da caverna ficam dentro do próprio tile (não fecham passagens)
+			var s := clampf(wpx / 64.0 * 0.58, 0.35, 1.0 if nm.begins_with("rochedo") else 1.25)
+			fsize = Vector2(s, s)
+			fpos = og - fsize * 0.5
 	var p := Prop.new().setup("box", fpos, fsize, 60.0, Color(0.3, 0.2, 0.1))
 	var a = anchors.get(nm)
 	var an := Vector2(a[0], a[1]) if a is Array else Vector2(-1, -1)

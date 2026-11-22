@@ -76,6 +76,12 @@ static func skill_need(k: String, l: int) -> int:
 
 ## Zona segura: o calçamento da vila (ninguém ataca nem é atacado ali).
 static var safe_check: Callable = Callable()
+## Linha de visão (magias não atravessam paredes): definida pelo mapa.
+static var sight_check: Callable = Callable()
+
+
+static func has_sight(a: Vector2, b: Vector2) -> bool:
+	return not sight_check.is_valid() or sight_check.call(a, b)
 
 
 static func is_safe(pos: Vector2) -> bool:

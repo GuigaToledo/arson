@@ -462,6 +462,12 @@ class Proj:
 		var to := _last - _from
 		var k := clampf(_t * speed / maxf(1.0, to.length()), 0.0, 1.0)
 		var p := _from.lerp(_last, k)
+		# bateu numa parede no caminho: explode ali, sem acertar
+		if k < 1.0 and not Rules.has_sight(global_position, p):
+			SpellArt.impact(get_parent(), global_position, el, big)
+			_detach_bits()
+			queue_free()
+			return
 		var h := 44.0
 		if el == "terra":
 			h = 44.0 + sin(k * PI) * minf(120.0, to.length() * 0.35)

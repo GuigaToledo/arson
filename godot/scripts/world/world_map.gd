@@ -45,6 +45,24 @@ func walkable_grid(g: Vector2) -> bool:
 	return not BLOCKED.contains(at(int(floor(g.x)), int(floor(g.y))))
 
 
+## Linha de visão entre dois pontos da tela: falso se passar por parede (construção ou rocha).
+## Água não bloqueia magia.
+func line_clear(a: Vector2, b: Vector2) -> bool:
+	var ga := Iso.to_grid(a)
+	var gb := Iso.to_grid(b)
+	var n := int(ceil(ga.distance_to(gb) / 0.3))
+	var ta := Vector2i(floor(ga.x), floor(ga.y))
+	var tb := Vector2i(floor(gb.x), floor(gb.y))
+	for i in range(1, n):
+		var q := ga.lerp(gb, float(i) / n)
+		var t := Vector2i(floor(q.x), floor(q.y))
+		if t == ta or t == tb:
+			continue
+		if "HR".contains(at(t.x, t.y)):
+			return false
+	return true
+
+
 func walkable(screen_pos: Vector2) -> bool:
 	return walkable_grid(Iso.to_grid(screen_pos))
 

@@ -428,7 +428,8 @@ func view_world_rect() -> Rect2:
 
 
 func on_screen(n: Node2D) -> bool:
-	return view_world_rect().grow(-12.0).has_point(n.global_position + Vector2(0, -24))
+	# na tela e sem parede no meio (magia não atravessa parede)
+	return view_world_rect().grow(-12.0).has_point(n.global_position + Vector2(0, -24)) and Rules.has_sight(global_position, n.global_position)
 
 
 func target_nearest() -> void:
