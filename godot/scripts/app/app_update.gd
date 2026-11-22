@@ -156,5 +156,10 @@ func _on_pack(result: int, code: int, _h: PackedStringArray, _b: PackedByteArray
 	inf = null
 	_msg.text = "Atualizado! Reiniciando o jogo… (se ele fechar, é só abrir de novo)"
 	await get_tree().create_timer(1.5).timeout
+	# fechar para atualizar não é falha: sem isso o app contava como "fechou sozinho" e, na
+	# segunda vez, apagava a atualização (ficava pedindo para atualizar sem parar)
+	var bt := get_node_or_null("/root/Boot")
+	if bt:
+		bt.step("ok")
 	OS.set_restart_on_exit(true)
 	get_tree().quit()
