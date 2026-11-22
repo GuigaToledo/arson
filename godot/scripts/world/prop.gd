@@ -132,12 +132,44 @@ func _fade_step(pl: Node2D, delta: float) -> void:
 		modulate.a = _fade
 
 
+## Onde a copa termina e sobra só o tronco (medido uma vez por imagem): a linha mais baixa
+## em que a parte opaca é bem mais larga que o tronco.
+static var _cuts := {}
+
+
+static func trunk_cut(t: Texture2D) -> float:
+	var key := t.resource_path
+	if _cuts.has(key):
+		return _cuts[key]
+	var cut := 0.8
+	var im := t.get_image()
+	if im != null:
+		if im.is_compressed():
+			im.decompress()
+		var w := im.get_width()
+		var h := im.get_height()
+		var wid := func(y: int) -> int:
+			var n := 0
+			for x in range(0, w, 2):
+				if im.get_pixel(x, y).a > 0.5:
+					n += 2
+			return n
+		var trunk: int = wid.call(h - 12)
+		for y in range(h - 12, 0, -2):
+			if wid.call(y) > maxi(int(trunk * 1.3) + 8, 24):
+				cut = float(y + 6) / h
+				break
+	_cuts[key] = clampf(cut, 0.5, 0.95)
+	return _cuts[key]
+
+
 ## Copa transparente e tronco sólido, com uma passagem suave entre os dois.
 func _draw_split(r: Rect2) -> void:
 	var ts := tex.get_size()
-	var cut := 0.74  # daqui para baixo é tronco (fração da altura da imagem)
-	var band := 0.1
-	var top := cut - band
+	var cut := trunk_cut(tex)  # daqui para baixo é só tronco (fração da altura da imagem)
+	var band := 0.06
+	var top := cut
+	cut = minf(0.98, cut + band)
 	draw_texture_rect_region(tex, Rect2(r.position, Vector2(r.size.x, r.size.y * top)), Rect2(0, 0, ts.x, ts.y * top), Color(1, 1, 1, _fade))
 	var n := 5
 	for i in n:
