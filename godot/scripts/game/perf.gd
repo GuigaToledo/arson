@@ -126,3 +126,33 @@ func _perf_log(frames: int) -> void:
 		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
 		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
 		vis, lights, int(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0), Prof.report(frames)])
+	if _log_n % 6 == 0:
+		_census()
+
+
+## Quantos objetos de cada tipo existem (e quantos visíveis), para achar o que pesa.
+func _census() -> void:
+	var tot := {}
+	var vis := {}
+	var procs := {}
+	var stack: Array = [get_tree().root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		for c in n.get_children():
+			stack.append(c)
+		var k := n.get_class()
+		var sc = n.get_script()
+		if sc:
+			k = str(sc.resource_path).get_file().get_basename() + ":" + k
+		tot[k] = int(tot.get(k, 0)) + 1
+		if n is CanvasItem and n.is_visible_in_tree():
+			vis[k] = int(vis.get(k, 0)) + 1
+		if n.is_processing() or n.is_physics_processing():
+			procs[k] = int(procs.get(k, 0)) + 1
+	var keys := tot.keys()
+	keys.sort_custom(func(x, y): return tot[x] > tot[y])
+	var out := PackedStringArray()
+	for k in keys.slice(0, 18):
+		out.append("%s=%d/vis%d/proc%d" % [k, tot[k], int(vis.get(k, 0)), int(procs.get(k, 0))])
+	print("ARSONCENSO ", " ".join(out))
+
