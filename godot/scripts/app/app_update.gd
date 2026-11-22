@@ -4,6 +4,9 @@ extends CanvasLayer
 ## com o botão "Atualizar", que baixa só o pacote do jogo e reinicia. Se a mudança exigir o app
 ## novo (APK), o botão abre o download do app.
 
+## Terminou: sem novidade, sem internet ou o jogador tocou em "Depois".
+signal done
+
 const BASE := "https://github.com/guigatoledo/arson/releases/download/app/"
 const GOLD := Color(0.95, 0.8, 0.5)
 
@@ -38,13 +41,16 @@ func _process(_d: float) -> void:
 func _on_versao(result: int, code: int, _h: PackedStringArray, body: PackedByteArray) -> void:
 	_http.request_completed.disconnect(_on_versao)
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
+		done.emit()
 		return  # sem internet ou sem resposta: joga a versão que já tem
 	var d = JSON.parse_string(body.get_string_from_utf8())
 	if typeof(d) != TYPE_DICTIONARY:
+		done.emit()
 		return
 	_remote = d
 	var atual := Boot._read("res://app/jogo.txt")
 	if str(d.get("jogo", "")) == atual or atual == "":
+		done.emit()
 		return
 	var boot := get_node_or_null("/root/Boot")
 	var sig: String = boot.app_sig if boot else ""
@@ -90,7 +96,9 @@ func _show(text: String, label: String, cb: Callable) -> void:
 	_row.add_theme_constant_override("separation", 12)
 	v.add_child(_row)
 	_row.add_child(_btn(label, cb, true))
-	_row.add_child(_btn("Depois", func(): _box.queue_free(), false))
+	_row.add_child(_btn("Depois", func():
+		_box.queue_free()
+		done.emit(), false))
 
 
 func _btn(text: String, cb: Callable, main: bool) -> Button:

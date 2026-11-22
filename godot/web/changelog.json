@@ -7,7 +7,9 @@
    "Novo: app do Arson para Android (modo solo por enquanto) — link \"Baixar app Android\" na tela inicial",
    "O app confere atualizações sempre que abre: aparece um aviso no topo com o botão Atualizar, que baixa só o jogo novo e reinicia",
    "Quando a mudança precisa do app novo, o aviso traz o botão Baixar app (instala por cima, sem perder o progresso)",
-   "No app a tela fica sempre ligada e o jogo abre em tela cheia na horizontal"
+   "No app a tela fica sempre ligada e o jogo abre em tela cheia na horizontal",
+   "App: nova tela de abertura que procura atualização antes de carregar o mundo",
+   "App: se fechar sozinho ao abrir, a próxima abertura mostra onde parou e entra em modo leve (na segunda vez, com chão simplificado)"
   ]
  },
  {

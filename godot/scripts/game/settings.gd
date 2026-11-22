@@ -74,9 +74,18 @@ static var _leve := -1
 static func safe_mode() -> bool:
 	if _leve < 0:
 		_leve = 0
+		var boot = (Engine.get_main_loop() as SceneTree).root.get_node_or_null("Boot")
+		if boot and boot.crashes >= 1:
+			_leve = 1
 		if OS.has_feature("web"):
 			_leve = 1 if str(JavaScriptBridge.eval("(function(){try{return localStorage.getItem('arson-leve')||''}catch(e){return ''}})()", true)) == "1" else 0
 	return _leve == 1
+
+
+## App fechou sozinho 2 vezes seguidas: abre o chão sem texturas (só cores).
+static func very_safe() -> bool:
+	var boot = (Engine.get_main_loop() as SceneTree).root.get_node_or_null("Boot")
+	return boot != null and boot.crashes >= 2
 
 
 ## Celular/tablet? (Android, iPhone, iPad — inclusive o iPad que se diz "Mac").

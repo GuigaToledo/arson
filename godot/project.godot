@@ -7,6 +7,7 @@ config/name="Arson"
 config/description="RPG isométrico 2D de fantasia medieval realista."
 config/icon="res://icon.png"
 run/main_scene="res://scenes/island.tscn"
+run/main_scene.android="res://scenes/app_inicio.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 
 [autoload]
@@ -21,6 +22,10 @@ window/size/viewport_height=540
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=4
+
+[debug]
+
+file_logging/enable_file_logging=true
 
 [rendering]
 

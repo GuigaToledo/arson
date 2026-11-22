@@ -98,6 +98,10 @@ jobs:
           test -s saida/arson.apk || { echo "::error::APK não foi gerado"; exit 1; }
           test -s saida/jogo.pck || { echo "::error::pacote não foi gerado"; exit 1; }
           ls -la saida
+          # roda o pacote exportado (sem tela) para pegar arquivo faltando ou erro de script
+          timeout 120 $HOME/godot --headless --main-pack saida/jogo.pck --quit-after 300 2>&1 | tee pack.log || true
+          timeout 60 $HOME/godot --headless --main-pack saida/jogo.pck res://scenes/app_inicio.tscn --quit-after 200 2>&1 | tee -a pack.log || true
+          grep -E "ERROR|SCRIPT ERROR|Failed|Cannot|Can't" pack.log | head -40 || true
           python3 - <<'PY'
           import json, os
           json.dump({"jogo": open("godot/app/jogo.txt").read().strip(),

@@ -28,6 +28,8 @@ func _exit_tree() -> void:
 
 
 func _ready() -> void:
+	Boot.step("inicio")
+	Boot.step("mapa")
 	map = WorldMap.load_file(MAP_PATH)
 	Player.map_hash = FileAccess.get_file_as_string(MAP_PATH).hash()
 	Actor.walkable = map.walkable
@@ -52,17 +54,25 @@ func _ready() -> void:
 	day_night.cm = cm
 	day_night.sun = sun
 	add_child(day_night)
+	Boot.step("chão")
 	_build_ground()
 	entities = Node2D.new()
 	entities.name = "Entidades"
 	entities.y_sort_enabled = true
 	add_child(entities)
+	Boot.step("construções")
 	_build_buildings()
+	Boot.step("detalhes")
 	_build_details()
+	Boot.step("luzes")
 	_build_lights()
+	Boot.step("regiões e monstros")
 	_build_regions()
+	Boot.step("cogumelos e cristais")
 	_build_glow()
+	Boot.step("detalhes do chão")
 	_decals = GroundDecals.build(self, map)
+	Boot.step("tela inicial")
 	add_to_group("qualidade")
 	# câmera da tela inicial (o mundo aparece escuro ao fundo)
 	var intro := Camera2D.new()
@@ -104,11 +114,10 @@ func _ready() -> void:
 				player.mp = player.max_mp
 				player.cast_spell("luz:2"))
 			return
-	if OS.has_feature("android"):
-		add_child(AppUpdate.new())
 	var ts := TitleScreen.new()
 	add_child(ts)
 	ts.setup()
+	_mark_ok()
 	ts.chosen.connect(start_game)
 	if "--teste-titulo" in OS.get_cmdline_user_args():
 		await get_tree().create_timer(0.5).timeout
@@ -132,7 +141,15 @@ func _test_args() -> Array:
 
 
 ## Começa o jogo com o personagem da vaga escolhida (chamado pela tela inicial).
+## Depois de alguns quadros desenhados (shaders compilados), marca que o app abriu bem.
+func _mark_ok() -> void:
+	for i in 20:
+		await get_tree().process_frame
+	Boot.step("ok")
+
+
 func start_game(slot: int) -> void:
+	Boot.step("entrando no jogo")
 	var inf := Chars.info(slot)
 	var nome: String = inf.get("nome", "")
 	if nome != "" and OS.has_feature("web") and JavaScriptBridge.eval("typeof window.ArsonNet !== 'undefined'", true):
@@ -173,6 +190,7 @@ func start_game(slot: int) -> void:
 	var perf := Perf.new()
 	perf.name = "Desempenho"
 	add_child(perf)
+	_mark_ok()
 	var dlg := NpcDialog.new()
 	add_child(dlg)
 	var gm := GameMenu.new()
@@ -303,16 +321,20 @@ func on_quality(lv: int) -> void:
 
 func _build_ground() -> void:
 	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/terrain.gdshader")
+	var simples := Settings.very_safe()
+	mat.shader = load("res://shaders/terrain_simples.gdshader" if simples else "res://shaders/terrain.gdshader")
 	var w := map.weight_textures()
 	mat.set_shader_parameter("map_size", Vector2(map.w, map.h))
 	mat.set_shader_parameter("w0", w[0])
 	mat.set_shader_parameter("w1", w[1])
-	# Visual Factory: texturas ambientCG em 1024 (512 no celular), 9 camadas com variações
-	var vf := ["grama_a", "terra", "areia", "calcamento", "floresta_a", "rocha", "grama_b", "floresta_b", "cemiterio"]
-	mat.set_shader_parameter("cores", _tex_array(vf.map(func(x): return VF + x + "_c")))
-	mat.set_shader_parameter("normais", _tex_array(vf.map(func(x): return VF + x + "_n"), true))
-	_ground_mat = mat
+	if not simples:
+		# Visual Factory: texturas ambientCG em 1024 (512 no celular), 9 camadas com variações
+		var vf := ["grama_a", "terra", "areia", "calcamento", "floresta_a", "rocha", "grama_b", "floresta_b", "cemiterio"]
+		Boot.step("texturas do chão")
+		mat.set_shader_parameter("cores", _tex_array(vf.map(func(x): return VF + x + "_c")))
+		Boot.step("relevo do chão")
+		mat.set_shader_parameter("normais", _tex_array(vf.map(func(x): return VF + x + "_n"), true))
+		_ground_mat = mat
 	var ground := Node2D.new()
 	ground.name = "Chao"
 	ground.z_index = -20
