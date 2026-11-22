@@ -297,7 +297,7 @@ func _build_ground() -> void:
 	# Visual Factory: texturas ambientCG em 1024 (512 no celular), 9 camadas com variações
 	var vf := ["grama_a", "terra", "areia", "calcamento", "floresta_a", "rocha", "grama_b", "floresta_b", "cemiterio"]
 	mat.set_shader_parameter("cores", _tex_array(vf.map(func(x): return VF + x + "_c")))
-	mat.set_shader_parameter("normais", _tex_array(vf.map(func(x): return VF + x + "_n")))
+	mat.set_shader_parameter("normais", _tex_array(vf.map(func(x): return VF + x + "_n"), true))
 	var ground := Node2D.new()
 	ground.name = "Chao"
 	ground.z_index = -20
@@ -315,14 +315,20 @@ func _build_ground() -> void:
 const VF := "res://assets/vf/terreno/"
 
 
-func _tex_array(names: Array) -> Texture2DArray:
+func _tex_array(names: Array, normals := false) -> Texture2DArray:
 	var imgs: Array[Image] = []
 	var sz := 512 if Settings.is_mobile() or Settings.level_now <= 3 else 1024
 	if Settings.safe_mode():
 		sz = 256
+	# celular: relevo do chão (normais) em tamanho mínimo, quase não aparece e economiza vídeo
+	if normals and Settings.is_mobile():
+		sz = 64
 	for nm in names:
 		var path: String = nm if str(nm).begins_with("res://") else TEX + nm
-		var im: Image = (load(path + ".jpg") as Texture2D).get_image()
+		# as texturas do chão são importadas como imagem (não vão para a placa de vídeo sozinhas:
+		# antes as 18 subiam em 1024 e o celular ficava sem memória de vídeo)
+		var res = load(path + ".jpg")
+		var im: Image = (res as Image).duplicate() if res is Image else (res as Texture2D).get_image()
 		if im.is_compressed():
 			im.decompress()
 		im.convert(Image.FORMAT_RGB8)

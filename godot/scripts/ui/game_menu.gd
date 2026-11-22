@@ -441,7 +441,7 @@ func _page_graphics() -> Control:
 		if OS.has_feature("web"):
 			JavaScriptBridge.eval("try{localStorage.removeItem('arson-leve')}catch(e){}", true)
 		if i == 0:
-			Settings.level_now = 3 if Settings.is_mobile() else 6
+			Settings.level_now = 1
 		Settings.save()
 		perf.apply()
 		_refresh_quality())

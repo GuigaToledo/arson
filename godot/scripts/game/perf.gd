@@ -14,6 +14,8 @@ var _applied := -1
 var _win := Vector2i.ZERO
 ## Depois de baixar por lag, não volta ao nível que travou por 2 minutos (evita ficar oscilando).
 var _ceil := 6
+## Primeiros segundos: sobe de nível mais rápido (começa no mais leve).
+var _warm := 45.0
 var _ceil_t := 0.0
 static var fps := 60.0
 ## Menu aberto: desenha tudo em resolução máxima (texto nítido).
@@ -23,10 +25,11 @@ static var force_full := false
 func _ready() -> void:
 	Settings.load_all()
 	if Settings.quality == 0:
-		Settings.level_now = 3 if Settings.is_mobile() else 6
+		# automática: sempre começa no mais leve e sobe enquanto o FPS aguentar
+		Settings.level_now = 1
 		if Settings.safe_mode():
-			Settings.level_now = 1
 			_ceil = 2
+			_ceil_t = 600.0
 	else:
 		Settings.level_now = Settings.quality
 	apply()
@@ -61,6 +64,7 @@ func _process(delta: float) -> void:
 	if get_window().size != _win:
 		apply()
 	_acc += delta
+	_warm -= delta
 	_ceil_t -= delta
 	if _ceil_t <= 0.0:
 		_ceil = 6
@@ -88,7 +92,7 @@ func _process(delta: float) -> void:
 		Settings.level_now -= 1
 		_bad = 0
 		apply()
-	elif _good >= 8 and Settings.level_now < _ceil:
+	elif _good >= (2 if _warm > 0.0 else 8) and Settings.level_now < _ceil:
 		Settings.level_now += 1
 		_good = 0
 		apply()
