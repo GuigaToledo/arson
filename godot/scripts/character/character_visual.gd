@@ -38,6 +38,8 @@ static var view_rect := Rect2()
 var _draw_acc := 1.0
 ## Quantas vezes por segundo o desenho é refeito (no navegador o desenho por código é mais lento).
 var draw_hz := 24.0 if OS.has_feature("web") else 30.0
+## O personagem do jogador sempre anima liso; os outros seguem a qualidade.
+var is_main := false
 var _eye_light: PointLight2D
 var _core_light: PointLight2D
 
@@ -108,7 +110,7 @@ func tick(delta: float, new_dir: String, new_anim: String, speed: float) -> void
 		return
 	visible = true
 	_draw_acc += delta
-	if _draw_acc < 1.0 / draw_hz:
+	if _draw_acc < 1.0 / (draw_hz if is_main else minf(draw_hz, Settings.anim_hz())):
 		return
 	_draw_acc = 0.0
 	var pose := PlaceholderPainter.pose(dir, anim, _phase, _time, _anim_t)

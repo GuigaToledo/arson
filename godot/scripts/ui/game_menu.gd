@@ -478,7 +478,7 @@ func _refresh_quality() -> void:
 	var ws := get_window().size
 	var lv := clampi(Settings.level_now, 1, 6)
 	var pct := int(round(Settings.LEVELS[lv] * 100))
-	var how := "Automática: começa na máxima e só baixa se o jogo engasgar; sobe de novo quando sobra desempenho." if Settings.quality == 0 else "Fixa no nível escolhido."
+	var how := "Automática: começa no mais leve e vai subindo enquanto o jogo roda liso; baixa sozinha se engasgar." if Settings.quality == 0 else "Fixa no nível escolhido."
 	_q_info.text = "%s\nNo jogo: nível %d (%d%% da tela) · %d FPS · janela %dx%d\n(Com o menu aberto, tudo é desenhado em resolução máxima.)" % [how, lv, pct, int(Perf.fps), ws.x, ws.y]
 
 

@@ -44,7 +44,7 @@ func tick(delta: float, new_dir: String, new_anim: String, speed: float) -> void
 		return
 	visible = true
 	_draw_acc += delta
-	if _draw_acc < 1.0 / draw_hz:
+	if _draw_acc < 1.0 / minf(draw_hz, Settings.anim_hz()):
 		return
 	_draw_acc = 0.0
 	queue_redraw()

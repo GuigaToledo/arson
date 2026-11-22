@@ -55,6 +55,16 @@ static func save() -> void:
 	c.save(PATH)
 
 
+## Quantas vezes por segundo os monstros e outros personagens são redesenhados (o jogador sempre 24).
+static func anim_hz() -> float:
+	return 12.0 if level_now <= 2 else (18.0 if level_now <= 4 else 24.0)
+
+
+## Quantas das 6 "faixas" de luzes decorativas (cogumelos, cristais) ficam acesas em cada nível.
+static func light_share() -> int:
+	return [0, 1, 2, 2, 3, 4, 6][clampi(level_now, 0, 6)]
+
+
 static var _mobile := -1
 static var _leve := -1
 

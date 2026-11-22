@@ -13,7 +13,7 @@ var cy := 0
 var dens := 1.0
 
 
-static func build(parent: Node, m: WorldMap) -> void:
+static func build(parent: Node, m: WorldMap) -> Node2D:
 	var root := Node2D.new()
 	root.name = "DetalhesDoChao"
 	root.z_index = -2
@@ -28,6 +28,7 @@ static func build(parent: Node, m: WorldMap) -> void:
 			g.cy = y
 			g.dens = d
 			root.add_child(g)
+	return root
 
 
 func _draw() -> void:

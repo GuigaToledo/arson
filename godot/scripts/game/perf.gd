@@ -42,6 +42,9 @@ func apply() -> void:
 	var win := get_window()
 	var lv := 6 if force_full else clampi(Settings.level_now, 1, 6)
 	_applied = lv
+	# efeitos acompanham o nível real (não o do menu aberto)
+	if is_inside_tree():
+		get_tree().call_group("qualidade", "on_quality", clampi(Settings.level_now, 1, 6))
 	# bordas suaves (antisserrilhamento 4x) do nível 4 para cima; no celular e nos níveis baixos, desligado
 	# (no navegador o Godot não tem MSAA 2D: lá a suavidade vem da resolução dobrada no index.html)
 	if not OS.has_feature("web"):

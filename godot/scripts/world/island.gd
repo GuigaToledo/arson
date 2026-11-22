@@ -10,6 +10,8 @@ const MARGIN := 10
 const TEX := "res://assets/textures/"
 
 var map: WorldMap
+var _ground_mat: ShaderMaterial
+var _decals: Node2D
 var entities: Node2D
 var player: Player
 
@@ -60,7 +62,8 @@ func _ready() -> void:
 	_build_lights()
 	_build_regions()
 	_build_glow()
-	GroundDecals.build(self, map)
+	_decals = GroundDecals.build(self, map)
+	add_to_group("qualidade")
 	# câmera da tela inicial (o mundo aparece escuro ao fundo)
 	var intro := Camera2D.new()
 	intro.name = "CameraInicial"
@@ -287,6 +290,15 @@ func _process(delta: float) -> void:
 		Prop.update_fades(player, delta)
 
 
+## Qualidade mudou (Perf): chão mais simples e menos luzes decorativas nos níveis baixos.
+func on_quality(lv: int) -> void:
+	if _ground_mat:
+		_ground_mat.set_shader_parameter("q", 0 if lv <= 2 else (1 if lv <= 4 else 2))
+	GlowProps.apply_quality()
+	if _decals:
+		_decals.visible = lv >= 2
+
+
 func _build_ground() -> void:
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://shaders/terrain.gdshader")
@@ -298,6 +310,7 @@ func _build_ground() -> void:
 	var vf := ["grama_a", "terra", "areia", "calcamento", "floresta_a", "rocha", "grama_b", "floresta_b", "cemiterio"]
 	mat.set_shader_parameter("cores", _tex_array(vf.map(func(x): return VF + x + "_c")))
 	mat.set_shader_parameter("normais", _tex_array(vf.map(func(x): return VF + x + "_n"), true))
+	_ground_mat = mat
 	var ground := Node2D.new()
 	ground.name = "Chao"
 	ground.z_index = -20
@@ -776,6 +789,9 @@ const FOTO_CENAS := [["vila", Vector2(27, 26)], ["vila_casas", Vector2(22, 22)],
 func _fotos(dir: String, hud: Node) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	player.photo_mode = true
+	var pf: Perf = get_children().filter(func(n): return n is Perf)[0]
+	Settings.quality = 6
+	pf.apply()
 	for k in Settings.auto:
 		if typeof(Settings.auto[k]) == TYPE_BOOL:
 			Settings.auto[k] = false
@@ -834,6 +850,23 @@ func _fotos(dir: String, hud: Node) -> void:
 	for f in 3:
 		await get_tree().process_frame
 	get_viewport().get_texture().get_image().save_png(base + "_4_sem_pecas.png")
+	for pr in find_children("*", "Prop", true, false):
+		pr.visible = true
+	for l in luzes:
+		l.visible = true
+	for sp in find_children("*", "Sprite2D", true, false):
+		if sp.texture == Prop.shadow_tex():
+			sp.visible = true
+	GlowProps.apply_quality()
+	# como fica no nível mais leve (começo da qualidade automática)
+	Settings.quality = 1
+	pf.apply()
+	DayNight.force = 0.3
+	for c in [["floresta_ilha", Vector2(12, 36)], ["caverna", Vector2(116, 22)]]:
+		player.global_position = Iso.to_screen(c[1])
+		for f in 30:
+			await get_tree().process_frame
+		get_viewport().get_texture().get_image().save_png("%s/_nivel1_%s.png" % [dir, c[0]])
 	print("FOTOS ok")
 	get_tree().quit()
 

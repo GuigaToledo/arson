@@ -7,6 +7,21 @@ extends RefCounted
 const CRYSTAL_COLS := [Color(0.35, 0.8, 1.0), Color(1.0, 0.35, 0.85), Color(0.4, 1.0, 0.5), Color(1.0, 0.72, 0.25), Color(0.65, 0.45, 1.0), Color(1.0, 0.3, 0.3)]
 
 
+## Luz decorativa: entra na faixa `rank` (0 a 5); Settings.light_share() decide quantas faixas
+## ficam acesas (nível 1: só 1 de 6; nível 6: todas).
+static func extra_light(l: Light2D, rank: int) -> void:
+	l.set_meta("rank", rank)
+	l.add_to_group("luz_extra")
+	l.visible = rank < Settings.light_share()
+
+
+static func apply_quality() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	var share := Settings.light_share()
+	for l in tree.get_nodes_in_group("luz_extra"):
+		l.visible = int(l.get_meta("rank", 0)) < share
+
+
 ## Desliga o processamento (animação e piscar da luz) quando sai da tela.
 static func cull(n: Node2D, r: Rect2) -> void:
 	var en := VisibleOnScreenEnabler2D.new()
@@ -20,12 +35,12 @@ static func mushrooms(parent: Node, pos: Vector2, sd: int) -> Node2D:
 	m.position = pos
 	parent.add_child(m)
 	# luz só em 1 de cada 3 grupos (cada luz 2D pesa bastante no celular); todos brilham
-	# orçamento de luz por qualidade (Visual Factory etapa 8): alta 1 em 2, média 1 em 3, leve 1 em 6
-	var every := 2 if Settings.level_now >= 5 else (3 if Settings.level_now >= 3 else 6)
-	if sd % every == 0:
+	# luz em 1 de cada 2 grupos; quantas ficam acesas depende da qualidade (extra_light)
+	if sd % 2 == 0:
 		var l := LightKit.make(Color(0.35, 1.0, 0.45), 0.9, 0.9, false, 0.0)
 		l.position = Vector2(0, -12)
 		m.add_child(l)
+		extra_light(l, (sd / 2) % 6)
 	cull(m, Rect2(-60, -80, 120, 110))
 	return m
 
@@ -36,10 +51,10 @@ static func crystal(parent: Node, pos: Vector2, sd: int) -> Node2D:
 	c.col = CRYSTAL_COLS[sd % CRYSTAL_COLS.size()]
 	c.position = pos
 	parent.add_child(c)
-	if Settings.level_now >= 3 or sd % 2 == 0:
-		var l := LightKit.make(c.col, 1.0, 1.1, false, 0.0)
-		l.position = Vector2(0, -30)
-		c.add_child(l)
+	var l := LightKit.make(c.col, 1.0, 1.1, false, 0.0)
+	l.position = Vector2(0, -30)
+	c.add_child(l)
+	extra_light(l, sd % 6)
 	cull(c, Rect2(-60, -100, 120, 130))
 	return c
 

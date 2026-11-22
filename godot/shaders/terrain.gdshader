@@ -10,6 +10,8 @@ uniform sampler2D w1 : filter_linear, repeat_disable;
 uniform sampler2DArray cores : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2DArray normais : filter_linear_mipmap, repeat_enable;
 uniform float tex_scale = 0.3;
+// qualidade (Perf): 0 = leve (sem anti-repetição nem relevo), 1 = média (sem relevo), 2 = completa
+uniform int q = 2;
 
 varying vec2 grid;
 
@@ -39,9 +41,9 @@ void vertex() {
 
 void fragment() {
 	vec2 g = grid;
-	vec2 jit = vec2(vnoise(g * 1.3), vnoise(g * 1.3 + 17.3)) - 0.5;
+	vec2 jit = q > 0 ? vec2(vnoise(g * 1.3), vnoise(g * 1.3 + 17.3)) - 0.5 : vec2(0.0);
 	vec2 wuv = (g + jit * 0.7) / map_size;
-	float n = vnoise(g * 2.7) * 0.6 + vnoise(g * 8.0) * 0.4;
+	float n = q > 0 ? vnoise(g * 2.7) * 0.6 + vnoise(g * 8.0) * 0.4 : vnoise(g * 2.7);
 	vec4 a = pow(texture(w0, wuv) * (0.7 + n * 0.6), vec4(3.0));
 	vec4 b = pow(texture(w1, wuv) * (0.7 + n * 0.6), vec4(3.0));
 	float sum = a.r + a.g + a.b + a.a + b.r + b.g + b.b + b.a + 0.0001;
@@ -51,24 +53,26 @@ void fragment() {
 	vec2 uv = g * tex_scale;
 	// contra repetição: cada camada mistura a textura com ela mesma girada e em outra escala,
 	// por manchas grandes de ruído; grama e floresta ainda alternam entre duas texturas
-	float m = smoothstep(0.3, 0.7, vnoise(g * 0.31 + 5.1));
+	float m = q > 0 ? smoothstep(0.3, 0.7, vnoise(g * 0.31 + 5.1)) : 0.0;
+	bool rel = q > 1;
 	float vg = smoothstep(0.35, 0.65, vnoise(g * 0.17 + 11.0));
 	vec3 col = vec3(0.0);
 	vec3 nm = vec3(0.0);
 	if (a.r + b.r > 0.003) {
-		vec3 ga = mix(at(0.0, uv, m), at(6.0, uv, 1.0 - m), vg);
+		float m2 = q > 0 ? 1.0 - m : 0.0;
+		vec3 ga = mix(at(0.0, uv, m), at(6.0, uv, m2), vg);
 		col += ga * a.r;
-		nm += mix(atn(0.0, uv, m), atn(6.0, uv, 1.0 - m), vg) * (a.r);
-		vec3 fo = mix(at(4.0, uv, m), at(7.0, uv, 1.0 - m), smoothstep(0.3, 0.7, vnoise(g * 0.23 + 3.0)));
+		if (rel) nm += mix(atn(0.0, uv, m), atn(6.0, uv, m2), vg) * (a.r);
+		vec3 fo = q > 0 ? mix(at(4.0, uv, m), at(7.0, uv, m2), smoothstep(0.3, 0.7, vnoise(g * 0.23 + 3.0))) : at(4.0, uv, 0.0);
 		col += fo * b.r;
-		nm += atn(4.0, uv, m) * b.r;
+		if (rel) nm += atn(4.0, uv, m) * b.r;
 	}
-	if (a.g > 0.003) { col += at(1.0, uv, m) * a.g; nm += atn(1.0, uv, m) * a.g; }
-	if (a.b > 0.003) { col += at(2.0, uv, m) * a.b; nm += atn(2.0, uv, m) * a.b; }
-	if (a.a > 0.003) { col += at(3.0, uv * 1.25, 0.0) * a.a; nm += atn(3.0, uv * 1.25, 0.0) * a.a; }
-	if (b.g > 0.003) { col += at(5.0, uv * 0.8, m) * b.g; nm += atn(5.0, uv * 0.8, m) * b.g; }
-	if (b.a > 0.003) { col += at(8.0, uv, m) * b.a * 0.85; nm += atn(8.0, uv, m) * b.a; }
-	nm += vec3(0.5, 0.5, 1.0) * b.b;
+	if (a.g > 0.003) { col += at(1.0, uv, m) * a.g; if (rel) nm += atn(1.0, uv, m) * a.g; }
+	if (a.b > 0.003) { col += at(2.0, uv, m) * a.b; if (rel) nm += atn(2.0, uv, m) * a.b; }
+	if (a.a > 0.003) { col += at(3.0, uv * 1.25, 0.0) * a.a; if (rel) nm += atn(3.0, uv * 1.25, 0.0) * a.a; }
+	if (b.g > 0.003) { col += at(5.0, uv * 0.8, m) * b.g; if (rel) nm += atn(5.0, uv * 0.8, m) * b.g; }
+	if (b.a > 0.003) { col += at(8.0, uv, m) * b.a * 0.85; if (rel) nm += atn(8.0, uv, m) * b.a; }
+	nm += vec3(0.5, 0.5, 1.0) * (rel ? b.b : 1.0);
 	// sujeira e manchas grandes (quebra a uniformidade) e cor do dark fantasy (menos saturada)
 	col *= 0.86 + 0.28 * vnoise(g * 0.6 + 2.0);
 	float lum = dot(col, vec3(0.3, 0.59, 0.11));

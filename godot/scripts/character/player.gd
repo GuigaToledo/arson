@@ -59,6 +59,7 @@ func _ready() -> void:
 			CombatText.add(global_position + Vector2(0, -160), "Magias reorganizadas: %s nível %d" % [Rules.skill_name(elem_a()), elem_level(elem_a())], Color(1, 0.85, 0.45), true)
 			save())
 	super()
+	visual.is_main = true
 	add_to_group("player")
 	spawn_pos = position
 	_load()

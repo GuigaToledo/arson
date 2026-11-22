@@ -20,9 +20,23 @@ func _ready() -> void:
 	_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mat = ShaderMaterial.new()
-	_mat.shader = load("res://shaders/post_leve.gdshader" if Settings.is_mobile() else "res://shaders/post.gdshader")
 	_rect.material = _mat
 	add_child(_rect)
+	add_to_group("qualidade")
+	on_quality(Settings.level_now)
+
+
+## Níveis 1-2: sem pós-processamento nem poeira (economiza uma cópia da tela inteira por quadro).
+## 3: versão leve (cor, vinheta e neblina). 4+ no PC: completa (brilho e granulação).
+func on_quality(lv: int) -> void:
+	_rect.visible = lv >= 3
+	var full := lv >= 4 and not Settings.is_mobile()
+	var sh: Shader = load("res://shaders/post.gdshader" if full else "res://shaders/post_leve.gdshader")
+	if _mat.shader != sh:
+		_mat.shader = sh
+	if _dust:
+		_dust.visible = lv >= 3
+		_dust.emitting = lv >= 3
 
 
 ## Poeira e brasinhas no ar, sempre em volta da câmera (fica no mundo, não na tela).
@@ -51,6 +65,7 @@ func setup_dust(world: Node2D) -> void:
 	_dust.color_ramp = g
 	_dust.z_index = 50
 	world.add_child(_dust)
+	on_quality(Settings.level_now)
 
 
 ## Neblina por região (Visual Factory etapa 8): olha o chão em volta do jogador.
@@ -78,6 +93,8 @@ func _sample_fog() -> void:
 
 
 func _process(d: float) -> void:
+	if not _rect.visible:
+		return
 	var full := Settings.level_now >= 4 and not Settings.is_mobile()
 	_mat.set_shader_parameter("full", 1.0 if full else 0.0)
 	_mat.set_shader_parameter("fog_on", 1.0 if Settings.level_now >= 3 else 0.0)
