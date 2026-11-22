@@ -817,6 +817,15 @@ func _fotos(dir: String, hud: Node) -> void:
 		await get_tree().process_frame
 	get_viewport().get_texture().get_image().save_png(base + "_3_sem_sombras.png")
 	for pr in find_children("*", "Prop", true, false):
+		if pr.global_position.distance_to(player.global_position) < 700:
+			print("DIAG peca ", pr.tex.resource_path if pr.tex else pr.kind, " pos ", pr.global_position - player.global_position, " fade ", pr._fade, " mod ", pr.modulate, " z ", pr.z_index, " filhos ", pr.get_children().map(func(n): return n.get_class()))
+	for pr in find_children("*", "Prop", true, false):
+		if pr._fade < 0.99:
+			pr.visible = false
+	for f in 3:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png(base + "_35_sem_transparentes.png")
+	for pr in find_children("*", "Prop", true, false):
 		pr.visible = false
 	for f in 3:
 		await get_tree().process_frame
