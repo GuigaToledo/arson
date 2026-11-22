@@ -27,6 +27,9 @@ static func build(parent: Node, m: WorldMap) -> Node2D:
 			g.cx = x
 			g.cy = y
 			g.dens = d
+			# só as luzes principais (aura do herói, lampiões, fogueira) iluminam os detalhes do chão:
+			# com todas as luzes decorativas, cada luz redesenhava milhares de detalhes (no celular caía pela metade)
+			g.light_mask = 2
 			root.add_child(g)
 	return root
 
