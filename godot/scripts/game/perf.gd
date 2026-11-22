@@ -80,6 +80,9 @@ func _process(delta: float) -> void:
 	_frames = 0
 	if Settings.quality != 0 or force_full:
 		return
+	# os primeiros segundos (mundo carregando) não contam: o FPS cai e travava a qualidade no mínimo
+	if _warm > 37.0:
+		return
 	# automática: 2 medições ruins seguidas baixam; 8 boas seguidas (16 s) sobem
 	# subir: medições a 54+ contam; uma queda curta (luta) só desconta 1, não zera.
 	# baixar: 2 medições seguidas abaixo de 40.
@@ -96,7 +99,7 @@ func _process(delta: float) -> void:
 		print("ARSONQ fps=%.1f nivel=%d bom=%d ruim=%d teto=%d" % [fps, Settings.level_now, _good, _bad, _ceil])
 	if _bad >= 2 and Settings.level_now > 1:
 		_ceil = Settings.level_now - 1
-		_ceil_t = 120.0
+		_ceil_t = 30.0  # tenta de novo em 30 s
 		Settings.level_now -= 1
 		_bad = 0
 		apply()
