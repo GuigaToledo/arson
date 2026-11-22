@@ -829,7 +829,8 @@ func _fotos(dir: String, hud: Node) -> void:
 	get_viewport().get_texture().get_image().save_png(base + "_1_sem_pos.png")
 	var luzes := find_children("*", "Light2D", true, false)
 	for l in luzes:
-		l.visible = false
+		if is_instance_valid(l):
+			l.visible = false
 	for f in 3:
 		await get_tree().process_frame
 	get_viewport().get_texture().get_image().save_png(base + "_2_sem_luzes.png")
@@ -853,7 +854,8 @@ func _fotos(dir: String, hud: Node) -> void:
 	for pr in find_children("*", "Prop", true, false):
 		pr.visible = true
 	for l in luzes:
-		l.visible = true
+		if is_instance_valid(l):
+			l.visible = true
 	for sp in find_children("*", "Sprite2D", true, false):
 		if sp.texture == Prop.shadow_tex():
 			sp.visible = true
