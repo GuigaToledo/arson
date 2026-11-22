@@ -20,7 +20,9 @@ static func mushrooms(parent: Node, pos: Vector2, sd: int) -> Node2D:
 	m.position = pos
 	parent.add_child(m)
 	# luz só em 1 de cada 3 grupos (cada luz 2D pesa bastante no celular); todos brilham
-	if sd % 3 == 0:
+	# orçamento de luz por qualidade (Visual Factory etapa 8): alta 1 em 2, média 1 em 3, leve 1 em 6
+	var every := 2 if Settings.level_now >= 5 else (3 if Settings.level_now >= 3 else 6)
+	if sd % every == 0:
 		var l := LightKit.make(Color(0.35, 1.0, 0.45), 0.9, 0.9, false, 0.0)
 		l.position = Vector2(0, -12)
 		m.add_child(l)
@@ -34,9 +36,10 @@ static func crystal(parent: Node, pos: Vector2, sd: int) -> Node2D:
 	c.col = CRYSTAL_COLS[sd % CRYSTAL_COLS.size()]
 	c.position = pos
 	parent.add_child(c)
-	var l := LightKit.make(c.col, 1.0, 1.1, false, 0.0)
-	l.position = Vector2(0, -30)
-	c.add_child(l)
+	if Settings.level_now >= 3 or sd % 2 == 0:
+		var l := LightKit.make(c.col, 1.0, 1.1, false, 0.0)
+		l.position = Vector2(0, -30)
+		c.add_child(l)
 	cull(c, Rect2(-60, -100, 120, 130))
 	return c
 

@@ -1,5 +1,18 @@
 [
  {
+  "versao": "0.12.0",
+  "data": "2026-11-21",
+  "titulo": "Visual Factory: corpos, neblina e luzes por qualidade",
+  "itens": [
+   "Braços e pernas com volume (músculo, contorno, luz e sombra)",
+   "Trolls, orcs, ciclopes e golens mais largos, com cabeça proporcional; goblins mais finos",
+   "Janelas do templo na escala certa",
+   "Neblina que muda com a região: densa e esverdeada no cemitério, úmida nas florestas e na selva, leve no campo; mais grossa à noite",
+   "Neblina agora aparece também no celular a partir da qualidade 3",
+   "Qualidades baixas acendem menos luzes de cogumelos e cristais (mais leve)"
+  ]
+ },
+ {
   "versao": "0.11.0",
   "data": "2026-11-21",
   "titulo": "Visual Factory: chão novo e sombras",

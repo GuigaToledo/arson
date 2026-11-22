@@ -178,6 +178,7 @@ func start_game(slot: int) -> void:
 	var post := PostFx.new()
 	add_child(post)
 	post.player = player
+	post.map = map
 	post.setup_dust(entities)
 	var hud := Hud.new()
 	add_child(hud)

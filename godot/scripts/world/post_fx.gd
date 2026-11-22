@@ -6,6 +6,12 @@ var _rect: ColorRect
 var _mat: ShaderMaterial
 var _dust: CPUParticles2D
 var player: Node2D
+var map: WorldMap
+var _fog := 0.1
+var _fog_goal := 0.1
+var _fog_c := Vector3(0.42, 0.44, 0.48)
+var _fog_cg := Vector3(0.42, 0.44, 0.48)
+var _fog_t := 0.0
 
 
 func _ready() -> void:
@@ -47,9 +53,42 @@ func setup_dust(world: Node2D) -> void:
 	world.add_child(_dust)
 
 
-func _process(_d: float) -> void:
+## Neblina por região (Visual Factory etapa 8): olha o chão em volta do jogador.
+## Cemitério = neblina densa esverdeada, floresta/selva = úmida, campo aberto = leve; à noite engrossa.
+func _sample_fog() -> void:
+	if map == null or not is_instance_valid(player):
+		return
+	var g := Iso.to_grid(player.global_position)
+	var cem := 0
+	var mata := 0
+	var tot := 0
+	for dy in range(-4, 5, 2):
+		for dx in range(-4, 5, 2):
+			var ch := map.at(int(g.x) + dx, int(g.y) + dy)
+			tot += 1
+			if ch == "g":
+				cem += 1
+			elif ch == "f" or ch == "j":
+				mata += 1
+	var fc := float(cem) / tot
+	var fm := float(mata) / tot
+	_fog_goal = 0.07 + fc * 0.24 + fm * 0.1 + (0.06 if DayNight.is_night_now() else 0.0)
+	var base := Vector3(0.42, 0.44, 0.48)
+	_fog_cg = base.lerp(Vector3(0.38, 0.45, 0.4), fc).lerp(Vector3(0.36, 0.42, 0.36), fm * 0.6)
+
+
+func _process(d: float) -> void:
 	var full := Settings.level_now >= 4 and not Settings.is_mobile()
 	_mat.set_shader_parameter("full", 1.0 if full else 0.0)
+	_mat.set_shader_parameter("fog_on", 1.0 if Settings.level_now >= 3 else 0.0)
+	_fog_t -= d
+	if _fog_t <= 0.0:
+		_fog_t = 0.5
+		_sample_fog()
+	_fog = lerpf(_fog, _fog_goal, minf(1.0, d * 0.6))
+	_fog_c = _fog_c.lerp(_fog_cg, minf(1.0, d * 0.6))
+	_mat.set_shader_parameter("fog_amount", _fog)
+	_mat.set_shader_parameter("fog_col", _fog_c)
 	var ct := get_viewport().get_canvas_transform()
 	_mat.set_shader_parameter("cam", -ct.origin / ct.get_scale())
 	if _dust and is_instance_valid(player):

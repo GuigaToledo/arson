@@ -173,9 +173,11 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 	ci.draw_circle(p.handL, 2.3, skin)
 	ci.draw_circle(p.handR, 2.3, skin)
 	ci.draw_line(p.neck, p.head + Vector2(0, 4), skin.darkened(0.2), 3.5, SpellArt.AA)
-	ci.draw_circle(p.head, 5.6, hair)
+	# cabeça acompanha o corpanzil (sem isso trolls e ciclopes ficavam com cabeça de alfinete)
+	var hs := 1.0 + (bulk - 1.0) * 0.55
+	ci.draw_circle(p.head, 5.6 * hs, hair)
 	if not p.away:
-		ci.draw_circle(p.head + fwd(p, 1.8) + Vector2(0, 1.0), 4.6, skin)
+		ci.draw_circle(p.head + fwd(p, 1.8 * hs) + Vector2(0, 1.0), 4.6 * hs, skin)
 	if c.get("core", false) and p.toward:
 		var cc: Vector2 = Vector2(0, -51 + p.bob) + fwd(p, 3)
 		var ccol: Color = c.get("core_col", Color(1, 0.45, 0.08))

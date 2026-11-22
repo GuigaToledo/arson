@@ -7,6 +7,8 @@ uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
 uniform vec2 cam = vec2(0.0);
 uniform float full = 1.0;
 uniform float fog_amount = 0.10;
+uniform float fog_on = 1.0;
+uniform vec3 fog_col = vec3(0.42, 0.44, 0.48);
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vnoise(vec2 p) {
@@ -31,10 +33,12 @@ void fragment() {
 			b += max(s1 - 0.55, 0.0) + max(s2 - 0.55, 0.0) * 0.8;
 		}
 		c += b * 0.16;
+	}
+	if (fog_on > 0.5) {
 		// neblina baixa, presa ao mundo (anda com a câmera) e se movendo devagar
 		vec2 wp = (uv / SCREEN_PIXEL_SIZE + cam) * 0.0025;
 		float n = vnoise(wp + vec2(TIME * 0.02, TIME * 0.008)) * 0.6 + vnoise(wp * 2.3 - vec2(TIME * 0.03, 0.0)) * 0.4;
-		c = mix(c, vec3(0.42, 0.44, 0.48), n * fog_amount);
+		c = mix(c, fog_col, n * fog_amount);
 	}
 	// cor: contraste, um pouco menos saturado, sombras azuladas e luzes quentes
 	float l = dot(c, vec3(0.299, 0.587, 0.114));
