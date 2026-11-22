@@ -15,6 +15,8 @@ var pack_loaded := false
 var crashes := 0
 ## Em que etapa ele parou da última vez (para mostrar na tela).
 var last_step := ""
+## Todas as etapas da abertura anterior (mostradas na tela de abertura).
+var prev_steps := ""
 const STEPS := "user://etapas.txt"
 
 
@@ -23,6 +25,7 @@ func _init() -> void:
 	if not OS.has_feature("android"):
 		return
 	var prev := _read(STEPS).split("\n", false)
+	prev_steps = " → ".join(prev.slice(1))
 	if prev.size() >= 2:
 		crashes = int(prev[0])
 		last_step = prev[prev.size() - 1]
@@ -30,6 +33,8 @@ func _init() -> void:
 			crashes += 1
 		else:
 			crashes = 0
+	step("inicio")
+	step("boot")
 	if not FileAccess.file_exists(PACK) or not FileAccess.file_exists(INFO):
 		return
 	var info = JSON.parse_string(_read(INFO))
@@ -56,8 +61,10 @@ func step(name: String) -> void:
 
 
 func _ready() -> void:
+	step("autoloads")
 	if OS.has_feature("mobile"):
 		DisplayServer.screen_set_keep_on(true)
+	step("tela ligada")
 
 
 static func _read(path: String) -> String:

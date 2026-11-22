@@ -27,6 +27,13 @@ func _ready() -> void:
 	_status = _lbl("Procurando atualização…", 17, GOLD)
 	v.add_child(_status)
 	var boot := get_node_or_null("/root/Boot")
+	if boot:
+		boot.step("abertura")
+		if boot.prev_steps != "":
+			var ps := _lbl("Última abertura: " + boot.prev_steps, 11, Color(0.6, 0.56, 0.5))
+			ps.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			ps.custom_minimum_size = Vector2(880, 0)
+			v.add_child(ps)
 	if boot and boot.crashes >= 1:
 		_hold = true
 		var aviso := "O jogo fechou sozinho da última vez (parou em: %s).\nVou abrir no modo leve%s. Se fechar de novo, mande um print desta tela." % [
@@ -49,8 +56,15 @@ func _ready() -> void:
 		var cb := CenterContainer.new()
 		cb.add_child(b)
 		v.add_child(cb)
+	# só procura atualização depois da tela aparecer (se algo travar, a tela já foi vista)
+	for i in 3:
+		await get_tree().process_frame
+	if boot:
+		boot.step("abertura desenhada")
 	_upd = AppUpdate.new()
 	add_child(_upd)
+	if boot:
+		boot.step("procurando atualização")
 	_upd.done.connect(func():
 		_waiting_update = false
 		_go())
@@ -65,6 +79,9 @@ func _go() -> void:
 	if _hold or _waiting_update:
 		return
 	_status.text = "Carregando o mundo…"
+	var boot := get_node_or_null("/root/Boot")
+	if boot:
+		boot.step("atualização ok")
 	set_process(false)
 	await get_tree().process_frame
 	await get_tree().process_frame

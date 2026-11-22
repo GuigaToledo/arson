@@ -28,7 +28,6 @@ func _exit_tree() -> void:
 
 
 func _ready() -> void:
-	Boot.step("inicio")
 	Boot.step("mapa")
 	map = WorldMap.load_file(MAP_PATH)
 	Player.map_hash = FileAccess.get_file_as_string(MAP_PATH).hash()
