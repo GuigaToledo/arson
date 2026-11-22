@@ -437,6 +437,9 @@ func _page_graphics() -> Control:
 	opt.select(Settings.quality)
 	opt.item_selected.connect(func(i):
 		Settings.quality = i
+		# escolher a qualidade na mão desliga o modo leve de segurança
+		if OS.has_feature("web"):
+			JavaScriptBridge.eval("try{localStorage.removeItem('arson-leve')}catch(e){}", true)
 		if i == 0:
 			Settings.level_now = 3 if Settings.is_mobile() else 6
 		Settings.save()

@@ -318,6 +318,8 @@ const VF := "res://assets/vf/terreno/"
 func _tex_array(names: Array) -> Texture2DArray:
 	var imgs: Array[Image] = []
 	var sz := 512 if Settings.is_mobile() or Settings.level_now <= 3 else 1024
+	if Settings.safe_mode():
+		sz = 256
 	for nm in names:
 		var path: String = nm if str(nm).begins_with("res://") else TEX + nm
 		var im: Image = (load(path + ".jpg") as Texture2D).get_image()
@@ -787,6 +789,38 @@ func _fotos(dir: String, hud: Node) -> void:
 				get_viewport().get_texture().get_image().save_png(nome + "_limpa.png")
 				hud.visible = true
 			print("FOTO ", nome)
+	# diagnóstico: mesma cena da floresta desligando uma camada por vez
+	DayNight.force = 0.3
+	hud.visible = false
+	player.global_position = Iso.to_screen(Vector2(12, 36))
+	for f in 45:
+		await get_tree().process_frame
+	var base := "%s/_diag_floresta" % dir
+	get_viewport().get_texture().get_image().save_png(base + "_0_normal.png")
+	var post := get_children().filter(func(n): return n is PostFx)
+	for n in post:
+		n.visible = false
+		n._rect.visible = false
+	for f in 3:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png(base + "_1_sem_pos.png")
+	var luzes := find_children("*", "Light2D", true, false)
+	for l in luzes:
+		l.visible = false
+	for f in 3:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png(base + "_2_sem_luzes.png")
+	for sp in find_children("*", "Sprite2D", true, false):
+		if sp.texture == Prop.shadow_tex():
+			sp.visible = false
+	for f in 3:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png(base + "_3_sem_sombras.png")
+	for pr in find_children("*", "Prop", true, false):
+		pr.visible = false
+	for f in 3:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png(base + "_4_sem_pecas.png")
 	print("FOTOS ok")
 	get_tree().quit()
 

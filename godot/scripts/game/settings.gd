@@ -56,6 +56,17 @@ static func save() -> void:
 
 
 static var _mobile := -1
+static var _leve := -1
+
+
+## Modo leve de segurança: a página liga quando o vídeo do celular reiniciou (falta de memória
+## de vídeo). Começa no nível 1, com texturas pequenas, até o jogador escolher outra qualidade.
+static func safe_mode() -> bool:
+	if _leve < 0:
+		_leve = 0
+		if OS.has_feature("web"):
+			_leve = 1 if str(JavaScriptBridge.eval("(function(){try{return localStorage.getItem('arson-leve')||''}catch(e){return ''}})()", true)) == "1" else 0
+	return _leve == 1
 
 
 ## Celular/tablet? (Android, iPhone, iPad — inclusive o iPad que se diz "Mac").

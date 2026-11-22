@@ -20,7 +20,7 @@ func _ready() -> void:
 	_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mat = ShaderMaterial.new()
-	_mat.shader = load("res://shaders/post.gdshader")
+	_mat.shader = load("res://shaders/post_leve.gdshader" if Settings.is_mobile() else "res://shaders/post.gdshader")
 	_rect.material = _mat
 	add_child(_rect)
 

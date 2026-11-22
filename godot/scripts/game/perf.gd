@@ -24,6 +24,9 @@ func _ready() -> void:
 	Settings.load_all()
 	if Settings.quality == 0:
 		Settings.level_now = 3 if Settings.is_mobile() else 6
+		if Settings.safe_mode():
+			Settings.level_now = 1
+			_ceil = 2
 	else:
 		Settings.level_now = Settings.quality
 	apply()
