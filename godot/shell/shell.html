@@ -29,6 +29,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: 
 .links { margin: 22px 0 34px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .links a { font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: .12em; color: #e8d2a6; text-decoration: none; padding: 10px 22px;
   border: 1px solid #6b4a26; border-radius: 6px; background: rgba(25, 13, 7, .75); transition: background .15s, border-color .15s; }
+.links a.app { border-color: #c98b3c; color: #ffcf73; }
 .links a:hover { background: rgba(70, 30, 10, .8); border-color: #c98b3c; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; text-align: left; margin-top: 10px; }
 .card { background: linear-gradient(180deg, rgba(36, 22, 14, .85), rgba(18, 10, 6, .85)); border: 1px solid #4a3220; border-radius: 8px; padding: 14px 16px; }
@@ -59,6 +60,7 @@ $GODOT_HEAD_INCLUDE
     <div class="links">
       <a href="atualizacoes.html">Atualizações</a>
       <a href="wiki.html">Wiki do jogo</a>
+      <a href="https://github.com/guigatoledo/arson/releases/download/app/arson.apk" class="app">📱 Baixar app Android</a>
     </div>
     <div class="grid">
       <div class="card"><h3>Mundo online</h3><p>Todos no mesmo mundo, no navegador do celular ou do PC. Chame os amigos e cacem juntos.</p></div>

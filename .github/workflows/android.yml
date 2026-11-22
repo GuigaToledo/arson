@@ -1,0 +1,119 @@
+name: App Android
+
+# A cada push no jogo: gera o app (APK) e o pacote do jogo (jogo.pck) e publica os dois no
+# lançamento "app" do GitHub. O app instalado confere versao.json ao abrir e baixa só o pacote.
+on:
+  push:
+    branches: [main]
+    paths: ["godot/**", "arte/**", "ferramentas/**", ".github/workflows/android.yml"]
+  # mantém a chave de assinatura viva no cache (cache sem uso some depois de 7 dias)
+  schedule:
+    - cron: "17 6 */4 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android
+  cancel-in-progress: true
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: "4.4.1"
+    steps:
+      - uses: actions/checkout@v4
+
+      # chave que assina o app: precisa ser sempre a mesma, senão o Android não deixa instalar
+      # a versão nova por cima. Fica guardada no cache do GitHub (não vai para o repositório).
+      - name: Chave de assinatura
+        id: chave
+        uses: actions/cache@v4
+        with:
+          path: ~/arson-chave
+          key: arson-android-chave-v1
+      - name: Criar chave (só na primeira vez)
+        if: steps.chave.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/arson-chave
+          P=$(openssl rand -hex 16)
+          echo -n "$P" > ~/arson-chave/senha
+          keytool -genkeypair -keystore ~/arson-chave/arson.jks -alias arson -keyalg RSA -keysize 2048 \
+            -validity 20000 -storepass "$P" -keypass "$P" -dname "CN=Arson, O=guigatoledo"
+
+      - name: Parar aqui na execução agendada (só renova o cache)
+        if: github.event_name == 'schedule'
+        run: echo "chave renovada"
+
+      - name: Peças de cenário
+        if: github.event_name != 'schedule'
+        run: |
+          pip install --quiet pillow numpy
+          python3 ferramentas/desenhar_pecas.py
+          python3 ferramentas/processar_objetos.py arte/objetos godot/assets/objetos
+
+      - name: Baixar Godot e modelos de exportação
+        if: github.event_name != 'schedule'
+        run: |
+          base=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
+          wget -q $base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          wget -q $base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          unzip -q Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 $HOME/godot
+          unzip -q Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          mkdir -p $HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mv templates/* $HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
+          mkdir -p $HOME/.config/godot
+          cat > $HOME/.config/godot/editor_settings-4.4.tres <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME_17_X64"
+          EOF
+          sed -i 's/^          //' $HOME/.config/godot/editor_settings-4.4.tres
+
+      - name: Versão e assinatura
+        if: github.event_name != 'schedule'
+        run: |
+          echo "${GITHUB_SHA::7}" > godot/app/jogo.txt
+          python3 ferramentas/app/assinatura.py godot ${GODOT_VERSION}
+          sed -i "s/^version\/code=.*/version\/code=${GITHUB_RUN_NUMBER}/; s/^version\/name=.*/version\/name=\"1.${GITHUB_RUN_NUMBER}\"/" godot/export_presets.cfg
+
+      - name: Importar
+        if: github.event_name != 'schedule'
+        run: $HOME/godot --headless --path godot --import 2>&1 | tail -5 || true
+
+      - name: Exportar app e pacote
+        if: github.event_name != 'schedule'
+        run: |
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$HOME/arson-chave/arson.jks
+          export GODOT_ANDROID_KEYSTORE_RELEASE_USER=arson
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$(cat $HOME/arson-chave/senha)
+          mkdir -p saida
+          $HOME/godot --headless --path godot --export-release "Android" "$GITHUB_WORKSPACE/saida/arson.apk" 2>&1 | tee export.log
+          $HOME/godot --headless --path godot --export-pack "Android" "$GITHUB_WORKSPACE/saida/jogo.pck" 2>&1 | tee -a export.log
+          test -s saida/arson.apk || { echo "::error::APK não foi gerado"; exit 1; }
+          test -s saida/jogo.pck || { echo "::error::pacote não foi gerado"; exit 1; }
+          ls -la saida
+          python3 - <<'PY'
+          import json, os
+          json.dump({"jogo": open("godot/app/jogo.txt").read().strip(),
+                     "assinatura": open("godot/app/assinatura.txt").read().strip(),
+                     "tam": os.path.getsize("saida/jogo.pck"),
+                     "apk": "arson.apk"}, open("saida/versao.json", "w"))
+          PY
+          cat saida/versao.json
+
+      - name: Publicar no lançamento "app"
+        if: github.event_name != 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view app >/dev/null 2>&1 || gh release create app --title "App Android" \
+            --notes "Baixe o arson.apk e instale. O app se atualiza sozinho ao abrir." --latest
+          # o pacote e o app primeiro, a versão por último (o app só vê a versão nova quando tudo já subiu)
+          gh release upload app saida/arson.apk saida/jogo.pck --clobber
+          gh release upload app saida/versao.json --clobber

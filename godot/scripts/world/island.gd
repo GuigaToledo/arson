@@ -104,6 +104,8 @@ func _ready() -> void:
 				player.mp = player.max_mp
 				player.cast_spell("luz:2"))
 			return
+	if OS.has_feature("android"):
+		add_child(AppUpdate.new())
 	var ts := TitleScreen.new()
 	add_child(ts)
 	ts.setup()

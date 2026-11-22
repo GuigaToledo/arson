@@ -5,11 +5,13 @@ config_version=5
 
 config/name="Arson"
 config/description="RPG isométrico 2D de fantasia medieval realista."
+config/icon="res://icon.png"
 run/main_scene="res://scenes/island.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 
 [autoload]
 
+Boot="*res://scripts/app/boot.gd"
 ItemDB="*res://scripts/equipment/item_db.gd"
 
 [display]
@@ -18,11 +20,13 @@ window/size/viewport_width=960
 window/size/viewport_height=540
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/handheld/orientation=4
 
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
 
 textures/canvas_textures/default_texture_filter=1
 environment/defaults/default_clear_color=Color(0.02, 0.015, 0.015, 1)
