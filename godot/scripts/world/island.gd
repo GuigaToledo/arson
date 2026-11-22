@@ -292,8 +292,10 @@ func _build_ground() -> void:
 	mat.set_shader_parameter("map_size", Vector2(map.w, map.h))
 	mat.set_shader_parameter("w0", w[0])
 	mat.set_shader_parameter("w1", w[1])
-	mat.set_shader_parameter("cores", _tex_array(["grass_c", "path_c", "sand_c", "stone_c", "forest_c", "ash_c"]))
-	mat.set_shader_parameter("normais", _tex_array(["grass_n", "path_n", "stone_n"]))
+	# Visual Factory: texturas ambientCG em 1024 (512 no celular), 9 camadas com variações
+	var vf := ["grama_a", "terra", "areia", "calcamento", "floresta_a", "rocha", "grama_b", "floresta_b", "cemiterio"]
+	mat.set_shader_parameter("cores", _tex_array(vf.map(func(x): return VF + x + "_c")))
+	mat.set_shader_parameter("normais", _tex_array(vf.map(func(x): return VF + x + "_n")))
 	var ground := Node2D.new()
 	ground.name = "Chao"
 	ground.z_index = -20
@@ -308,15 +310,20 @@ func _build_ground() -> void:
 
 
 ## Junta várias texturas do chão num Texture2DArray (1 unidade de textura em vez de várias).
+const VF := "res://assets/vf/terreno/"
+
+
 func _tex_array(names: Array) -> Texture2DArray:
 	var imgs: Array[Image] = []
+	var sz := 512 if Settings.is_mobile() or Settings.level_now <= 3 else 1024
 	for nm in names:
-		var im: Image = (load(TEX + nm + ".jpg") as Texture2D).get_image()
+		var path: String = nm if str(nm).begins_with("res://") else TEX + nm
+		var im: Image = (load(path + ".jpg") as Texture2D).get_image()
 		if im.is_compressed():
 			im.decompress()
-		im.convert(Image.FORMAT_RGBA8)
-		if im.get_width() != 512 or im.get_height() != 512:
-			im.resize(512, 512)
+		im.convert(Image.FORMAT_RGB8)
+		if im.get_width() != sz or im.get_height() != sz:
+			im.resize(sz, sz, Image.INTERPOLATE_LANCZOS)
 		im.generate_mipmaps()
 		imgs.append(im)
 	var arr := Texture2DArray.new()

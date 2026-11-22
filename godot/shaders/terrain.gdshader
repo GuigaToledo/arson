@@ -6,10 +6,10 @@ uniform vec2 map_size = vec2(56.0, 56.0);
 uniform sampler2D w0 : filter_linear, repeat_disable;
 uniform sampler2D w1 : filter_linear, repeat_disable;
 // Poucas unidades de textura (celulares e muitas placas só têm 16 no total):
-// cores = [grama, caminho, areia, pedra, floresta, rocha]; normais = [grama, caminho, pedra]
+// cores/normais = [grama_a, terra, areia, calçamento, floresta_a, rocha, grama_b, floresta_b, cemitério] (ambientCG CC0)
 uniform sampler2DArray cores : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2DArray normais : filter_linear_mipmap, repeat_enable;
-uniform float tex_scale = 0.5;
+uniform float tex_scale = 0.3;
 
 varying vec2 grid;
 
@@ -19,6 +19,18 @@ float vnoise(vec2 p) {
 	vec2 f = fract(p);
 	f = f * f * (3.0 - 2.0 * f);
 	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+
+const mat2 ROT = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8));
+vec3 at(float L, vec2 uv, float m) {
+	vec3 c = texture(cores, vec3(uv, L)).rgb;
+	if (m < 0.01) return c;
+	return mix(c, texture(cores, vec3(ROT * uv * 0.71 + vec2(0.37, 0.11), L)).rgb, m);
+}
+vec3 atn(float L, vec2 uv, float m) {
+	vec3 c = texture(normais, vec3(uv, L)).rgb;
+	if (m < 0.01) return c;
+	return mix(c, texture(normais, vec3(ROT * uv * 0.71 + vec2(0.37, 0.11), L)).rgb, m);
 }
 
 void vertex() {
@@ -37,13 +49,30 @@ void fragment() {
 	b /= sum;
 
 	vec2 uv = g * tex_scale;
-	vec3 col = texture(cores, vec3(uv, 0.0)).rgb * a.r
-		+ texture(cores, vec3(uv, 1.0)).rgb * a.g
-		+ texture(cores, vec3(uv, 2.0)).rgb * a.b
-		+ texture(cores, vec3(uv, 3.0)).rgb * a.a
-		+ texture(cores, vec3(uv, 4.0)).rgb * b.r
-		+ texture(cores, vec3(uv * 0.7, 5.0)).rgb * b.g
-		+ mix(texture(cores, vec3(uv, 1.0)).rgb, texture(cores, vec3(uv, 0.0)).rgb, 0.35) * vec3(0.6, 0.57, 0.64) * b.a;
+	// contra repetição: cada camada mistura a textura com ela mesma girada e em outra escala,
+	// por manchas grandes de ruído; grama e floresta ainda alternam entre duas texturas
+	float m = smoothstep(0.3, 0.7, vnoise(g * 0.31 + 5.1));
+	float vg = smoothstep(0.35, 0.65, vnoise(g * 0.17 + 11.0));
+	vec3 col = vec3(0.0);
+	vec3 nm = vec3(0.0);
+	if (a.r + b.r > 0.003) {
+		vec3 ga = mix(at(0.0, uv, m), at(6.0, uv, 1.0 - m), vg);
+		col += ga * a.r;
+		nm += mix(atn(0.0, uv, m), atn(6.0, uv, 1.0 - m), vg) * (a.r);
+		vec3 fo = mix(at(4.0, uv, m), at(7.0, uv, 1.0 - m), smoothstep(0.3, 0.7, vnoise(g * 0.23 + 3.0)));
+		col += fo * b.r;
+		nm += atn(4.0, uv, m) * b.r;
+	}
+	if (a.g > 0.003) { col += at(1.0, uv, m) * a.g; nm += atn(1.0, uv, m) * a.g; }
+	if (a.b > 0.003) { col += at(2.0, uv, m) * a.b; nm += atn(2.0, uv, m) * a.b; }
+	if (a.a > 0.003) { col += at(3.0, uv * 1.25, 0.0) * a.a; nm += atn(3.0, uv * 1.25, 0.0) * a.a; }
+	if (b.g > 0.003) { col += at(5.0, uv * 0.8, m) * b.g; nm += atn(5.0, uv * 0.8, m) * b.g; }
+	if (b.a > 0.003) { col += at(8.0, uv, m) * b.a * 0.85; nm += atn(8.0, uv, m) * b.a; }
+	nm += vec3(0.5, 0.5, 1.0) * b.b;
+	// sujeira e manchas grandes (quebra a uniformidade) e cor do dark fantasy (menos saturada)
+	col *= 0.86 + 0.28 * vnoise(g * 0.6 + 2.0);
+	float lum = dot(col, vec3(0.3, 0.59, 0.11));
+	col = mix(vec3(lum), col, 0.78);
 
 	float t = TIME;
 	vec3 water = mix(vec3(0.04, 0.11, 0.13), vec3(0.10, 0.22, 0.23), vnoise(g * 1.6 + vec2(t * 0.25, t * 0.15)));
@@ -52,10 +81,6 @@ void fragment() {
 	// beira molhada da areia perto da água
 	col *= 1.0 - 0.35 * smoothstep(0.05, 0.5, b.b) * (1.0 - b.b);
 
-	vec3 nm = texture(normais, vec3(uv, 0.0)).rgb * (a.r + b.r)
-		+ texture(normais, vec3(uv, 1.0)).rgb * (a.g + a.b + b.a)
-		+ texture(normais, vec3(uv, 2.0)).rgb * (a.a + b.g)
-		+ vec3(0.5, 0.5, 1.0) * b.b;
 	COLOR = vec4(col, 1.0);
 	NORMAL_MAP = nm;
 }
