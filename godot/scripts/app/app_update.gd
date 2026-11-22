@@ -40,9 +40,9 @@ func _process(_d: float) -> void:
 
 func _on_versao(result: int, code: int, _h: PackedStringArray, body: PackedByteArray) -> void:
 	_http.request_completed.disconnect(_on_versao)
-	var boot := get_node_or_null("/root/Boot")
-	if boot:
-		boot.step("resposta da atualização %d/%d" % [result, code])
+	var bt := get_node_or_null("/root/Boot")
+	if bt:
+		bt.step("resposta da atualização %d/%d" % [result, code])
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		done.emit()
 		return  # sem internet ou sem resposta: joga a versão que já tem

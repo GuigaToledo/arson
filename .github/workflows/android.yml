@@ -102,6 +102,8 @@ jobs:
           timeout 120 $HOME/godot --headless --main-pack saida/jogo.pck --quit-after 300 2>&1 | tee pack.log || true
           timeout 60 $HOME/godot --headless --main-pack saida/jogo.pck res://scenes/app_inicio.tscn --quit-after 200 2>&1 | tee -a pack.log || true
           grep -E "ERROR|SCRIPT ERROR|Failed|Cannot|Can't" pack.log | head -40 || true
+          # não publica app com erro de script
+          if grep -qE "SCRIPT ERROR|Parse Error|Failed to load script" export.log pack.log; then echo "::error::erro de script"; exit 1; fi
           python3 - <<'PY'
           import json, os
           json.dump({"jogo": open("godot/app/jogo.txt").read().strip(),
