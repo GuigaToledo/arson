@@ -62,7 +62,10 @@ static func anim_hz() -> float:
 
 ## Quantas das 6 "faixas" de luzes decorativas (cogumelos, cristais) ficam acesas em cada nível.
 static func light_share() -> int:
-	return [0, 1, 2, 2, 3, 4, 6][clampi(level_now, 0, 6)]
+	var n: int = [0, 1, 2, 2, 3, 4, 6][clampi(level_now, 0, 6)]
+	# celular: cada luz a mais redesenha o chão inteiro de novo (no Redmi o nível 2 caía de 60 para 22 FPS);
+	# fica na quantidade do nível 1 e os níveis maiores sobem só resolução e efeitos
+	return mini(n, 1) if is_mobile() else n
 
 
 static var _mobile := -1
