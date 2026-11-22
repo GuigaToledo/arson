@@ -1,5 +1,18 @@
 [
  {
+  "versao": "0.13.0",
+  "data": "2026-11-21",
+  "titulo": "Otimização geral e qualidade automática",
+  "itens": [
+   "Qualidade automática começa no nível 1 e sobe sozinha enquanto o jogo roda liso",
+   "Cada nível de qualidade agora muda também os efeitos, não só a resolução:",
+   "Níveis 1-2: chão simples (sem anti-repetição e sem relevo), sem pós-processamento e sem poeira no ar, só 1 a 2 de cada 6 luzes de cogumelos e cristais, monstros animados a 12 quadros por segundo, tochas tremulando mais devagar",
+   "Níveis 3-4: chão sem relevo, cor e neblina leves, metade das luzes decorativas, monstros a 18 quadros por segundo",
+   "Níveis 5-6: tudo ligado (no PC com brilho e granulação)",
+   "O seu personagem sempre anima liso em qualquer nível"
+  ]
+ },
+ {
   "versao": "0.12.0",
   "data": "2026-11-21",
   "titulo": "Visual Factory: corpos, neblina e luzes por qualidade",
