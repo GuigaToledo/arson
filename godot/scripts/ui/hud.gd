@@ -305,6 +305,12 @@ func _release_joy() -> void:
 
 
 func _process(_d: float) -> void:
+	var t0 := Prof.t()
+	_process_hud(_d)
+	Prof.add("hud", t0)
+
+
+func _process_hud(_d: float) -> void:
 	if player == null:
 		return
 	# magias seguradas (dedo/mouse em cima do botão, ou teclas 1-8)
@@ -742,6 +748,11 @@ class NameTags:
 	var player: Node2D = null
 
 	func _draw() -> void:
+		var t0 := Prof.t()
+		_draw_tags()
+		Prof.add("nomes", t0)
+
+	func _draw_tags() -> void:
 		var font := ThemeDB.fallback_font
 		var ct := get_viewport().get_canvas_transform()
 		var zoom := ct.get_scale().x

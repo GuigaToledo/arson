@@ -36,6 +36,8 @@ func _ready() -> void:
 			v.add_child(ps)
 	if boot and boot.crashes >= 1:
 		_hold = true
+		# parado esperando "Abrir o jogo": fechar aqui não é queda (o contador de tentativas já foi gravado)
+		boot.step("ok")
 		var extra: String = ["", "", " e com o chão simplificado", ", chão simplificado e sem luzes", ", chão simplificado, sem luzes e sem detalhes", ", chão simplificado, sem luzes, detalhes nem cenário"][mini(boot.crashes, 5)]
 		var aviso := "O jogo fechou sozinho da última vez (parou em: %s). Tentativa %d.\nVou abrir no modo leve%s. Se fechar de novo, mande um print desta tela." % [
 			boot.last_step, boot.crashes, extra]

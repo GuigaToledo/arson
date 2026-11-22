@@ -65,6 +65,11 @@ func _on_versao(result: int, code: int, _h: PackedStringArray, body: PackedByteA
 
 
 func _show(text: String, label: String, cb: Callable) -> void:
+	# esperando a escolha do jogador (Atualizar / Baixar app / Depois): se fechar aqui (inclusive para
+	# instalar o app novo por cima), não é queda. Se travar depois, as etapas seguintes vêm depois deste ok.
+	var bt0 := get_node_or_null("/root/Boot")
+	if bt0:
+		bt0.step("ok")
 	_box = PanelContainer.new()
 	var st := StyleBoxFlat.new()
 	st.bg_color = Color(0.09, 0.05, 0.03, 0.94)

@@ -7,6 +7,8 @@ extends RefCounted
 const RX := 90.5  # raio de 1 tile na tela (semieixo x da elipse isométrica)
 ## Melhorias da magia sendo lançada (0 a 5): mais partículas e efeitos extras.
 static var boost := 0
+## Celular/tablet: efeitos com menos partículas e redesenho mais espaçado.
+static var MOBILE := Settings.is_mobile()
 ## Linhas suavizadas: na web a imagem já é desenhada com o dobro de pixels, então não precisa (e pesa).
 static var AA := not OS.has_feature("web")
 
@@ -49,6 +51,9 @@ class DrawFx:
 		if t >= life:
 			queue_free()
 			return
+		# celular: redesenha 30x por segundo (o efeito continua igual, só menos trabalho)
+		if SpellArt.MOBILE and Engine.get_process_frames() % 2 == 1:
+			return
 		queue_redraw()
 
 	func _draw() -> void:
@@ -82,7 +87,7 @@ static func fxg(parent: Node, pos: Vector2, life: float, f: Callable) -> DrawFx:
 ## Partículas com gravidade (g > 0 cai).
 static func parts(parent: Node, pos: Vector2, amount: int, speed: float, life: float, size: float, a: Color, b: Color, g := 0.0, spread := 180.0, dir := Vector2.UP, add := true) -> CPUParticles2D:
 	var p := CPUParticles2D.new()
-	p.amount = maxi(1, int(amount * (1.0 + 0.25 * boost)))
+	p.amount = maxi(1, int(amount * (1.0 + 0.25 * boost) * (0.6 if MOBILE else 1.0)))
 	p.lifetime = life
 	p.one_shot = true
 	p.explosiveness = 0.9
