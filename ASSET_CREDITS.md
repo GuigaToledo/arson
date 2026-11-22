@@ -9,7 +9,7 @@ Todo o resto do visual (personagens, monstros, objetos, magias) é gerado por c�
 | --- | --- | --- | --- | --- |
 | `grama_a` | [Grass001](https://ambientcg.com/view?id=Grass001) | ambientCG | [CC0 1.0](https://docs.ambientcg.com/license/) | grama densa e escura (camada principal) |
 | `grama_b` | [Grass004](https://ambientcg.com/view?id=Grass004) | ambientCG | [CC0 1.0](https://docs.ambientcg.com/license/) | grama clara (variação contra repetição) |
-| `terra` | [Ground030](https://ambientcg.com/view?id=Ground030) | ambientCG | [CC0 1.0](https://docs.ambientcg.com/license/) | terra batida com pedrinhas (estradas e acampamentos) |
+| `terra` | [Ground103](https://ambientcg.com/view?id=Ground103) | ambientCG | [CC0 1.0](https://docs.ambientcg.com/license/) | terra velha batida (estradas e acampamentos) |
 | `areia` | [Ground054](https://ambientcg.com/view?id=Ground054) | ambientCG | [CC0 1.0](https://docs.ambientcg.com/license/) | areia/lama de praia |
 | `calcamento` | [PavingStones138](https://ambientcg.com/view?id=PavingStones138) | ambientCG | [CC0 1.0](https://docs.ambientcg.com/license/) | calçamento velho com musgo (vila) |
 | `floresta_a` | [Ground037](https://ambientcg.com/view?id=Ground037) | ambientCG | [CC0 1.0](https://docs.ambientcg.com/license/) | chão de floresta com musgo |
