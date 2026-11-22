@@ -385,7 +385,8 @@ var atlas_pad := 16
 
 
 func _tex_array(names: Array, normals := false) -> Texture2D:
-	var sz := 512 if Settings.is_mobile() or Settings.level_now <= 3 else 1024
+	# PC (navegador ou não): sempre 1024, a qualidade máxima fica guardada; celular 512
+	var sz := 512 if Settings.is_mobile() else 1024
 	if Settings.safe_mode():
 		sz = 256
 	# celular: relevo do chão (normais) em tamanho mínimo, quase não aparece e economiza vídeo

@@ -19,7 +19,7 @@ static func build(parent: Node, m: WorldMap) -> Node2D:
 	root.z_index = -2
 	root.z_as_relative = false
 	parent.add_child(root)
-	var d := 0.5 if (Settings.is_mobile() or Settings.level_now <= 3) else 1.0
+	var d := 0.5 if Settings.is_mobile() else 1.0
 	for y in range(0, m.h, CHUNK):
 		for x in range(0, m.w, CHUNK):
 			var g := GroundDecals.new()

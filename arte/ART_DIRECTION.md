@@ -85,3 +85,17 @@ Proibido: preto puro (`#000`) em áreas grandes, branco puro fora de brilhos, ve
 - Licença conferida uma a uma, com prioridade para CC0, e tudo registrado em `ASSET_CREDITS.md`.
 - Nunca misturar pixel art com textura fotográfica na mesma camada.
 - Novos arquivos ficam em `godot/assets/vf/<categoria>/` e as ferramentas em `ferramentas/vf/`.
+
+
+## Perfis por plataforma (não apagar)
+
+Nada da qualidade avançada foi removido: o celular só liga menos coisas.
+
+- **PC (navegador ou app de PC):** chão com texturas de 1024 e relevo completo, detalhes do chão na densidade total,
+  pós-processamento completo (brilho, granulação, neblina), todas as luzes decorativas, monstros a 24 quadros por segundo.
+  A qualidade automática começa no nível 1 e sobe até o 6 em uns 20 segundos se o computador aguentar.
+- **Celular (navegador e app Android):** chão 512 com relevo mínimo, metade dos detalhes do chão, pós-processamento leve,
+  e o resto conforme o nível automático.
+- **Só no app Android:** modo de segurança depois de fechar sozinho (chão só com cores, sem luzes etc.). Nunca vale no PC.
+- Mudanças de técnica feitas para o celular não pioram o PC: o chão virou atlas (mesma imagem), e triângulos, círculos e
+  linhas são desenhados em lote (mesmo visual, mais rápido em todos).
