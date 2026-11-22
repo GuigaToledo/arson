@@ -46,7 +46,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: 
 </style>
 <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
-<script>(function(){var m=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent));if(m)return;var r=window.devicePixelRatio||1;Object.defineProperty(window,'devicePixelRatio',{get:function(){return Math.min(4,r*2);}});})();</script><script src="arson_net.js?v=960adcd"></script>
+<script>(function(){var m=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent));if(m)return;var r=window.devicePixelRatio||1;Object.defineProperty(window,'devicePixelRatio',{get:function(){return Math.min(4,r*2);}});})();</script><script src="arson_net.js?v=b3a0c0b"></script>
 </head>
 <body>
 <canvas id="canvas" tabindex="-1">Seu navegador não suporta o jogo (precisa de WebGL 2).</canvas>
@@ -76,7 +76,7 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: 
 </div>
 <script src="index.js"></script>
 <script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","mainPack":"index-960adcd.pck","experimentalVK":true,"fileSizes":{"index-960adcd.pck":36870688,"index.wasm":43699190},"focusCanvas":true,"gdextensionLibs":[]};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"ensureCrossOriginIsolationHeaders":true,"executable":"index","mainPack":"index-b3a0c0b.pck","experimentalVK":true,"fileSizes":{"index-b3a0c0b.pck":36868064,"index.wasm":43699190},"focusCanvas":true,"gdextensionLibs":[]};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(Object.assign({}, GODOT_CONFIG, { canvas: document.getElementById('canvas') }));
 const home = document.getElementById('home');
@@ -138,7 +138,7 @@ function startGame() {
   goFull();
   keepAwake();
   const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
-  if (missing.length) { setStatus('Seu navegador não tem o que o jogo precisa: ' + missing.join(', ')); return; }
+  if (missing.length) { semVideo(missing); return; }
   const bar = document.querySelector('#bar div');
   engine.startGame({
     onProgress: function (cur, total) { if (total > 0) bar.style.width = Math.round(cur / total * 100) + '%'; },
@@ -146,6 +146,33 @@ function startGame() {
           (err) => { setStatus(String(err && err.message || err)); });
 }
 document.getElementById('play').addEventListener('click', startGame);
+
+// Sem WebGL 2: o Godot 4 não roda sem ele, então explica o motivo provável, tenta de novo
+// sozinho a cada 2 s e começa assim que o navegador liberar o vídeo.
+function temGL(tipo) {
+  try { const c = document.createElement('canvas'); const g = c.getContext(tipo); if (g) { const l = g.getExtension('WEBGL_lose_context'); l && l.loseContext(); } return !!g; } catch (e) { return false; }
+}
+function semVideo(missing) {
+  const gl1 = temGL('webgl');
+  const app = /FBAN|FBAV|Instagram|WhatsApp|Line\/|; wv\)/i.test(navigator.userAgent);
+  let msg = 'O navegador não liberou o vídeo (WebGL 2), que o jogo precisa para rodar. ';
+  if (app) msg += 'Parece que o link foi aberto dentro de outro app: abra no Chrome. ';
+  else if (gl1) msg += 'O aparelho tem vídeo, mas o navegador desligou o WebGL 2 — isso costuma acontecer depois de uma travada do vídeo. Feche o navegador por completo (tire dos apps recentes) e abra de novo. ';
+  else msg += 'O navegador bloqueou todo o vídeo 3D — isso costuma acontecer depois de uma travada. Feche o navegador por completo (tire dos apps recentes) e abra de novo; se continuar, reinicie o celular ou atualize o Chrome. ';
+  msg += 'Vou tentar de novo sozinho.';
+  setStatus(msg + ' (' + missing.join(', ') + ')');
+  try { localStorage.setItem('arson-leve', '1'); } catch (e) {}
+  const t = setInterval(() => {
+    if (!Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED }).length) { clearInterval(t); started = false; setStatus(''); startGame(); }
+  }, 2000);
+}
+// vídeo do celular reiniciou no meio do jogo (falta de memória de vídeo): volta em modo leve
+document.getElementById('canvas').addEventListener('webglcontextlost', (e) => {
+  try { localStorage.setItem('arson-leve', '1'); sessionStorage.setItem('arson-resume', '0'); } catch (er) {}
+  loading.style.display = 'flex';
+  setStatus('O vídeo do celular reiniciou (pouca memória). Recarregando em modo leve…');
+  setTimeout(() => location.reload(), 1500);
+}, false);
 
 // volta direto ao jogo depois de uma atualização automática ou em testes
 const q = new URLSearchParams(location.search);
