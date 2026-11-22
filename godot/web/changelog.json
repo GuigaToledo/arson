@@ -9,7 +9,11 @@
    "Janelas do templo na escala certa",
    "Neblina que muda com a região: densa e esverdeada no cemitério, úmida nas florestas e na selva, leve no campo; mais grossa à noite",
    "Neblina agora aparece também no celular a partir da qualidade 3",
-   "Qualidades baixas acendem menos luzes de cogumelos e cristais (mais leve)"
+   "Qualidades baixas acendem menos luzes de cogumelos e cristais (mais leve)",
+   "Árvore na frente do personagem: só a copa fica transparente, o tronco continua sólido (sumiu a faixa/retângulo estranho no chão da floresta)",
+   "Celular sem WebGL 2: a página explica o motivo provável, tenta de novo sozinha a cada 2 segundos e começa em modo leve",
+   "Se o vídeo do celular reiniciar no meio do jogo, a página recarrega sozinha em modo leve (qualidade 1, texturas menores); escolher a qualidade no menu desliga o modo leve",
+   "Pós-processamento mais leve no celular"
   ]
  },
  {

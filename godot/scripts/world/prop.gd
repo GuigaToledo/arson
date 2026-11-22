@@ -27,6 +27,9 @@ var D: Vector2
 var _bounds: Rect2
 var _player: Node2D
 var _fade := 1.0
+## Árvores: só a copa fica transparente; o tronco continua sólido (antes o tronco virava um
+## fantasma escuro no chão, parecendo uma coluna/retângulo).
+var trunk_solid := false
 
 
 func with_image(path: String, sc: float, foot := Vector2.ZERO, flip := false, anchor := Vector2(-1, -1)) -> Prop:
@@ -119,8 +122,30 @@ func _exit_tree() -> void:
 func _fade_step(pl: Node2D, delta: float) -> void:
 	var lp := pl.global_position - global_position
 	var behind := lp.y < 0.0 and _bounds.grow(6).has_point(lp + Vector2(0, -35))
-	_fade = move_toward(_fade, 0.35 if behind else 1.0, delta * 3.0)
-	modulate.a = _fade
+	var f := move_toward(_fade, (0.28 if trunk_solid else 0.35) if behind else 1.0, delta * 3.0)
+	if f == _fade:
+		return
+	_fade = f
+	if trunk_solid:
+		queue_redraw()
+	else:
+		modulate.a = _fade
+
+
+## Copa transparente e tronco sólido, com uma passagem suave entre os dois.
+func _draw_split(r: Rect2) -> void:
+	var ts := tex.get_size()
+	var cut := 0.74  # daqui para baixo é tronco (fração da altura da imagem)
+	var band := 0.1
+	var top := cut - band
+	draw_texture_rect_region(tex, Rect2(r.position, Vector2(r.size.x, r.size.y * top)), Rect2(0, 0, ts.x, ts.y * top), Color(1, 1, 1, _fade))
+	var n := 5
+	for i in n:
+		var a := top + band * i / n
+		var b := top + band * (i + 1) / n
+		var al := lerpf(_fade, 1.0, (i + 0.5) / n)
+		draw_texture_rect_region(tex, Rect2(r.position + Vector2(0, r.size.y * a), Vector2(r.size.x, r.size.y * (b - a))), Rect2(0, ts.y * a, ts.x, ts.y * (b - a)), Color(1, 1, 1, al))
+	draw_texture_rect_region(tex, Rect2(r.position + Vector2(0, r.size.y * cut), Vector2(r.size.x, r.size.y * (1.0 - cut))), Rect2(0, ts.y * cut, ts.x, ts.y * (1.0 - cut)), Color.WHITE)
 
 
 ## Retângulo da imagem relativo ao ponto de apoio (antes do espelhamento).
@@ -148,7 +173,10 @@ func inset(k: float) -> Array:
 func _draw() -> void:
 	if tex:
 		draw_set_transform(tex_foot, 0.0, Vector2(-1, 1) if tex_flip else Vector2.ONE)
-		draw_texture_rect(tex, _tex_rect(), false)
+		if trunk_solid and _fade < 0.999:
+			_draw_split(_tex_rect())
+		else:
+			draw_texture_rect(tex, _tex_rect(), false)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		return
 	match kind:

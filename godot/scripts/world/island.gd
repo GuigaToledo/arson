@@ -354,6 +354,7 @@ func piece(nm: String, og: Vector2, fpos: Vector2, fsize: Vector2, flip := false
 	# imagens desenhadas em resolução dupla: escala 0.5 no jogo
 	p.with_image(OBJ + nm + ".png", 0.5 * sc, Iso.to_screen(og) - center, flip, an)
 	p.casts_shadow = shadow
+	p.trunk_solid = nm.begins_with("arvore") or nm == "pinheiro"
 	entities.add_child(p)
 	# variação natural (ART_DIRECTION: tom ±8%) para árvores, pedras e plantas não repetirem
 	if nm.begins_with("arvore") or nm.begins_with("pedra") or nm.begins_with("rochedo") or nm == "pinheiro" or nm == "samambaia" or nm == "pedregulho":
@@ -816,9 +817,6 @@ func _fotos(dir: String, hud: Node) -> void:
 	for f in 3:
 		await get_tree().process_frame
 	get_viewport().get_texture().get_image().save_png(base + "_3_sem_sombras.png")
-	for pr in find_children("*", "Prop", true, false):
-		if pr.global_position.distance_to(player.global_position) < 700:
-			print("DIAG peca ", pr.tex.resource_path if pr.tex else pr.kind, " pos ", pr.global_position - player.global_position, " fade ", pr._fade, " mod ", pr.modulate, " z ", pr.z_index, " filhos ", pr.get_children().map(func(n): return n.get_class()))
 	for pr in find_children("*", "Prop", true, false):
 		if pr._fade < 0.99:
 			pr.visible = false
