@@ -81,22 +81,24 @@ func _process(delta: float) -> void:
 	if Settings.quality != 0 or force_full:
 		return
 	# automática: 2 medições ruins seguidas baixam; 8 boas seguidas (16 s) sobem
-	if fps < 42.0:
+	# subir: medições a 54+ contam; uma queda curta (luta) só desconta 1, não zera.
+	# baixar: 2 medições seguidas abaixo de 40.
+	if fps < 40.0:
 		_bad += 1
 		_good = 0
-	elif fps > 57.0:
+	elif fps >= 54.0:
 		_good += 1
 		_bad = 0
 	else:
 		_bad = 0
-		_good = 0
+		_good = maxi(0, _good - 1)
 	if _bad >= 2 and Settings.level_now > 1:
 		_ceil = Settings.level_now - 1
 		_ceil_t = 120.0
 		Settings.level_now -= 1
 		_bad = 0
 		apply()
-	elif _good >= (2 if _warm > 0.0 else 8) and Settings.level_now < _ceil:
+	elif _good >= (2 if _warm > 0.0 else 5) and Settings.level_now < _ceil:
 		Settings.level_now += 1
 		_good = 0
 		apply()
