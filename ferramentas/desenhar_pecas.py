@@ -315,7 +315,7 @@ def leaves(base, seed):
 
 
 def tree(name, base, seed, pine=False):
-    c = Canvas(220, 300, (110, 270))
+    c = Canvas(280, 300, (140, 270))  # largo: a copa não pode ser cortada na borda (virava faixa reta ao ficar transparente)
     bark = noise_tex(64, 128, (0.2, 0.15, 0.11), 0.3, 3, seed + 2, 0.2)
     c.cylinder(0, 0, 0, 0.26, 2.0 if not pine else 1.2, bark)
     lv = leaves(base, seed)
