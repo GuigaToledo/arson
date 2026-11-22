@@ -357,8 +357,10 @@ func _build_ground() -> void:
 		var vf := ["grama_a", "terra", "areia", "calcamento", "floresta_a", "rocha", "grama_b", "floresta_b", "cemiterio"]
 		Boot.step("texturas do chão")
 		mat.set_shader_parameter("cores", _tex_array(vf.map(func(x): return VF + x + "_c")))
+		mat.set_shader_parameter("cell_c", _cell_uv())
 		Boot.step("relevo do chão")
 		mat.set_shader_parameter("normais", _tex_array(vf.map(func(x): return VF + x + "_n"), true))
+		mat.set_shader_parameter("cell_n", _cell_uv())
 		_ground_mat = mat
 	var ground := Node2D.new()
 	ground.name = "Chao"
@@ -373,22 +375,28 @@ func _build_ground() -> void:
 			ground.add_child(p)
 
 
-## Junta várias texturas do chão num Texture2DArray (1 unidade de textura em vez de várias).
+## Junta as 9 texturas do chão num atlas 3x3 (uma textura só). Antes era um Texture2DArray, que
+## derrubava o app em alguns celulares Android (o driver de vídeo fechava o app no primeiro desenho).
+## Cada célula tem uma borda com a continuação da própria textura, para não vazar a vizinha.
 const VF := "res://assets/vf/terreno/"
+var atlas_tile := 512
+var atlas_pad := 16
 
 
-func _tex_array(names: Array, normals := false) -> Texture2DArray:
-	var imgs: Array[Image] = []
+func _tex_array(names: Array, normals := false) -> Texture2D:
 	var sz := 512 if Settings.is_mobile() or Settings.level_now <= 3 else 1024
 	if Settings.safe_mode():
 		sz = 256
 	# celular: relevo do chão (normais) em tamanho mínimo, quase não aparece e economiza vídeo
 	if normals and Settings.is_mobile():
 		sz = 64
-	for nm in names:
-		var path: String = nm if str(nm).begins_with("res://") else TEX + nm
-		# as texturas do chão são importadas como imagem (não vão para a placa de vídeo sozinhas:
-		# antes as 18 subiam em 1024 e o celular ficava sem memória de vídeo)
+	var pad := maxi(4, sz / 32)
+	var cell := sz + pad * 2
+	var atlas := Image.create(cell * 3, cell * 3, false, Image.FORMAT_RGB8)
+	for i in names.size():
+		var nm: String = names[i]
+		var path: String = nm if nm.begins_with("res://") else TEX + nm
+		# as texturas do chão são importadas como imagem (não vão para a placa de vídeo sozinhas)
 		var res = load(path + ".jpg")
 		var im: Image = (res as Image).duplicate() if res is Image else (res as Texture2D).get_image()
 		if im.is_compressed():
@@ -396,11 +404,32 @@ func _tex_array(names: Array, normals := false) -> Texture2DArray:
 		im.convert(Image.FORMAT_RGB8)
 		if im.get_width() != sz or im.get_height() != sz:
 			im.resize(sz, sz, Image.INTERPOLATE_LANCZOS)
-		im.generate_mipmaps()
-		imgs.append(im)
-	var arr := Texture2DArray.new()
-	arr.create_from_images(imgs)
-	return arr
+		var o := Vector2i((i % 3) * cell, (i / 3) * cell)
+		# a textura no meio e pedaços dela mesma em volta (repete sem emenda)
+		_blit_wrapped(atlas, im, o, sz, pad)
+	atlas.generate_mipmaps()
+	atlas_tile = sz
+	atlas_pad = pad
+	return ImageTexture.create_from_image(atlas)
+
+
+## (borda, tamanho) de uma célula do último atlas, em fração do atlas (para o shader).
+func _cell_uv() -> Vector2:
+	var full := float((atlas_tile + atlas_pad * 2) * 3)
+	return Vector2(atlas_pad / full, atlas_tile / full)
+
+
+## Copia `im` (sz x sz) para a célula em `o` com borda `pad` feita da própria textura.
+static func _blit_wrapped(atlas: Image, im: Image, o: Vector2i, sz: int, pad: int) -> void:
+	var cell := sz + pad * 2
+	for dy in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			# pedaço da cópia vizinha que cai dentro da célula
+			var dst := Rect2i(o.x + pad + dx * sz, o.y + pad + dy * sz, sz, sz)
+			var clip := dst.intersection(Rect2i(o.x, o.y, cell, cell))
+			if clip.size.x <= 0 or clip.size.y <= 0:
+				continue
+			atlas.blit_rect(im, Rect2i(clip.position - dst.position, clip.size), clip.position)
 
 
 const OBJ := "res://assets/objetos/"

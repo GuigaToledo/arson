@@ -7,8 +7,11 @@ uniform sampler2D w0 : filter_linear, repeat_disable;
 uniform sampler2D w1 : filter_linear, repeat_disable;
 // Poucas unidades de textura (celulares e muitas placas só têm 16 no total):
 // cores/normais = [grama_a, terra, areia, calçamento, floresta_a, rocha, grama_b, floresta_b, cemitério] (ambientCG CC0)
-uniform sampler2DArray cores : source_color, filter_linear_mipmap, repeat_enable;
-uniform sampler2DArray normais : filter_linear_mipmap, repeat_enable;
+// atlas 3x3 (célula = borda + textura); cell_* = (borda, textura) em fração do atlas
+uniform sampler2D cores : source_color, filter_linear_mipmap, repeat_disable;
+uniform sampler2D normais : filter_linear_mipmap, repeat_disable;
+uniform vec2 cell_c = vec2(0.0098, 0.3137);
+uniform vec2 cell_n = vec2(0.0185, 0.2963);
 uniform float tex_scale = 0.3;
 // qualidade (Perf): 0 = leve (sem anti-repetição nem relevo), 1 = média (sem relevo), 2 = completa
 uniform int q = 2;
@@ -24,15 +27,20 @@ float vnoise(vec2 p) {
 }
 
 const mat2 ROT = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8));
-vec3 at(float L, vec2 uv, float m) {
-	vec3 c = texture(cores, vec3(uv, L)).rgb;
-	if (m < 0.01) return c;
-	return mix(c, texture(cores, vec3(ROT * uv * 0.71 + vec2(0.37, 0.11), L)).rgb, m);
+// g = derivadas do uv do chão (xy = dFdx, zw = dFdy), para o mipmap certo dentro do atlas
+vec4 cel(sampler2D s, vec2 cell, float L, vec2 uv, vec4 g) {
+	vec2 base = vec2(mod(L, 3.0), floor(L / 3.0)) * (cell.y + cell.x * 2.0) + cell.x;
+	return textureGrad(s, base + fract(uv) * cell.y, g.xy * cell.y, g.zw * cell.y);
 }
-vec3 atn(float L, vec2 uv, float m) {
-	vec3 c = texture(normais, vec3(uv, L)).rgb;
+vec3 at(float L, vec2 uv, float m, vec4 g) {
+	vec3 c = cel(cores, cell_c, L, uv, g).rgb;
 	if (m < 0.01) return c;
-	return mix(c, texture(normais, vec3(ROT * uv * 0.71 + vec2(0.37, 0.11), L)).rgb, m);
+	return mix(c, cel(cores, cell_c, L, ROT * uv * 0.71 + vec2(0.37, 0.11), g * 0.71).rgb, m);
+}
+vec3 atn(float L, vec2 uv, float m, vec4 g) {
+	vec3 c = cel(normais, cell_n, L, uv, g).rgb;
+	if (m < 0.01) return c;
+	return mix(c, cel(normais, cell_n, L, ROT * uv * 0.71 + vec2(0.37, 0.11), g * 0.71).rgb, m);
 }
 
 void vertex() {
@@ -51,6 +59,7 @@ void fragment() {
 	b /= sum;
 
 	vec2 uv = g * tex_scale;
+	vec4 gd = vec4(dFdx(uv), dFdy(uv));
 	// contra repetição: cada camada mistura a textura com ela mesma girada e em outra escala,
 	// por manchas grandes de ruído; grama e floresta ainda alternam entre duas texturas
 	float m = q > 0 ? smoothstep(0.3, 0.7, vnoise(g * 0.31 + 5.1)) : 0.0;
@@ -60,18 +69,18 @@ void fragment() {
 	vec3 nm = vec3(0.0);
 	if (a.r + b.r > 0.003) {
 		float m2 = q > 0 ? 1.0 - m : 0.0;
-		vec3 ga = mix(at(0.0, uv, m), at(6.0, uv, m2), vg);
+		vec3 ga = mix(at(0.0, uv, m, gd), at(6.0, uv, m2, gd), vg);
 		col += ga * a.r;
-		if (rel) nm += mix(atn(0.0, uv, m), atn(6.0, uv, m2), vg) * (a.r);
-		vec3 fo = q > 0 ? mix(at(4.0, uv, m), at(7.0, uv, m2), smoothstep(0.3, 0.7, vnoise(g * 0.23 + 3.0))) : at(4.0, uv, 0.0);
+		if (rel) nm += mix(atn(0.0, uv, m, gd), atn(6.0, uv, m2, gd), vg) * (a.r);
+		vec3 fo = q > 0 ? mix(at(4.0, uv, m, gd), at(7.0, uv, m2, gd), smoothstep(0.3, 0.7, vnoise(g * 0.23 + 3.0))) : at(4.0, uv, 0.0, gd);
 		col += fo * b.r;
-		if (rel) nm += atn(4.0, uv, m) * b.r;
+		if (rel) nm += atn(4.0, uv, m, gd) * b.r;
 	}
-	if (a.g > 0.003) { col += at(1.0, uv, m) * a.g; if (rel) nm += atn(1.0, uv, m) * a.g; }
-	if (a.b > 0.003) { col += at(2.0, uv, m) * a.b; if (rel) nm += atn(2.0, uv, m) * a.b; }
-	if (a.a > 0.003) { col += at(3.0, uv * 1.25, 0.0) * a.a; if (rel) nm += atn(3.0, uv * 1.25, 0.0) * a.a; }
-	if (b.g > 0.003) { col += at(5.0, uv * 0.8, m) * b.g; if (rel) nm += atn(5.0, uv * 0.8, m) * b.g; }
-	if (b.a > 0.003) { col += at(8.0, uv, m) * b.a * 0.85; if (rel) nm += atn(8.0, uv, m) * b.a; }
+	if (a.g > 0.003) { col += at(1.0, uv, m, gd) * a.g; if (rel) nm += atn(1.0, uv, m, gd) * a.g; }
+	if (a.b > 0.003) { col += at(2.0, uv, m, gd) * a.b; if (rel) nm += atn(2.0, uv, m, gd) * a.b; }
+	if (a.a > 0.003) { col += at(3.0, uv * 1.25, 0.0, gd * 1.25) * a.a; if (rel) nm += atn(3.0, uv * 1.25, 0.0, gd * 1.25) * a.a; }
+	if (b.g > 0.003) { col += at(5.0, uv * 0.8, m, gd * 0.8) * b.g; if (rel) nm += atn(5.0, uv * 0.8, m, gd * 0.8) * b.g; }
+	if (b.a > 0.003) { col += at(8.0, uv, m, gd) * b.a * 0.85; if (rel) nm += atn(8.0, uv, m, gd) * b.a; }
 	nm += vec3(0.5, 0.5, 1.0) * (rel ? b.b : 1.0);
 	// sujeira e manchas grandes (quebra a uniformidade) e cor do dark fantasy (menos saturada)
 	col *= 0.86 + 0.28 * vnoise(g * 0.6 + 2.0);
