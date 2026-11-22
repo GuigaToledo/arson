@@ -223,7 +223,8 @@
    "hair": "#2e2b2b",
    "eyes": "#ff9926",
    "glow_eyes": true,
-   "core": true
+   "core": true,
+   "bulk": 1.4
   },
   "items": [],
   "regiao": "Morros de Pedra",
@@ -420,7 +421,8 @@
    "under": "#4a3520",
    "hair": "#2a2010",
    "eyes": "#ffcc33",
-   "orelhas": true
+   "orelhas": true,
+   "bulk": 0.85
   },
   "body": "humano",
   "items": [
@@ -471,7 +473,8 @@
    "hair": "#2a2010",
    "eyes": "#a8ff5a",
    "orelhas": true,
-   "glow_eyes": true
+   "glow_eyes": true,
+   "bulk": 0.85
   },
   "body": "humano",
   "items": [
@@ -539,7 +542,8 @@
    "under": "#3a2e22",
    "hair": "#2a2f1f",
    "eyes": "#ff8a2a",
-   "presas": true
+   "presas": true,
+   "bulk": 1.4
   },
   "body": "humano",
   "items": [
@@ -1110,7 +1114,8 @@
    "hair": "#1f241a",
    "eyes": "#ff6a1a",
    "presas": true,
-   "glow_eyes": true
+   "glow_eyes": true,
+   "bulk": 1.4
   },
   "body": "humano",
   "items": [
@@ -1493,7 +1498,8 @@
    "under": "#5a3a1e",
    "hair": "#2a2010",
    "eyes": "#ffcc33",
-   "orelhas": true
+   "orelhas": true,
+   "bulk": 0.85
   },
   "body": "humano",
   "items": [
@@ -1548,7 +1554,8 @@
    "hair": "#2a2010",
    "eyes": "#ffd23a",
    "orelhas": true,
-   "presas": true
+   "presas": true,
+   "bulk": 0.85
   },
   "body": "humano",
   "items": [
@@ -1624,7 +1631,8 @@
    "hair": "#1a1a10",
    "eyes": "#ff5a1a",
    "orelhas": true,
-   "presas": true
+   "presas": true,
+   "bulk": 1.4
   },
   "body": "humano",
   "items": [
@@ -1682,7 +1690,8 @@
    "eyes": "#ff8a1a",
    "orelhas": true,
    "presas": true,
-   "glow_eyes": true
+   "glow_eyes": true,
+   "bulk": 1.4
   },
   "body": "humano",
   "items": [
@@ -1756,7 +1765,8 @@
    "eyes": "#ff3a1a",
    "orelhas": true,
    "presas": true,
-   "glow_eyes": true
+   "glow_eyes": true,
+   "bulk": 1.4
   },
   "body": "humano",
   "items": [
@@ -1837,7 +1847,8 @@
    "under": "#4a3a2a",
    "hair": "#3a2a1a",
    "eyes": "#3a7aff",
-   "olho_unico": true
+   "olho_unico": true,
+   "bulk": 1.4
   },
   "body": "humano",
   "items": [
@@ -1893,7 +1904,8 @@
    "under": "#3a2e20",
    "hair": "#2a2016",
    "eyes": "#ff3a1a",
-   "olho_unico": true
+   "olho_unico": true,
+   "bulk": 1.4
   },
   "body": "humano",
   "items": [
@@ -2037,7 +2049,8 @@
    "hair": "#2e2b2b",
    "eyes": "#ff9926",
    "glow_eyes": true,
-   "core": true
+   "core": true,
+   "bulk": 1.4
   },
   "items": [],
   "regiao": "Morros de Pedra",
@@ -2475,7 +2488,8 @@
    "hair": "#d8d0c0",
    "eyes": "#ffb03a",
    "olho_unico": true,
-   "glow_eyes": true
+   "glow_eyes": true,
+   "bulk": 1.4
   },
   "body": "humano",
   "items": [

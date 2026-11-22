@@ -142,6 +142,7 @@ static func eyes(ci: CanvasItem, p: Dictionary, col: Color, bright := true) -> v
 
 static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 	ellipse(ci, Vector2.ZERO, 15, 6.5, Color(0, 0, 0, 0.45))
+	bulk = float(c.get("bulk", 1.0))
 	var skin: Color = c.get("skin", Color(0.55, 0.42, 0.34))
 	var under: Color = c.get("under", Color(0.2, 0.18, 0.16))
 	var hair: Color = c.get("hair", Color(0.08, 0.06, 0.05))
@@ -162,7 +163,7 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 		limb(ci, p.shL, p.elbowL, p.handL, 4.8, 4.0, under.darkened(0.35))
 	if near_left:
 		limb(ci, p.shR, p.elbowR, p.handR, 4.8, 4.0, under.darkened(0.35))
-	var torso := vol(p, p.shC, p.w, 5.5, p.hipC, p.w * 0.55, 4.5)
+	var torso := vol(p, p.shC, p.w * bulk, 5.5 * bulk, p.hipC, p.w * 0.55 * maxf(1.0, bulk), 4.5 * bulk)
 	SpellArt.spoly(ci, torso, under, 0.4)
 	outline(ci, torso, under.darkened(0.5))
 	if not near_right:
@@ -204,17 +205,42 @@ static func draw_body(ci: CanvasItem, p: Dictionary, c: Dictionary) -> void:
 			ci.draw_colored_polygon(PackedVector2Array([t0 + Vector2(-0.8, 0), t0 + Vector2(0.8, 0), t0 + Vector2(0, -3)]), Color(0.92, 0.88, 0.75))
 
 
-## Membro com duas partes (braço: ombro-cotovelo-mão), afinando na ponta, juntas redondas.
+## Membro com duas partes (braço: ombro-cotovelo-mão / perna: quadril-joelho-pé), com volume:
+## músculo mais grosso perto da junta de cima, afinando na ponta, contorno escuro e realce no
+## lado da luz (alto à esquerda). Visual Factory: nada de membros-palito.
+static var bulk := 1.0
+
+
+static func _seg(a: Vector2, b: Vector2, wa: float, wm: float, wb: float, grow := 0.0) -> PackedVector2Array:
+	var d := b - a
+	if d.length() < 0.5:
+		d = Vector2(0, 1)
+	var n := Vector2(-d.y, d.x).normalized()
+	var m := a.lerp(b, 0.38)
+	var pts := PackedVector2Array([(a + b + m) / 3.0])
+	for q in [a + n * (wa + grow), m + n * (wm + grow), b + n * (wb + grow), b + d.normalized() * grow, b - n * (wb + grow), m - n * (wm + grow), a - n * (wa + grow), a - d.normalized() * grow]:
+		pts.append(q)
+	pts.append(pts[1])
+	return pts
+
+
 static func limb(ci: CanvasItem, a: Vector2, j: Vector2, b: Vector2, w1: float, w2: float, col: Color) -> void:
-	ci.draw_line(a, j, col.darkened(0.35), w1 + 1.4, SpellArt.AA)
-	ci.draw_line(j, b, col.darkened(0.35), w2 + 1.4, SpellArt.AA)
-	ci.draw_line(a, j, col, w1, SpellArt.AA)
-	ci.draw_line(j, b, col.lightened(0.04), w2, SpellArt.AA)
-	ci.draw_circle(j, w1 * 0.5, col)
-	# realce do lado da luz (alto à esquerda)
-	var hl := Vector2(-0.5, -0.6)
-	ci.draw_line(a + hl * w1 * 0.3, j + hl * w1 * 0.3, Color(col.lightened(0.35), 0.55), maxf(1.0, w1 * 0.3), SpellArt.AA)
-	ci.draw_line(j + hl * w2 * 0.3, b + hl * w2 * 0.3, Color(col.lightened(0.3), 0.5), maxf(1.0, w2 * 0.3), SpellArt.AA)
+	var k := 0.72 * bulk
+	var up_w := [w1 * k, w1 * k * 1.15, w1 * k * 0.78]
+	var lo_w := [w2 * k * 0.85, w2 * k * 0.95, w2 * k * 0.6]
+	var dark := col.darkened(0.55)
+	# contorno
+	ElemArt.fan(ci, _seg(a, j, up_w[0], up_w[1], up_w[2], 0.9), dark)
+	ElemArt.fan(ci, _seg(j, b, lo_w[0], lo_w[1], lo_w[2], 0.9), dark)
+	# volume
+	ElemArt.fan(ci, _seg(a, j, up_w[0], up_w[1], up_w[2]), col)
+	ElemArt.fan(ci, _seg(j, b, lo_w[0], lo_w[1], lo_w[2]), col.lightened(0.03))
+	ci.draw_circle(j, float(up_w[2]) * 1.02, col)
+	# sombra do lado de baixo/direita e realce do lado da luz
+	var hl := Vector2(-0.55, -0.65)
+	ElemArt.fan(ci, _seg(a + hl * up_w[1] * 0.45, j + hl * up_w[2] * 0.45, up_w[0] * 0.35, up_w[1] * 0.4, up_w[2] * 0.3), Color(col.lightened(0.3), 0.5))
+	ElemArt.fan(ci, _seg(j + hl * lo_w[1] * 0.45, b + hl * lo_w[2] * 0.45, lo_w[0] * 0.3, lo_w[1] * 0.35, lo_w[2] * 0.25), Color(col.lightened(0.25), 0.45))
+	ElemArt.fan(ci, _seg(a - hl * up_w[1] * 0.5, j - hl * up_w[2] * 0.5, up_w[0] * 0.3, up_w[1] * 0.35, up_w[2] * 0.25), Color(col.darkened(0.3), 0.45))
 
 
 ## Perna (quadril-joelho-pé) com o pé apontando para a frente.
