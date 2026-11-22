@@ -7,7 +7,7 @@ extends Node
 
 const CYCLE := 1200.0  # 20 minutos: 15 de dia, 5 de noite
 const DAY := 0.75
-const C_DAY := Color(0.56, 0.54, 0.5)
+const C_DAY := Color(0.62, 0.6, 0.55)
 const C_DUSK := Color(0.5, 0.36, 0.32)
 const C_NIGHT := Color(0.13, 0.15, 0.27)
 const C_DAWN := Color(0.46, 0.4, 0.46)

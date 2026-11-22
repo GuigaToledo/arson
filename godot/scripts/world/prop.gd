@@ -76,6 +76,8 @@ func _ready() -> void:
 			_bounds.position.x = -_bounds.position.x - _bounds.size.x
 		_bounds.position += tex_foot
 		_bounds = _bounds.grow(-_bounds.size.x * 0.08)
+	if tex != null or height > 20.0:
+		_add_ground_shadow()
 	set_process(false)
 	if fade_when_behind or tex != null:
 		var k := _cell(global_position)
@@ -221,3 +223,41 @@ func _draw() -> void:
 ## Ponto central da abertura da lareira (para fogo e luz).
 func hearth_point() -> Vector2:
 	return D.lerp(C, 0.5) + Vector2(0, -8)
+
+
+
+## Sombra macia no chão (Visual Factory): mancha escura com borda esfumada, do tamanho da
+## base da peça, puxada para o lado oposto ao sol. Fica embaixo de tudo (z -1).
+static var _shadow_tex: Texture2D
+
+
+static func shadow_tex() -> Texture2D:
+	if _shadow_tex == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(0, 0, 0, 0.55))
+		g.set_color(1, Color(0, 0, 0, 0.0))
+		g.add_point(0.55, Color(0, 0, 0, 0.38))
+		var gt := GradientTexture2D.new()
+		gt.gradient = g
+		gt.fill = GradientTexture2D.FILL_RADIAL
+		gt.fill_from = Vector2(0.5, 0.5)
+		gt.fill_to = Vector2(1.0, 0.5)
+		gt.width = 128
+		gt.height = 128
+		_shadow_tex = gt
+	return _shadow_tex
+
+
+func _add_ground_shadow() -> void:
+	var w := maxf(B.x - D.x, 40.0)
+	var h := maxf(C.y - A.y, 20.0)
+	var tall := 1.0
+	if tex:
+		tall = clampf(_tex_rect().size.y / maxf(w, 1.0), 0.6, 2.2)
+	var sh := Sprite2D.new()
+	sh.texture = shadow_tex()
+	sh.z_index = -1
+	sh.z_as_relative = false
+	sh.position = Vector2(w * 0.12 * tall, h * 0.1)
+	sh.scale = Vector2(w * (1.05 + 0.25 * tall), h * (1.1 + 0.2 * tall)) / 128.0
+	add_child(sh)

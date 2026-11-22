@@ -40,7 +40,9 @@ func _ready() -> void:
 	sun.color = Color(1.0, 0.78, 0.55)
 	sun.energy = 0.22
 	sun.rotation_degrees = 35.0
-	sun.shadow_enabled = true
+	# sombras do sol por oclusor saíam como faixas retas e duras; agora cada peça tem sombra
+	# macia própria no chão (prop.gd), e só as luzes de perto (lampiões) projetam sombra
+	sun.shadow_enabled = false
 	sun.shadow_color = Color(0, 0, 0, 0.45)
 	sun.max_distance = 600.0
 	add_child(sun)
@@ -749,7 +751,6 @@ const FOTO_CENAS := [["vila", Vector2(27, 26)], ["vila_casas", Vector2(22, 22)],
 
 func _fotos(dir: String, hud: Node) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
-	player.immortal_t = 99999.0
 	for k in Settings.auto:
 		if typeof(Settings.auto[k]) == TYPE_BOOL:
 			Settings.auto[k] = false
@@ -759,6 +760,8 @@ func _fotos(dir: String, hud: Node) -> void:
 			player.global_position = Iso.to_screen(c[1])
 			player.joy = Vector2.ZERO
 			for f in 45:
+				player.hp = player.max_hp  # sem imortalidade (ela desenha asas de luz)
+				player.dead = false
 				await get_tree().process_frame
 			var nome := "%s/%s_%s" % [dir, c[0], hora[0]]
 			get_viewport().get_texture().get_image().save_png(nome + ".png")

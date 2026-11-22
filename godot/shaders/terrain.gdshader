@@ -43,7 +43,7 @@ void fragment() {
 		+ texture(cores, vec3(uv, 3.0)).rgb * a.a
 		+ texture(cores, vec3(uv, 4.0)).rgb * b.r
 		+ texture(cores, vec3(uv * 0.7, 5.0)).rgb * b.g
-		+ mix(texture(cores, vec3(uv, 1.0)).rgb, texture(cores, vec3(uv, 0.0)).rgb, 0.35) * vec3(0.42, 0.4, 0.47) * b.a;
+		+ mix(texture(cores, vec3(uv, 1.0)).rgb, texture(cores, vec3(uv, 0.0)).rgb, 0.35) * vec3(0.6, 0.57, 0.64) * b.a;
 
 	float t = TIME;
 	vec3 water = mix(vec3(0.04, 0.11, 0.13), vec3(0.10, 0.22, 0.23), vnoise(g * 1.6 + vec2(t * 0.25, t * 0.15)));
