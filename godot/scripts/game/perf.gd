@@ -72,7 +72,7 @@ func _process(delta: float) -> void:
 	if _ceil_t <= 0.0:
 		_ceil = 6
 	_frames += 1
-	if _acc < 2.0:
+	if _acc < 4.0:
 		return
 	fps = _frames / _acc
 	_perf_log(_frames)
@@ -92,13 +92,15 @@ func _process(delta: float) -> void:
 	else:
 		_bad = 0
 		_good = maxi(0, _good - 1)
+	if Prof.on:
+		print("ARSONQ fps=%.1f nivel=%d bom=%d ruim=%d teto=%d" % [fps, Settings.level_now, _good, _bad, _ceil])
 	if _bad >= 2 and Settings.level_now > 1:
 		_ceil = Settings.level_now - 1
 		_ceil_t = 120.0
 		Settings.level_now -= 1
 		_bad = 0
 		apply()
-	elif _good >= (2 if _warm > 0.0 else 5) and Settings.level_now < _ceil:
+	elif _good >= (1 if _warm > 0.0 else 3) and Settings.level_now < _ceil:
 		Settings.level_now += 1
 		_good = 0
 		apply()
@@ -112,9 +114,6 @@ func _perf_log(frames: int) -> void:
 	if not Prof.on:
 		return
 	_log_n += 1
-	if _log_n % 2 != 0:
-		Prof.report(frames)
-		return
 	var vis := 0
 	for a in get_tree().get_nodes_in_group("actors"):
 		if a.visual and a.visual.visible:
@@ -128,8 +127,6 @@ func _perf_log(frames: int) -> void:
 		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
 		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
 		vis, lights, int(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0), Prof.report(frames)])
-	if _log_n % 6 == 0:
-		_census()
 
 
 ## Quantos objetos de cada tipo existem (e quantos visíveis), para achar o que pesa.
