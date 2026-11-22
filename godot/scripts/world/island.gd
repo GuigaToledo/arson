@@ -60,6 +60,7 @@ func _ready() -> void:
 	_build_lights()
 	_build_regions()
 	_build_glow()
+	GroundDecals.build(self, map)
 	# câmera da tela inicial (o mundo aparece escuro ao fundo)
 	var intro := Camera2D.new()
 	intro.name = "CameraInicial"
