@@ -1,0 +1,30 @@
+name: Visual Factory - assets externos
+
+# Baixa os recursos listados em ferramentas/vf/fontes.json (licença conferida antes),
+# processa e grava no repositório. Só roda quando a lista ou o script mudam.
+on:
+  push:
+    branches: [main]
+    paths: ["ferramentas/vf/fontes.json", "ferramentas/vf/baixar_texturas.py", ".github/workflows/vf-assets.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  baixar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Baixar e processar
+        run: |
+          pip install --quiet pillow
+          python3 ferramentas/vf/baixar_texturas.py
+      - name: Gravar no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add godot/assets/vf ASSET_CREDITS.md
+          git diff --cached --quiet && exit 0
+          git commit -qm "Visual Factory: texturas externas (ambientCG CC0)"
+          for i in 1 2 3; do git pull -q --rebase && git push -q && break; sleep 5; done

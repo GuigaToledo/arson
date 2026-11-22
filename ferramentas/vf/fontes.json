@@ -1,0 +1,14 @@
+{
+ "_leia": "Visual Factory: recursos externos. Cada item tem a licença conferida na página da fonte. Baixados pelo workflow vf-assets.yml.",
+ "terreno": [
+  {"id": "Grass001", "nome": "grama_a", "uso": "grama densa e escura (camada principal)", "fonte": "ambientCG"},
+  {"id": "Grass004", "nome": "grama_b", "uso": "grama clara (variação contra repetição)", "fonte": "ambientCG"},
+  {"id": "Ground030", "nome": "terra", "uso": "terra batida com pedrinhas (estradas e acampamentos)", "fonte": "ambientCG"},
+  {"id": "Ground054", "nome": "areia", "uso": "areia/lama de praia", "fonte": "ambientCG"},
+  {"id": "PavingStones138", "nome": "calcamento", "uso": "calçamento velho com musgo (vila)", "fonte": "ambientCG"},
+  {"id": "Ground037", "nome": "floresta_a", "uso": "chão de floresta com musgo", "fonte": "ambientCG"},
+  {"id": "Ground020", "nome": "floresta_b", "uso": "chão de floresta com folhas (variação)", "fonte": "ambientCG"},
+  {"id": "Ground110", "nome": "rocha", "uso": "chão rochoso seco (morros, caverna)", "fonte": "ambientCG"},
+  {"id": "Ground106", "nome": "cemiterio", "uso": "lama com folhas (cemitério)", "fonte": "ambientCG"}
+ ]
+}
