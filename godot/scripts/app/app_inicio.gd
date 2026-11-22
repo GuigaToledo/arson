@@ -36,8 +36,9 @@ func _ready() -> void:
 			v.add_child(ps)
 	if boot and boot.crashes >= 1:
 		_hold = true
-		var aviso := "O jogo fechou sozinho da última vez (parou em: %s).\nVou abrir no modo leve%s. Se fechar de novo, mande um print desta tela." % [
-			boot.last_step, " e com o chão simplificado" if boot.crashes >= 2 else ""]
+		var extra := ["", "", " e com o chão simplificado", ", chão simplificado e sem luzes", ", chão simplificado, sem luzes e sem detalhes", ", chão simplificado, sem luzes, detalhes nem cenário"][mini(boot.crashes, 5)]
+		var aviso := "O jogo fechou sozinho da última vez (parou em: %s). Tentativa %d.\nVou abrir no modo leve%s. Se fechar de novo, mande um print desta tela." % [
+			boot.last_step, boot.crashes, extra]
 		v.add_child(_lbl(aviso, 16, Color(1, 0.7, 0.55)))
 		var tail := Boot.log_tail()
 		if tail != "":

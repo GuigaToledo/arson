@@ -71,6 +71,7 @@ func _ready() -> void:
 	_build_glow()
 	Boot.step("detalhes do chão")
 	_decals = GroundDecals.build(self, map)
+	_safety()
 	Boot.step("tela inicial")
 	add_to_group("qualidade")
 	# câmera da tela inicial (o mundo aparece escuro ao fundo)
@@ -116,6 +117,7 @@ func _ready() -> void:
 	var ts := TitleScreen.new()
 	add_child(ts)
 	ts.setup()
+	Boot.step("tela inicial montada")
 	_mark_ok()
 	ts.chosen.connect(start_game)
 	if "--teste-titulo" in OS.get_cmdline_user_args():
@@ -144,7 +146,31 @@ func _test_args() -> Array:
 func _mark_ok() -> void:
 	for i in 20:
 		await get_tree().process_frame
+		if i == 0 or i == 2 or i == 8:
+			Boot.step("quadro %d" % (i + 1))
 	Boot.step("ok")
+
+
+## App Android que fechou sozinho várias vezes seguidas: desliga uma camada a mais a cada vez,
+## para descobrir qual derruba o celular (2: chão simples, 3: sem luzes, 4: sem detalhes do chão
+## e sem brilhos, 5: sem peças do cenário).
+func _safety() -> void:
+	var boot := get_node_or_null("/root/Boot")
+	var n: int = boot.crashes if boot else 0
+	if n >= 3:
+		for l in find_children("*", "Light2D", true, false):
+			l.visible = false
+		Boot.step("sem luzes")
+	if n >= 4:
+		if _decals:
+			_decals.visible = false
+		for gnode in get_tree().get_nodes_in_group("luz_extra"):
+			gnode.get_parent().visible = false
+		Boot.step("sem detalhes")
+	if n >= 5:
+		for pr in find_children("*", "Prop", true, false):
+			pr.visible = false
+		Boot.step("sem peças")
 
 
 func start_game(slot: int) -> void:
