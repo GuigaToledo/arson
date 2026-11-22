@@ -1,5 +1,17 @@
 [
  {
+  "versao": "0.11.0",
+  "data": "2026-11-21",
+  "titulo": "Visual Factory: chão novo e sombras",
+  "itens": [
+   "Chão com 9 texturas novas em alta resolução (ambientCG, CC0): grama em dois tons, terra batida, calçamento velho com musgo, floresta com musgo e com folhas, rocha, lama do cemitério",
+   "Chão sem repetição visível: cada textura se mistura com ela mesma girada e em outra escala, com manchas de sujeira",
+   "Cores do chão menos saturadas, no tom dark fantasy",
+   "Árvores, casas e pedras com sombra macia no chão (sem as faixas de sombra retas)",
+   "Cemitério e dia um pouco mais claros"
+  ]
+ },
+ {
   "versao": "0.10.1",
   "data": "2026-11-21",
   "titulo": "Mais leve",
