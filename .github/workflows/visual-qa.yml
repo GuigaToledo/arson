@@ -49,7 +49,7 @@ jobs:
         run: |
           # fotos em JPG (menores) num ramo separado, substituído a cada rodada
           cd fotos
-          for f in *.png; do convert "$f" -quality 85 "${f%.png}.jpg" && rm "$f"; done
+          python3 -c "import glob,os;from PIL import Image;[(Image.open(f).convert('RGB').save(f[:-4]+'.jpg',quality=85),os.remove(f)) for f in glob.glob('*.png') if not f.startswith('_')]"
           cp ../fotos.log .
           git init -q
           git checkout -q -b visual-qa
