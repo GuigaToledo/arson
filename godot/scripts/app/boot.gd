@@ -39,8 +39,16 @@ func _init() -> void:
 		return
 	var info = JSON.parse_string(_read(INFO))
 	if typeof(info) != TYPE_DICTIONARY or str(info.get("assinatura", "")) != app_sig:
+		step("pacote de outra versão do app")
+		return
+	# fechou 2 vezes seguidas com o pacote baixado: apaga e volta para a versão que veio no app
+	if crashes >= 2:
+		DirAccess.remove_absolute(PACK)
+		DirAccess.remove_absolute(INFO)
+		step("pacote baixado removido")
 		return
 	pack_loaded = ProjectSettings.load_resource_pack(PACK, true)
+	step("pacote baixado carregado" if pack_loaded else "pacote baixado falhou")
 
 
 ## Marca até onde o jogo chegou ao abrir (grava na hora: se o app fechar, a próxima abertura sabe).
