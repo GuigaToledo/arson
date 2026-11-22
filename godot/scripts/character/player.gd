@@ -166,6 +166,7 @@ func try_equip(it: EquipmentItem) -> bool:
 
 
 func _load() -> void:
+	_real = {}
 	_reset_skills()
 	var c := ConfigFile.new()
 	if c.load(Chars.path()) == OK:
@@ -204,9 +205,26 @@ func _load() -> void:
 		if int(c.get_value("jogador", "magias_v", 1)) < 2:
 			_migrate_spells()
 	level = Rules.level_for(xp)
+	_apply_test_max()
 	_recalc()
 	hp = max_hp
 	mp = max_mp
+
+
+## MODO TESTE (Rules.TESTE_NIVEL_100): todos os personagens no nível 100 e todos os elementos
+## (magias) no nível 100. Não é salvo: o arquivo continua com o progresso real, então ao
+## desligar o modo teste cada personagem volta exatamente como estava.
+var _real := {}
+
+
+func _apply_test_max() -> void:
+	if not Rules.TESTE_NIVEL_100:
+		return
+	if _real.is_empty():
+		_real = {"xp": xp, "skills": skills.duplicate(true)}
+	level = 100
+	for k in skills:
+		skills[k] = [100, 0.0]
 
 
 ## Recarrega o progresso do arquivo (depois de importar um código).
@@ -219,14 +237,14 @@ func save() -> void:
 	var c := ConfigFile.new()
 	c.set_value("jogador", "classe", classe)
 	c.set_value("jogador", "nome", Chars.nome)
-	c.set_value("jogador", "xp", xp)
+	c.set_value("jogador", "xp", _real.get("xp", xp))
 	c.set_value("jogador", "xp_v", 2)
 	c.set_value("jogador", "magias_v", 2)
 	c.set_value("jogador", "ouro", gold)
-	c.set_value("jogador", "nivel", level)
+	c.set_value("jogador", "nivel", Rules.level_for(int(_real.xp)) if not _real.is_empty() else level)
 	c.set_value("jogador", "pocao_vida", hp_pot)
 	c.set_value("jogador", "pocao_mana", mp_pot)
-	c.set_value("jogador", "habilidades", skills)
+	c.set_value("jogador", "habilidades", _real.get("skills", skills))
 	c.set_value("jogador", "barra", bar)
 	c.set_value("jogador", "tarefa", task)
 	c.set_value("jogador", "magias_nivel", spell_pts)
@@ -284,7 +302,7 @@ func gain_xp(n: int, g: int, _src: String) -> void:
 	if g > 0:
 		CombatText.add(global_position + Vector2(0, -110), "+%d ouro" % g, Color(1, 0.85, 0.3))
 	var nl := Rules.level_for(xp)
-	if nl > level:
+	if nl > level and not Rules.TESTE_NIVEL_100:
 		level = nl
 		_recalc()
 		hp = max_hp
@@ -378,6 +396,7 @@ func _die(src: String) -> void:
 	var lost := int(xp * 0.08)
 	xp -= lost
 	level = Rules.level_for(xp)
+	_apply_test_max()
 	_recalc()
 	CombatText.add(global_position + Vector2(0, -100), "Morto por %s (-%d xp)" % [src, lost], Color(1, 0.3, 0.25), true)
 	var tw := create_tween()
