@@ -137,7 +137,7 @@ static func poly(n: CanvasItem, pts: PackedVector2Array, col: Color) -> void:
 		pts = Geometry2D.convex_hull(pts)
 		if pts.size() < 4:
 			return
-	n.draw_colored_polygon(pts, col)
+	ElemArt.poly(n, pts, col)
 
 
 ## Polígono com volume: escurece do lado oposto à luz (vem do alto à esquerda) e clareia o lado da luz.
@@ -165,7 +165,10 @@ static func spoly(n: CanvasItem, pts: PackedVector2Array, col: Color, k := 0.32)
 		var d := (q - cen)
 		var f := d.normalized().dot(L) if d.length() > 0.01 else 0.0
 		cols.append(col.lightened(f * k) if f > 0.0 else col.darkened(-f * k * 1.4))
-	n.draw_polygon(pts, cols)
+	var fi := PackedInt32Array()
+	for i in range(1, pts.size() - 1):
+		fi.append_array(PackedInt32Array([0, i, i + 1]))
+	ElemArt.emit(n, fi, pts, cols)
 
 
 static func ellipse(n: CanvasItem, c: Vector2, rx: float, col: Color, filled := true, w := 2.0) -> void:
@@ -176,7 +179,7 @@ static func ellipse(n: CanvasItem, c: Vector2, rx: float, col: Color, filled := 
 	if filled:
 		poly(n, pts, col)
 	else:
-		n.draw_polyline(pts, col, w, SpellArt.AA)
+		ElemArt.polyline(n, pts, col, w, SpellArt.AA)
 
 
 ## Polígono de pedra irregular (mesmo formato para a mesma semente).
@@ -187,7 +190,7 @@ static func rock(n: CanvasItem, c: Vector2, r: float, col: Color, sd: int, rot :
 		var h := fposmod(sin(float(sd) * 12.9898 + i * 78.233) * 43758.5453, 1.0)
 		pts.append(c + Vector2(cos(a), sin(a)) * r * (0.7 + h * 0.35))
 	poly(n, pts, col)
-	n.draw_polyline(pts + PackedVector2Array([pts[0]]), col.darkened(0.45), 1.2, SpellArt.AA)
+	ElemArt.polyline(n, pts + PackedVector2Array([pts[0]]), col.darkened(0.45), 1.2, SpellArt.AA)
 	n.draw_line(c + Vector2(-r * 0.3, -r * 0.4), c + Vector2(r * 0.25, -r * 0.5), col.lightened(0.35), 1.2)
 
 
@@ -196,9 +199,9 @@ static func jag(n: CanvasItem, a: Vector2, b: Vector2, col: Color, w: float, seg
 	for k in range(1, segs):
 		pts.append(a.lerp(b, float(k) / segs) + Vector2(randf_range(-amp, amp), randf_range(-amp, amp)))
 	pts.append(b)
-	n.draw_polyline(pts, Color(col, col.a * 0.35), w * 3.0, SpellArt.AA)
-	n.draw_polyline(pts, col, w, SpellArt.AA)
-	n.draw_polyline(pts, Color(1, 1, 1, col.a), maxf(1.0, w * 0.4), SpellArt.AA)
+	ElemArt.polyline(n, pts, Color(col, col.a * 0.35), w * 3.0, SpellArt.AA)
+	ElemArt.polyline(n, pts, col, w, SpellArt.AA)
+	ElemArt.polyline(n, pts, Color(1, 1, 1, col.a), maxf(1.0, w * 0.4), SpellArt.AA)
 
 
 static func thorn(n: CanvasItem, base: Vector2, tip: Vector2, w: float, col: Color) -> void:
@@ -216,8 +219,8 @@ static func root(n: CanvasItem, base: Vector2, h: float, bend: float, k: float, 
 		var f := float(i) / steps * k
 		pts.append(base + Vector2(sin(f * 3.0) * bend * f, -h * f))
 	if pts.size() > 1:
-		n.draw_polyline(pts, col.darkened(0.3), w + 1.5, SpellArt.AA)
-		n.draw_polyline(pts, col, w, SpellArt.AA)
+		ElemArt.polyline(n, pts, col.darkened(0.3), w + 1.5, SpellArt.AA)
+		ElemArt.polyline(n, pts, col, w, SpellArt.AA)
 		for i in range(2, pts.size(), 2):
 			thorn(n, pts[i], pts[i] + Vector2(5 if i % 4 == 0 else -5, -2), 1.3, col.lightened(0.25))
 
@@ -286,7 +289,7 @@ static func flame(n: CanvasItem, base: Vector2, h: float, w: float, t: float, sd
 		var cols_v := PackedColorArray()
 		cols_v.resize(pts.size())
 		cols_v.fill(col)
-		RenderingServer.canvas_item_add_triangle_array(n.get_canvas_item(), idx, pts, cols_v)
+		ElemArt.emit(n, idx, pts, cols_v)
 	# fiapo que se solta da ponta e sobe
 	var ph := fmod(t * (1.3 + fmod(absf(sd), 0.7)) + absf(sd) * 0.31, 1.0)
 	if ph > 0.35:
@@ -345,15 +348,15 @@ static func lava(n: CanvasItem, c: Vector2, rx: float, t: float, sd: int, a := 1
 		edge.append(c + Vector2(cos(ang), sin(ang) * ry_k) * rx * wob)
 		var mw := wob * (0.8 + 0.05 * sin(t * 2.0 + ang * 4.0))
 		molten.append(c + Vector2(cos(ang), sin(ang) * ry_k) * rx * mw)
-	n.draw_colored_polygon(edge, Color(0.16, 0.05, 0.03, 0.95 * a))
-	n.draw_colored_polygon(molten, Color(0.95, 0.28, 0.03, a))
+	ElemArt.poly(n, edge, Color(0.16, 0.05, 0.03, 0.95 * a))
+	ElemArt.poly(n, molten, Color(0.95, 0.28, 0.03, a))
 	# manchas de magma mais quente deslizando
 	for i in 6:
 		var ang := rng.randf() * TAU + t * (0.25 + rng.randf() * 0.3)
 		var r := rng.randf_range(0.1, 0.55) * rx
 		var p := c + Vector2(cos(ang) * r, sin(ang) * r * ry_k)
 		n.draw_set_transform(p, 0.0, Vector2(1, ry_k))
-		n.draw_circle(Vector2.ZERO, rx * rng.randf_range(0.12, 0.22), Color(1, 0.62 + 0.15 * sin(t * 3.0 + i), 0.12, 0.85 * a))
+		ElemArt.circle(n, Vector2.ZERO, rx * rng.randf_range(0.12, 0.22), Color(1, 0.62 + 0.15 * sin(t * 3.0 + i), 0.12, 0.85 * a))
 		n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# placas de crosta boiando
 	for i in 5:
@@ -365,7 +368,7 @@ static func lava(n: CanvasItem, c: Vector2, rx: float, t: float, sd: int, a := 1
 		for j in 5:
 			var b := TAU * j / 5.0 + rng.randf() * 0.6
 			pl.append(p + Vector2(cos(b), sin(b) * ry_k) * sz * rng.randf_range(0.7, 1.2))
-		n.draw_colored_polygon(pl, Color(0.22, 0.07, 0.04, 0.9 * a))
+		ElemArt.poly(n, pl, Color(0.22, 0.07, 0.04, 0.9 * a))
 	# veios brilhando
 	for i in 4:
 		var p0 := c + Vector2(rng.randf_range(-0.6, 0.6) * rx, rng.randf_range(-0.25, 0.25) * rx)
@@ -373,19 +376,19 @@ static func lava(n: CanvasItem, c: Vector2, rx: float, t: float, sd: int, a := 1
 		for j in 3:
 			p0 += Vector2(rng.randf_range(-0.25, 0.25) * rx, rng.randf_range(-0.1, 0.1) * rx)
 			pts.append(p0)
-		n.draw_polyline(pts, Color(1, 0.9, 0.45, (0.5 + 0.5 * sin(t * 4.0 + i)) * a), 2.0)
+		ElemArt.polyline(n, pts, Color(1, 0.9, 0.45, (0.5 + 0.5 * sin(t * 4.0 + i)) * a), 2.0)
 	# bolhas que incham e estouram
 	for i in 5:
 		var p := c + Vector2(rng.randf_range(-0.55, 0.55) * rx, rng.randf_range(-0.22, 0.22) * rx)
 		var b := fmod(t * (0.8 + rng.randf() * 0.6) + rng.randf(), 1.0)
 		if b < 0.75:
-			n.draw_circle(p + Vector2(0, -b * 4.0), 2.0 + b * 6.0, Color(1, 0.55 + b * 0.35, 0.15, a))
-			n.draw_arc(p + Vector2(-1, -b * 4.0 - 1), 1.5 + b * 4.0, PI * 1.1, PI * 1.6, 6, Color(1, 1, 0.8, 0.7 * a), 1.2)
+			ElemArt.circle(n, p + Vector2(0, -b * 4.0), 2.0 + b * 6.0, Color(1, 0.55 + b * 0.35, 0.15, a))
+			ElemArt.arc(n, p + Vector2(-1, -b * 4.0 - 1), 1.5 + b * 4.0, PI * 1.1, PI * 1.6, 6, Color(1, 1, 0.8, 0.7 * a), 1.2)
 		else:
 			var q := (b - 0.75) / 0.25
 			for j in 4:
 				var d := Vector2(cos(j * 1.6 + i), -1.0).normalized() * q * 14.0
-				n.draw_circle(p + d + Vector2(0, q * q * 10.0), 1.8 * (1.0 - q), Color(1, 0.7, 0.2, a))
+				ElemArt.circle(n, p + d + Vector2(0, q * q * 10.0), 1.8 * (1.0 - q), Color(1, 0.7, 0.2, a))
 
 
 ## Respingo de lava: gotas em arco que caem e deixam pingos no chão.
@@ -396,8 +399,8 @@ static func lava_splash(parent: Node, pos: Vector2, count: int, spread: float) -
 	fxn(parent, pos, 0.7, func(n: DrawFx, k: float):
 		for d in drops:
 			var p: Vector2 = d[0] * k + Vector2(0, -sin(k * PI) * d[1] - 30.0 * (1.0 - k))
-			n.draw_circle(p, d[2], Color(0.95, 0.35, 0.05))
-			n.draw_circle(p + Vector2(-1, -1), d[2] * 0.5, Color(1, 0.85, 0.4)))
+			ElemArt.circle(n, p, d[2], Color(0.95, 0.35, 0.05))
+			ElemArt.circle(n, p + Vector2(-1, -1), d[2] * 0.5, Color(1, 0.85, 0.4)))
 	parent.get_tree().create_timer(0.7).timeout.connect(func():
 		if not is_instance_valid(parent):
 			return
@@ -406,8 +409,8 @@ static func lava_splash(parent: Node, pos: Vector2, count: int, spread: float) -
 			var sz: float = d[2]
 			fxg(parent, at, 2.5, func(n: DrawFx, k: float):
 				n.draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
-				n.draw_circle(Vector2.ZERO, sz * 1.6, Color(0.15, 0.05, 0.03, 0.8 * (1.0 - k)))
-				n.draw_circle(Vector2.ZERO, sz * 1.1, Color(1, 0.4 * (1.0 - k) + 0.1, 0.05, 1.0 - k))
+				ElemArt.circle(n, Vector2.ZERO, sz * 1.6, Color(0.15, 0.05, 0.03, 0.8 * (1.0 - k)))
+				ElemArt.circle(n, Vector2.ZERO, sz * 1.1, Color(1, 0.4 * (1.0 - k) + 0.1, 0.05, 1.0 - k))
 				n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)))
 
 
@@ -555,9 +558,9 @@ class Proj:
 				for j in 3:
 					SpellArt.flame(self, Vector2((j - 1) * 4.0, 2.0), 16.0 - absf(j - 1) * 5.0, 6.0, _t, j * 2.3)
 				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-				draw_circle(c, 9.5 * s, Color(0.95, 0.3, 0.04))
-				draw_circle(c + dir * 1.5 * s, 6.5 * s, Color(1, 0.62, 0.15))
-				draw_circle(c + dir * 2.5 * s, 3.5 * s, Color(1, 0.95, 0.7))
+				ElemArt.circle(self, c, 9.5 * s, Color(0.95, 0.3, 0.04))
+				ElemArt.circle(self, c + dir * 1.5 * s, 6.5 * s, Color(1, 0.62, 0.15))
+				ElemArt.circle(self, c + dir * 2.5 * s, 3.5 * s, Color(1, 0.95, 0.7))
 			"lava":
 				_tail(4.5 * s, Color(0.35, 0.08, 0.03, 0.9), Color(1, 0.42, 0.06, 0.95))
 				SpellArt.lava(self, c, 9.0 * s, _t * 2.0, 7, 1.0, 0.8)
@@ -576,9 +579,9 @@ class Proj:
 					for j in 8:
 						var f := j / 7.0
 						pts.append(c + off - dir * f * 22.0 * s + nrm * sin(_t * 18.0 + f * 5.0 + i) * 4.0)
-					draw_polyline(pts, Color(0.85, 1, 0.95, 0.7 - absf(i - 1.5) * 0.15), 2.0, SpellArt.AA)
+					ElemArt.polyline(self, pts, Color(0.85, 1, 0.95, 0.7 - absf(i - 1.5) * 0.15), 2.0, SpellArt.AA)
 				var a0 := dir.angle() - 1.2
-				draw_arc(c, 12 * s, a0, a0 + 2.4, 16, Color(0.9, 1, 0.97, 0.9), 3.0, SpellArt.AA)
+				ElemArt.arc(self, c, 12 * s, a0, a0 + 2.4, 16, Color(0.9, 1, 0.97, 0.9), 3.0, SpellArt.AA)
 			"terra":
 				SpellArt.rock(self, c, 9 * s, Color(0.45, 0.38, 0.3), 3, _t * 9.0)
 			"natureza":
@@ -603,12 +606,12 @@ class Proj:
 					var a := TAU * i / 6.0 + _t * 3.0
 					draw_line(c, c + Vector2.from_angle(a) * 10.0 * s, Color(0.95, 0.95, 0.9, 0.85), 1.2)
 				for r in [4.0, 7.5]:
-					draw_arc(c, r * s, 0, TAU, 12, Color(0.95, 0.95, 0.9, 0.7), 1.0)
+					ElemArt.arc(self, c, r * s, 0, TAU, 12, Color(0.95, 0.95, 0.9, 0.7), 1.0)
 			"trevas":
 				for i in 4:
 					var off := Vector2(sin(_t * 9.0 + i * 1.7), cos(_t * 7.0 + i)) * 4.0
 					ElemArt.puff(self, c + off - dir * i * 5.0, (8.0 - i * 1.4) * s, Color(0.28, 0.08, 0.36, 0.55 - i * 0.1))
-				draw_circle(c, 3.5 * s, Color(0.75, 0.45, 1.0, 0.9))
+				ElemArt.circle(self, c, 3.5 * s, Color(0.75, 0.45, 1.0, 0.9))
 			"gosma":
 				ElemArt.drop(self, c, dir * 300.0, 6.0 * s, Color(0.45, 0.9, 0.35, 0.92))
 			"lasca":
@@ -639,9 +642,9 @@ static func bit(n: CanvasItem, el: String, p: Vector2, rot: float, a: float) -> 
 		"terra":
 			rock(n, p, 2.5, Color(0.42, 0.35, 0.27, a), int(rot * 10.0) % 7, rot)
 		"vento":
-			n.draw_arc(p, 5.0, rot, rot + 1.8, 6, Color(0.9, 1, 0.95, 0.7 * a), 1.2)
+			ElemArt.arc(n, p, 5.0, rot, rot + 1.8, 6, Color(0.9, 1, 0.95, 0.7 * a), 1.2)
 		"trevas":
-			n.draw_circle(p, 3.0, Color(0.3, 0.1, 0.4, 0.5 * a))
+			ElemArt.circle(n, p, 3.0, Color(0.3, 0.1, 0.4, 0.5 * a))
 		"gosma":
 			ElemArt.drop(n, p, Vector2(0, 200), 2.0, Color(0.45, 0.9, 0.35, 0.9 * a))
 		"teia":
@@ -699,7 +702,7 @@ static func _impact_old(parent: Node, pos: Vector2, el: String, big := false) ->
 		"gelo": parts(parent, pos + Vector2(0, -36), int(24 * s), 130.0, 0.7, 0.05, Color(1, 1, 1), Color(0.6, 0.85, 1), 380.0, 90.0)
 		"vento": fx(parent, pos + Vector2(0, -36), 0.4, func(n: DrawFx, k: float):
 			for i in 3:
-				n.draw_arc(Vector2.ZERO, (10 + i * 8) * (0.5 + k) * s, k * 6 + i, k * 6 + i + 2.2, 14, Color(0.85, 1, 0.95, 1.0 - k), 2.0, SpellArt.AA))
+				ElemArt.arc(n, Vector2.ZERO, (10 + i * 8) * (0.5 + k) * s, k * 6 + i, k * 6 + i + 2.2, 14, Color(0.85, 1, 0.95, 1.0 - k), 2.0, SpellArt.AA))
 		"terra":
 			parts(parent, pos + Vector2(0, -30), int(20 * s), 150.0, 0.7, 0.06, Color(0.6, 0.5, 0.4), Color(0.35, 0.3, 0.25), 520.0, 80.0, Vector2.UP, false)
 			for i in int(4 * s):
@@ -748,7 +751,7 @@ static func _cc_old(parent: Node, center: Vector2, radius: float, el: String) ->
 					for j in 20:
 						var t := k * 9.0 + i + j * 0.25
 						pts.append(Vector2(cos(t) * r * (j / 20.0 + 0.3), sin(t) * r * 0.5 * (j / 20.0 + 0.3)))
-					n.draw_polyline(pts, Color(0.5, 0.8, 1, a * 0.8), 3.0, SpellArt.AA))
+					ElemArt.polyline(n, pts, Color(0.5, 0.8, 1, a * 0.8), 3.0, SpellArt.AA))
 			parts(parent, center + Vector2(0, -10), 40, 120.0, 0.9, 0.045, Color(0.8, 0.95, 1), Color(0.2, 0.45, 1), 420.0, 60.0)
 		"gelo":  # Congelar: cristais de gelo saem do chão
 			fx(parent, center, 1.6, func(n: DrawFx, k: float):
@@ -791,7 +794,7 @@ static func _cc_old(parent: Node, center: Vector2, radius: float, el: String) ->
 						t += rng.randf_range(-0.5, 0.5)
 						p += Vector2(cos(t), sin(t) * 0.5) * rx * 0.28 * minf(1.0, k * 4.0)
 						pts.append(p)
-					n.draw_polyline(pts, Color(0.08, 0.06, 0.04, a), 3.0, SpellArt.AA))
+					ElemArt.polyline(n, pts, Color(0.08, 0.06, 0.04, a), 3.0, SpellArt.AA))
 			impact(parent, center, "terra", true)
 		"natureza":  # Raízes brotam do chão
 			fxn(parent, center, 3.0, func(n: DrawFx, k: float):
@@ -835,8 +838,8 @@ static func _cone_old(parent: Node, pos: Vector2, dir: Vector2, length_px: float
 				for i in 17:
 					var t := base - half_ang + 2.0 * half_ang * i / 16.0
 					pts.append(Vector2(cos(t) * r, sin(t) * r * 0.55) + Vector2(0, -12 - sin(i * 0.8 + k * 12) * 6))
-				n.draw_polyline(pts, Color(0.3, 0.55, 1, 0.55 * (1.0 - k * 0.5)), 16.0, SpellArt.AA)
-				n.draw_polyline(pts, Color(0.85, 0.95, 1, 1.0 - k * 0.5), 4.0, SpellArt.AA))
+				ElemArt.polyline(n, pts, Color(0.3, 0.55, 1, 0.55 * (1.0 - k * 0.5)), 16.0, SpellArt.AA)
+				ElemArt.polyline(n, pts, Color(0.85, 0.95, 1, 1.0 - k * 0.5), 4.0, SpellArt.AA))
 			parts(parent, o + dir * length_px * 0.5, 50, 160.0, 0.8, 0.045, Color(0.8, 0.95, 1), Color(0.2, 0.45, 1), 450.0, rad_to_deg(half_ang), dir)
 		"gelo":
 			SpellFx.cone(parent, pos, dir, length_px, half_ang, Color(1, 1, 1), Color(0.5, 0.8, 1))
@@ -864,8 +867,8 @@ static func _cone_old(parent: Node, pos: Vector2, dir: Vector2, length_px: float
 					for j in 12:
 						var f := j / 11.0 * g
 						pts.append(d2 * length_px * f + Vector2(-d2.y, d2.x) * sin(f * 9 + i) * 10 + Vector2(0, -10 - f * 20))
-					n.draw_polyline(pts, Color(0.2, 0.4, 0.1, 1.0 - maxf(0, k - 0.7) / 0.3), 4.0, SpellArt.AA)
-					n.draw_polyline(pts, Color(0.4, 0.75, 0.25, 1.0 - maxf(0, k - 0.7) / 0.3), 2.0, SpellArt.AA))
+					ElemArt.polyline(n, pts, Color(0.2, 0.4, 0.1, 1.0 - maxf(0, k - 0.7) / 0.3), 4.0, SpellArt.AA)
+					ElemArt.polyline(n, pts, Color(0.4, 0.75, 0.25, 1.0 - maxf(0, k - 0.7) / 0.3), 2.0, SpellArt.AA))
 		_:
 			SpellFx.cone(parent, pos, dir, length_px, half_ang, c.lightened(0.4), c)
 
@@ -889,7 +892,7 @@ static func _line_old(parent: Node, a: Vector2, b: Vector2, el: String) -> void:
 				var al := 1.0 - maxf(0, k - 0.6) / 0.4
 				for i in 10:
 					var f := fmod(k * 1.8 + i / 10.0, 1.0)
-					n.draw_circle(d * f, 4.0, Color(1, 0.85, 0.4, al * 0.8)))
+					ElemArt.circle(n, d * f, 4.0, Color(1, 0.85, 0.4, al * 0.8)))
 		"raio":  # Corrente Elétrica
 			fx(parent, Vector2.ZERO, 0.4, func(n: DrawFx, k: float):
 				jag(n, a + Vector2(0, -44), b + Vector2(0, -40), Color(0.85, 0.85, 1, 1.0 - k), 3.0, 14, 14.0)
@@ -905,7 +908,7 @@ static func _line_old(parent: Node, a: Vector2, b: Vector2, el: String) -> void:
 					var f := i / 13.0 * g
 					pts.append(d * f + nrm * (i % 2 * 2 - 1) * 5)
 				if pts.size() > 1:
-					n.draw_polyline(pts, Color(0.05, 0.03, 0.02, al), 7.0, SpellArt.AA)
+					ElemArt.polyline(n, pts, Color(0.05, 0.03, 0.02, al), 7.0, SpellArt.AA)
 				for i in 6:
 					var f := (i + 0.5) / 6.0
 					if f <= g:
@@ -966,7 +969,7 @@ static func _area_old(parent: Node, center: Vector2, radius: float, el: String, 
 				for i in 45:
 					var p := Vector2(randf_range(-1, 1) * rx, randf_range(-0.5, 0.5) * rx)
 					var y := -180 + fmod(k * 500 + i * 41, 180)
-					n.draw_circle(p + Vector2(sin(k * 10 + i) * 6, y), 2.0 if not fused else 3.5, Color(1, 1, 1, 0.85))
+					ElemArt.circle(n, p + Vector2(sin(k * 10 + i) * 6, y), 2.0 if not fused else 3.5, Color(1, 1, 1, 0.85))
 				_no(n, Vector2.ZERO, rx, Color(0.85, 0.95, 1, 0.22 * k)))
 			if fused:
 				for i in 8:
@@ -982,7 +985,7 @@ static func _area_old(parent: Node, center: Vector2, radius: float, el: String, 
 					var y := -i * 11.0
 					var r := rx * (0.25 + i * 0.05)
 					var t := k * 22.0 + i * 0.7
-					n.draw_arc(Vector2(sin(k * 6 + i * 0.3) * 6, y), r, t, t + 4.0, 20, Color(0.85, 1, 0.95, 0.55 * a), 2.5, SpellArt.AA)
+					ElemArt.arc(n, Vector2(sin(k * 6 + i * 0.3) * 6, y), r, t, t + 4.0, 20, Color(0.85, 1, 0.95, 0.55 * a), 2.5, SpellArt.AA)
 					if fused and i % 4 == 0:
 						jag(n, Vector2(cos(t) * r, y), Vector2(cos(t + 1) * r, y - 14), Color(0.8, 0.8, 1, a), 1.5, 3, 5.0))
 			parts(parent, center, 50, 200.0, 1.2, 0.05, Color(0.75, 0.7, 0.6), Color(0.5, 0.45, 0.4), -60.0, 180.0, Vector2.UP, false)
@@ -1041,7 +1044,7 @@ static func shield_break(parent: Node, pos: Vector2, col: Color, els: Array) -> 
 			var p0 := Vector2(0, -44)
 			var p1 := p0 + Vector2(cos(a), sin(a)) * 18.0
 			var p2 := p1 + Vector2(cos(a + 0.4), sin(a + 0.4)) * 16.0
-			n.draw_polyline(PackedVector2Array([p0, p1, p2]), Color(1, 1, 1, 1.0 - k), 2.0))
+			ElemArt.polyline(n, PackedVector2Array([p0, p1, p2]), Color(1, 1, 1, 1.0 - k), 2.0))
 	fxn(parent, pos, 0.9, func(n: DrawFx, k: float):
 		for sd in shards:
 			var p: Vector2 = sd[0] + sd[1] * k + Vector2(0, 260.0 * k * k)
@@ -1069,8 +1072,8 @@ static func _fall(parent: Node, p: Vector2, col: Color, dur: float, el: String) 
 				flame(n, Vector2((j - 1) * 4.0, 2.0), 30.0 - absf(j - 1) * 9.0, 7.0, n.t, j * 1.7)
 			n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		n.draw_line(q + Vector2(30, -190) * 0.2, q, Color(col, 0.4), 6.0, SpellArt.AA)
-		n.draw_circle(q, 7, col)
-		n.draw_circle(q, 3.5, Color(1, 1, 0.9)))
+		ElemArt.circle(n, q, 7, col)
+		ElemArt.circle(n, q, 3.5, Color(1, 1, 0.9)))
 	f.tree_exited.connect(func():
 		if is_instance_valid(parent):
 			impact(parent, p, el))
@@ -1122,7 +1125,7 @@ static func _light_old(parent: Node, kind: String, pos: Vector2) -> void:
 				_no(n, Vector2.ZERO, RX * 2.4 * minf(1.0, k * 3.0), Color(1, 0.95, 0.7, a * 0.7), false, 2.0)
 				for i in 8:
 					var t := TAU * i / 8.0 + k
-					n.draw_circle(Vector2(cos(t), sin(t) * 0.5) * RX * 2.7, 3.0, Color(1, 1, 0.8, a)))
+					ElemArt.circle(n, Vector2(cos(t), sin(t) * 0.5) * RX * 2.7, 3.0, Color(1, 1, 0.8, a)))
 		"bless":  # halo subindo
 			fx(parent, pos, 1.0, func(n: DrawFx, k: float):
 				_no(n, Vector2(0, -80 - k * 30), 14, Color(1, 0.95, 0.6, 1.0 - k), false, 3.0))
@@ -1271,7 +1274,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 				for i in 12:
 					var ang := n.t * 4.0 + i * 0.9
 					var r := rx * (0.3 + 0.6 * fmod(i * 0.37, 1.0))
-					n.draw_circle(Vector2(cos(ang) * r, sin(ang) * r * 0.5 - 6.0), 2.0, Color(0.95, 1, 1, 0.8 * a)))
+					ElemArt.circle(n, Vector2(cos(ang) * r, sin(ang) * r * 0.5 - 6.0), 2.0, Color(0.95, 1, 1, 0.8 * a)))
 			for i in 4:
 				var p := center + Vector2(randf_range(-1, 1) * rx * 0.6, randf_range(-0.3, 0.3) * rx)
 				parent.get_tree().create_timer(0.2 + i * 0.25).timeout.connect(func(): splash(parent, p, 8, 70.0, Color(0.6, 0.85, 1.0, 0.9), 10.0))
@@ -1330,7 +1333,7 @@ static func cc(parent: Node, center: Vector2, radius: float, el: String) -> void
 						p += Vector2(cos(ang), sin(ang) * 0.5) * rx * 0.22 * g
 						pts.append(p)
 					ElemArt.ribbon(n, pts, 3.5, 0.5, Color(0.06, 0.04, 0.03, a))
-					n.draw_polyline(pts, Color(0.62, 0.52, 0.4, 0.5 * a), 1.0)
+					ElemArt.polyline(n, pts, Color(0.62, 0.52, 0.4, 0.5 * a), 1.0)
 				var arr := []
 				for i in 9:
 					var ang := rng.randf() * TAU

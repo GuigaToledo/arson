@@ -54,9 +54,9 @@ func _draw() -> void:
 	if kind == "ring":
 		var rx := radius * 90.0 * (0.35 + 0.65 * k)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
-		draw_arc(Vector2.ZERO, rx, 0, TAU, 40, Color(color, al), 5.0 * al + 1.0)
-		draw_arc(Vector2.ZERO, rx * 0.8, 0, TAU, 40, Color(color, al * 0.5), 2.0)
-		draw_circle(Vector2.ZERO, rx * 0.6, Color(color, al * 0.12))
+		ElemArt.arc(self, Vector2.ZERO, rx, 0, TAU, 40, Color(color, al), 5.0 * al + 1.0)
+		ElemArt.arc(self, Vector2.ZERO, rx * 0.8, 0, TAU, 40, Color(color, al * 0.5), 2.0)
+		ElemArt.circle(self, Vector2.ZERO, rx * 0.6, Color(color, al * 0.12))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	elif kind == "beam":
 		if not is_instance_valid(a) or not is_instance_valid(b):
@@ -68,5 +68,5 @@ func _draw() -> void:
 			var t := i / 8.0
 			var n := (p1 - p0).orthogonal().normalized() * sin(t * PI * 3.0 + _t * 30.0) * 5.0 * sin(t * PI)
 			pts.append(p0.lerp(p1, t) + n)
-		draw_polyline(pts, Color(color, al * 0.5), 6.0)
-		draw_polyline(pts, Color(color.lightened(0.4), al), 2.0)
+		ElemArt.polyline(self, pts, Color(color, al * 0.5), 6.0)
+		ElemArt.polyline(self, pts, Color(color.lightened(0.4), al), 2.0)

@@ -225,10 +225,10 @@ class Chandelier:
 		for i in 25:
 			var a := TAU * i / 24.0
 			pts.append(c + Vector2(cos(a) * 30.0, sin(a) * 13.0))
-		draw_polyline(pts, Color(0.2, 0.16, 0.13), 3.0)
+		ElemArt.polyline(self, pts, Color(0.2, 0.16, 0.13), 3.0)
 		for i in 8:
 			var a := TAU * i / 8.0
 			var p := c + Vector2(cos(a) * 30.0, sin(a) * 13.0)
 			draw_line(p, p + Vector2(0, -8), Color(0.9, 0.85, 0.72), 2.5)
-			draw_circle(p + Vector2(0, -11), 2.2, Color(1, 0.8, 0.4))
-			draw_circle(p + Vector2(0, -11), 4.5, Color(1, 0.6, 0.2, 0.25))
+			ElemArt.circle(self, p + Vector2(0, -11), 2.2, Color(1, 0.8, 0.4))
+			ElemArt.circle(self, p + Vector2(0, -11), 4.5, Color(1, 0.6, 0.2, 0.25))

@@ -224,7 +224,7 @@ func _draw() -> void:
 			draw_rect(Rect2(mid + Vector2(-14, -7), Vector2(5, 7)), Color(0.55, 0.5, 0.42))
 			draw_rect(Rect2(mid + Vector2(10, -6), Vector2(5, 6)), Color(0.45, 0.33, 0.2))
 			draw_rect(Rect2(mid + Vector2(-1.5, -10), Vector2(3, 10)), Color(0.9, 0.86, 0.75))
-			draw_circle(mid + Vector2(0, -13), 2.5, Color(1, 0.75, 0.3))
+			ElemArt.circle(self, mid + Vector2(0, -13), 2.5, Color(1, 0.75, 0.3))
 		"bench":
 			var legs := inset(0.12)
 			for i in [0, 1, 3, 2]:

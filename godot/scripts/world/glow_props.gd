@@ -101,7 +101,7 @@ class Mushrooms:
 			arr.append([Vector2(rng.randf_range(-22, 22), rng.randf_range(-8, 8)), rng.randf_range(0.6, 1.25), rng.randf() * 6.0])
 		arr.sort_custom(func(a, b): return a[0].y < b[0].y)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
-		draw_circle(Vector2.ZERO, 34, Color(0.3, 1.0, 0.4, 0.10))
+		ElemArt.circle(self, Vector2.ZERO, 34, Color(0.3, 1.0, 0.4, 0.10))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		for e in arr:
 			var p: Vector2 = e[0]
@@ -116,10 +116,10 @@ class Mushrooms:
 				pts.append(cap + Vector2(cos(a) * 9.0 * s, sin(a) * 6.0 * s))
 			pts.append(cap + Vector2(7.0 * s, 1.5 * s))
 			pts.append(cap + Vector2(-7.0 * s, 1.5 * s))
-			draw_circle(cap + Vector2(0, -2 * s), 12.0 * s, Color(0.3, 1.0, 0.45, 0.16 * pulse))
-			draw_colored_polygon(pts, Color(0.2, 0.75, 0.3).lerp(Color(0.55, 1.0, 0.55), pulse - 0.6))
+			ElemArt.circle(self, cap + Vector2(0, -2 * s), 12.0 * s, Color(0.3, 1.0, 0.45, 0.16 * pulse))
+			ElemArt.poly(self, pts, Color(0.2, 0.75, 0.3).lerp(Color(0.55, 1.0, 0.55), pulse - 0.6))
 			for k in 3:
-				draw_circle(cap + Vector2((k - 1) * 4.0 * s, -3.0 * s - (k % 2) * 2.0 * s), 1.3 * s, Color(0.85, 1.0, 0.8, pulse))
+				ElemArt.circle(self, cap + Vector2((k - 1) * 4.0 * s, -3.0 * s - (k % 2) * 2.0 * s), 1.3 * s, Color(0.85, 1.0, 0.8, pulse))
 
 
 class Crystal:
@@ -138,7 +138,7 @@ class Crystal:
 		rng.seed = sd
 		var pulse := 0.85 + 0.15 * sin(_t * 1.3 + sd)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
-		draw_circle(Vector2.ZERO, 40, Color(col, 0.12 * pulse))
+		ElemArt.circle(self, Vector2.ZERO, 40, Color(col, 0.12 * pulse))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		var shards := []
 		for i in rng.randi_range(3, 5):
@@ -156,13 +156,13 @@ class Crystal:
 			var r1 := b + side * w
 			var l2 := b + up * h * 0.78 - side * w * 0.8
 			var r2 := b + up * h * 0.78 + side * w * 0.8
-			draw_colored_polygon(PackedVector2Array([l1, b, b + up * h * 0.8, l2]), col.darkened(0.35))
-			draw_colored_polygon(PackedVector2Array([b, r1, r2, b + up * h * 0.8]), col.lightened(0.1 * pulse))
-			draw_colored_polygon(PackedVector2Array([l2, b + up * h * 0.8, r2, tip]), col.lightened(0.45))
+			ElemArt.poly(self, PackedVector2Array([l1, b, b + up * h * 0.8, l2]), col.darkened(0.35))
+			ElemArt.poly(self, PackedVector2Array([b, r1, r2, b + up * h * 0.8]), col.lightened(0.1 * pulse))
+			ElemArt.poly(self, PackedVector2Array([l2, b + up * h * 0.8, r2, tip]), col.lightened(0.45))
 			draw_line(b, tip, Color(1, 1, 1, 0.5 * pulse), 1.2)
 		for i in 3:
 			var a := _t * 0.7 + i * 2.1 + sd
-			draw_circle(Vector2(cos(a) * 18, -30 + sin(a * 1.3) * 16), 1.5, Color(col.lightened(0.6), 0.8 * pulse))
+			ElemArt.circle(self, Vector2(cos(a) * 18, -30 + sin(a * 1.3) * 16), 1.5, Color(col.lightened(0.6), 0.8 * pulse))
 
 
 class LavaPool:
@@ -190,6 +190,6 @@ class LavaPool:
 
 	func _draw() -> void:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
-		draw_circle(Vector2.ZERO, r * 1.35, Color(0.12, 0.08, 0.06, 0.55))
+		ElemArt.circle(self, Vector2.ZERO, r * 1.35, Color(0.12, 0.08, 0.06, 0.55))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		SpellArt.lava(self, Vector2.ZERO, r, _t * 0.6, sd, 1.0)

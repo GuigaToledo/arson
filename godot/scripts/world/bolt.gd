@@ -68,6 +68,6 @@ func _draw() -> void:
 	if not is_processing():
 		return
 	var c := Vector2(0, -HEIGHT)
-	draw_circle(c, 6.0 * size, Color(color, 0.35))
-	draw_circle(c, 3.5 * size, color.lightened(0.3))
-	draw_circle(c, 1.8 * size, Color(1, 0.97, 0.85))
+	ElemArt.circle(self, c, 6.0 * size, Color(color, 0.35))
+	ElemArt.circle(self, c, 3.5 * size, color.lightened(0.3))
+	ElemArt.circle(self, c, 1.8 * size, Color(1, 0.97, 0.85))

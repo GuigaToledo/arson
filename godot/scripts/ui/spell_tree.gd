@@ -173,7 +173,7 @@ func _draw_bar(font: Font) -> void:
 		var bc := Color(1, 0.8, 0.4) if _sel_id != "" else Color(col, 0.7)
 		draw_rect(r, bc, false, 2.0 if _sel_id != "" else 1.5)
 		draw_string(font, r.position + Vector2(4, 13), str(i + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1, 0.9, 0.6))
-		draw_circle(r.position + Vector2(r.size.x - 10, 11), 5, col)
+		ElemArt.circle(self, r.position + Vector2(r.size.x - 10, 11), 5, col)
 		var nm: String = s.curto if not s.is_empty() else "vazio"
 		draw_string(font, r.position + Vector2(4, 33), nm, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 6, 12, Color(0.95, 0.9, 0.8) if not s.is_empty() and player.spell_unlocked(str(player.bar[i])) else Color(0.55, 0.5, 0.45))
 
@@ -200,17 +200,17 @@ func _node(font: Font, p: Vector2, t: int, name: String, c: Color, ok: bool, inf
 	var hov := i == _hover
 	if ok:
 		var pulse := 0.5 + 0.5 * sin(_t * 2.5 + t)
-		draw_circle(p, R + 6 + pulse * 2, Color(c.r, c.g, c.b, 0.12))
-		draw_circle(p, R, c.darkened(0.55))
-		draw_circle(p, R - 4, c.darkened(0.15))
+		ElemArt.circle(self, p, R + 6 + pulse * 2, Color(c.r, c.g, c.b, 0.12))
+		ElemArt.circle(self, p, R, c.darkened(0.55))
+		ElemArt.circle(self, p, R - 4, c.darkened(0.15))
 		draw_arc(p, R, 0, TAU, 32, c.lightened(0.3), 2.0)
 	else:
-		draw_circle(p, R, Color(0.1, 0.09, 0.08))
+		ElemArt.circle(self, p, R, Color(0.1, 0.09, 0.08))
 		draw_arc(p, R, 0, TAU, 32, Color(0.35, 0.3, 0.26), 2.0)
 	if hov or str(info.id) == _sel_id:
 		draw_arc(p, R + 4, 0, TAU, 32, Color(1, 0.9, 0.6), 2.0)
 	if player.bar.has(str(info.id)):
-		draw_circle(p + Vector2(R - 2, -R + 2), 5, Color(1, 0.8, 0.3))
+		ElemArt.circle(self, p + Vector2(R - 2, -R + 2), 5, Color(1, 0.8, 0.3))
 	var num := str(t)
 	var tw := font.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
 	draw_string(font, p + Vector2(-tw / 2, 5), num, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 1, 1) if ok else Color(0.5, 0.46, 0.42))

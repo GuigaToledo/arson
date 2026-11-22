@@ -178,9 +178,9 @@ class Ring:
 		var k := _t / dur
 		var r := rx * (0.3 + 0.7 * k) if grow else rx
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
-		draw_arc(Vector2.ZERO, r, 0, TAU, 64, Color(color, 1.0 - k), 4.0 * (1.0 - k) + 1.0)
+		ElemArt.arc(self, Vector2.ZERO, r, 0, TAU, 64, Color(color, 1.0 - k), 4.0 * (1.0 - k) + 1.0)
 		if not grow:
-			draw_circle(Vector2.ZERO, r, Color(color, 0.12 * (1.0 - k)))
+			ElemArt.circle(self, Vector2.ZERO, r, Color(color, 0.12 * (1.0 - k)))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -211,9 +211,9 @@ class Lightning:
 				var q := p0.lerp(p1, k / 8.0) + Vector2(randf_range(-9, 9), randf_range(-9, 9))
 				line.append(q)
 			line.append(p1)
-			draw_polyline(line, Color(col.darkened(0.3), 0.35 * a), 9.0)
-			draw_polyline(line, Color(col.lightened(0.3), 0.85 * a), 3.5)
-			draw_polyline(line, Color(1, 1, 1, a), 1.4)
+			ElemArt.polyline(self, line, Color(col.darkened(0.3), 0.35 * a), 9.0)
+			ElemArt.polyline(self, line, Color(col.lightened(0.3), 0.85 * a), 3.5)
+			ElemArt.polyline(self, line, Color(1, 1, 1, a), 1.4)
 
 
 class Meteor:
@@ -248,9 +248,9 @@ class Meteor:
 			queue_free()
 
 	func _draw() -> void:
-		draw_circle(Vector2.ZERO, 26, Color(col, 0.35))
-		draw_circle(Vector2.ZERO, 15, col.lightened(0.15))
-		draw_circle(Vector2.ZERO, 8, Color(1, 0.95, 0.75))
+		ElemArt.circle(self, Vector2.ZERO, 26, Color(col, 0.35))
+		ElemArt.circle(self, Vector2.ZERO, 15, col.lightened(0.15))
+		ElemArt.circle(self, Vector2.ZERO, 8, Color(1, 0.95, 0.75))
 		for i in 6:
 			var d := Vector2(220, -520).normalized() * (20 + i * 14)
-			draw_circle(d, 12 - i * 1.6, Color(col, 0.5 - i * 0.07))
+			ElemArt.circle(self, d, 12 - i * 1.6, Color(col, 0.5 - i * 0.07))

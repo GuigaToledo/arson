@@ -139,8 +139,8 @@ static func flowers(n: CanvasItem, p: Vector2, sd: int) -> void:
 	var c: Color = cols[sd % cols.size()]
 	for i in rng.randi_range(2, 4):
 		var q := p + Vector2(rng.randf_range(-6, 6), -rng.randf_range(6, 11))
-		n.draw_circle(q, 1.6, c)
-		n.draw_circle(q, 0.7, Color(0.95, 0.85, 0.4))
+		ElemArt.circle(n, q, 1.6, c)
+		ElemArt.circle(n, q, 0.7, Color(0.95, 0.85, 0.4))
 
 
 static func pebbles(n: CanvasItem, p: Vector2, sd: int) -> void:
@@ -150,7 +150,7 @@ static func pebbles(n: CanvasItem, p: Vector2, sd: int) -> void:
 		var q := p + Vector2(rng.randf_range(-9, 9), rng.randf_range(-4, 4))
 		var r := rng.randf_range(1.2, 3.2)
 		n.draw_set_transform(q + Vector2(0.8, 0.8), 0.0, Vector2(1, 0.6))
-		n.draw_circle(Vector2.ZERO, r * 1.1, Color(0, 0, 0, 0.25))
+		ElemArt.circle(n, Vector2.ZERO, r * 1.1, Color(0, 0, 0, 0.25))
 		n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		ElemArt.boulder(n, q, r, rng.randi(), rng.randf() * TAU, Color(0.3, 0.28, 0.25).lerp(Color(0.4, 0.36, 0.3), rng.randf()))
 
@@ -178,8 +178,8 @@ static func twigs(n: CanvasItem, p: Vector2, sd: int) -> void:
 
 static func moss(n: CanvasItem, p: Vector2, r: float) -> void:
 	n.draw_set_transform(p, 0.0, Vector2(1, 0.5))
-	n.draw_circle(Vector2.ZERO, r, Color(0.12, 0.18, 0.07, 0.22))
-	n.draw_circle(Vector2(r * 0.3, -r * 0.2), r * 0.6, Color(0.16, 0.24, 0.09, 0.2))
+	ElemArt.circle(n, Vector2.ZERO, r, Color(0.12, 0.18, 0.07, 0.22))
+	ElemArt.circle(n, Vector2(r * 0.3, -r * 0.2), r * 0.6, Color(0.16, 0.24, 0.09, 0.2))
 	n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 

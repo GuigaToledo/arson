@@ -136,7 +136,7 @@ func _slime() -> void:
 		for s in [-1.0, 1.0]:
 			var p := e + lat(s * 5.0)
 			ell(p, 2.2, 3.0, Color(0.05, 0.04, 0.04))
-			draw_circle(p + Vector2(-0.6, -1.0), 0.8, Color(1, 1, 1, 0.9))
+			ElemArt.circle(self, p + Vector2(-0.6, -1.0), 0.8, Color(1, 1, 1, 0.9))
 
 
 # ------------------------------------------------------------ quadrúpedes
@@ -190,12 +190,12 @@ func _quad() -> void:
 	if variant == "onca":
 		for i in 9:
 			var sp := c + fwd((i % 3 - 1) * L * 0.25) + lat(((i / 3) - 1) * v.r * 0.5) + Vector2(0, -2)
-			draw_circle(sp, 1.6, Color(0.1, 0.07, 0.04, 0.8))
+			ElemArt.circle(self, sp, 1.6, Color(0.1, 0.07, 0.04, 0.8))
 	if variant == "urso":
 		ell(front + Vector2(0, -v.r * 0.5), v.r * 0.9, v.r * 0.6, c_main.lightened(0.06))
 	for l in near:
 		draw_line(l[0], l[1], c_main.darkened(0.1), v.leg)
-		draw_circle(l[1], v.leg * 0.6, c_dark)
+		ElemArt.circle(self, l[1], v.leg * 0.6, c_dark)
 	if not tail_first:
 		_tail(back, v, c)
 	var hc: Vector2 = front + fwd(L * 0.28) + Vector2(0, -v.r * 0.55 - lg * 2.0)
@@ -210,21 +210,21 @@ func _quad() -> void:
 
 
 func _quad_head(hc: Vector2, v: Dictionary, f: Vector2, lg: float) -> void:
-	draw_circle(hc, v.head, c_main.lightened(0.04))
+	ElemArt.circle(self, hc, v.head, c_main.lightened(0.04))
 	var sn: Vector2 = hc + fwd(v.snout) + Vector2(0, 1.5)
 	draw_colored_polygon(PackedVector2Array([hc + lat(-v.head * 0.55) + Vector2(0, 1), hc + lat(v.head * 0.55) + Vector2(0, 1), sn + lat(1.5), sn + lat(-1.5)]), c_belly.darkened(0.1))
-	draw_circle(sn, 1.6, Color(0.05, 0.04, 0.04))
+	ElemArt.circle(self, sn, 1.6, Color(0.05, 0.04, 0.04))
 	for s in [-1.0, 1.0]:
 		var ep: Vector2 = hc + lat(s * v.head * 0.75) + Vector2(0, -v.head * 0.7)
 		if v.ears == "ponta":
 			draw_colored_polygon(PackedVector2Array([ep + lat(-2.2), ep + lat(2.2), ep + Vector2(0, -7)]), c_dark)
 		else:
-			draw_circle(ep, 2.6, c_dark)
+			ElemArt.circle(self, ep, 2.6, c_dark)
 	if f.y > -0.35:
 		for s in [-1.0, 1.0]:
 			var e: Vector2 = hc + fwd(v.head * 0.55) + lat(s * 2.6) + Vector2(0, -1.5)
-			draw_circle(e, 1.9, Color(c_eye, 0.35))
-			draw_circle(e, 1.0, c_eye)
+			ElemArt.circle(self, e, 1.9, Color(c_eye, 0.35))
+			ElemArt.circle(self, e, 1.0, c_eye)
 	if lg > 0.3 and f.y > -0.35:
 		draw_colored_polygon(PackedVector2Array([sn + lat(-2), sn + lat(2), sn + Vector2(0, 4)]), Color(0.5, 0.1, 0.08))
 
@@ -239,9 +239,9 @@ func _tail(back: Vector2, v: Dictionary, c: Vector2) -> void:
 		var t := float(i) / n
 		pts.append(base - fwd(ln * t) + lat(sw * t * t) + Vector2(0, (-6.0 if v.tail == "longa" else 2.0) * t * t))
 	var w := 5.0 if v.tail == "peluda" else (2.5 if v.tail == "longa" else 6.0)
-	draw_polyline(pts, c_dark, w)
+	ElemArt.polyline(self, pts, c_dark, w)
 	if v.tail == "peluda":
-		draw_circle(pts[n], 2.5, c_belly)
+		ElemArt.circle(self, pts[n], 2.5, c_belly)
 
 
 # ------------------------------------------------------------ morcego
@@ -260,11 +260,11 @@ func _bat() -> void:
 		draw_line(sh, tip, c_main.darkened(0.3), 1.2)
 	ell(c, 6, 8, c_main)
 	var hd := c + Vector2(0, -8) + fwd(2)
-	draw_circle(hd, 4.5, c_main)
+	ElemArt.circle(self, hd, 4.5, c_main)
 	for s in [-1.0, 1.0]:
 		draw_colored_polygon(PackedVector2Array([hd + lat(s * 1.5) + Vector2(0, -2), hd + lat(s * 4.5) + Vector2(0, -2), hd + lat(s * 3.5) + Vector2(0, -9)]), c_dark)
 		if f.y > -0.3:
-			draw_circle(hd + fwd(2.5) + lat(s * 1.8), 1.0, c_eye)
+			ElemArt.circle(self, hd + fwd(2.5) + lat(s * 1.8), 1.0, c_eye)
 
 
 # ------------------------------------------------------------ aranha
@@ -288,7 +288,7 @@ func _spider() -> void:
 			legs.append([base, knee, foot, lat(s).y])
 	for l in legs:
 		if l[3] < 0.0:
-			draw_polyline(PackedVector2Array([l[0], l[1], l[2]]), c_dark, 2.2)
+			ElemArt.polyline(self, PackedVector2Array([l[0], l[1], l[2]]), c_dark, 2.2)
 	if f.y >= 0.0:
 		draw_colored_polygon(blobpoly([abd], 12.0, 0.85), c_main)
 		_abd_mark(abd)
@@ -299,11 +299,11 @@ func _spider() -> void:
 		_abd_mark(abd)
 	for l in legs:
 		if l[3] >= 0.0:
-			draw_polyline(PackedVector2Array([l[0], l[1], l[2]]), c_main.darkened(0.15), 2.4)
+			ElemArt.polyline(self, PackedVector2Array([l[0], l[1], l[2]]), c_main.darkened(0.15), 2.4)
 	if f.y > -0.4:
 		for i in 4:
 			var e := ceph + fwd(5.0) + lat((i - 1.5) * 1.8) + Vector2(0, -1.5 - (1.0 if i % 3 == 0 else 0.0))
-			draw_circle(e, 1.2, c_eye)
+			ElemArt.circle(self, e, 1.2, c_eye)
 		if lg > 0.3:
 			for s in [-1.0, 1.0]:
 				draw_line(ceph + fwd(6) + lat(s * 1.5), ceph + fwd(9) + lat(s * 0.5) + Vector2(0, 3), Color(0.8, 0.75, 0.6), 1.4)
@@ -338,10 +338,10 @@ func _ghost() -> void:
 		var sh := top + lat(s * 9) + Vector2(0, 16)
 		var hand := sh + lat(s * 6) + fwd(10 + lg * 10) + Vector2(0, 14 + sin(_time * 3 + s) * 3)
 		draw_line(sh, hand, Color(c_main, a), 5.0)
-		draw_circle(hand, 2.5, Color(c_belly, a))
-	draw_circle(top + Vector2(0, 8), 8.0, Color(c_dark, 0.85))
+		ElemArt.circle(self, hand, 2.5, Color(c_belly, a))
+	ElemArt.circle(self, top + Vector2(0, 8), 8.0, Color(c_dark, 0.85))
 	if f.y > -0.3:
 		for s in [-1.0, 1.0]:
 			var e := top + Vector2(0, 8) + fwd(4) + lat(s * 3)
-			draw_circle(e, 2.6, Color(c_eye, 0.35))
-			draw_circle(e, 1.3, c_eye)
+			ElemArt.circle(self, e, 2.6, Color(c_eye, 0.35))
+			ElemArt.circle(self, e, 1.3, c_eye)

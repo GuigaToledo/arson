@@ -1340,8 +1340,8 @@ class TapMarker:
 		var a := 1.0 - _t
 		var r := 10.0 + _t * 10.0
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
-		draw_arc(Vector2.ZERO, r, 0, TAU, 24, Color(1, 0.75, 0.35, a), 2.0)
-		draw_arc(Vector2.ZERO, r * 0.5, 0, TAU, 16, Color(1, 0.75, 0.35, a * 0.6), 1.5)
+		ElemArt.arc(self, Vector2.ZERO, r, 0, TAU, 24, Color(1, 0.75, 0.35, a), 2.0)
+		ElemArt.arc(self, Vector2.ZERO, r * 0.5, 0, TAU, 16, Color(1, 0.75, 0.35, a * 0.6), 1.5)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -1385,10 +1385,10 @@ class StatusAura:
 					draw_line(p + Vector2(-3, 0), p + Vector2(3, 1), Color(1, 0.5, 0.1), 1.5)
 			"agua":  # bolha d'água com ondulação
 				draw_set_transform(c, 0.0, Vector2(1.0, 1.25))
-				draw_circle(Vector2.ZERO, 30, Color(0.3, 0.6, 1, 0.12))
+				ElemArt.circle(self, Vector2.ZERO, 30, Color(0.3, 0.6, 1, 0.12))
 				for i in 2:
-					draw_arc(Vector2.ZERO, 30 - i * 3 + sin(_t * 4 + i) * 1.5, 0, TAU, 40, Color(0.6, 0.85, 1, 0.45), 2.0, SpellArt.AA)
-				draw_arc(Vector2(-10, -12), 8, PI, PI * 1.5, 10, Color(1, 1, 1, 0.6), 2.0, SpellArt.AA)
+					ElemArt.arc(self, Vector2.ZERO, 30 - i * 3 + sin(_t * 4 + i) * 1.5, 0, TAU, 40, Color(0.6, 0.85, 1, 0.45), 2.0, SpellArt.AA)
+				ElemArt.arc(self, Vector2(-10, -12), 8, PI, PI * 1.5, 10, Color(1, 1, 1, 0.6), 2.0, SpellArt.AA)
 				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			"gelo":  # Armadura de Gelo: cristais em volta
 				for i in 9:
@@ -1400,7 +1400,7 @@ class StatusAura:
 				for i in 3:
 					var a0 := _t * 5.0 + i * 2.1
 					draw_set_transform(c, 0.0, Vector2(1.0, 1.25))
-					draw_arc(Vector2.ZERO, 26 + i * 3, a0, a0 + 2.0, 16, Color(0.85, 1, 0.95, 0.55), 2.0, SpellArt.AA)
+					ElemArt.arc(self, Vector2.ZERO, 26 + i * 3, a0, a0 + 2.0, 16, Color(0.85, 1, 0.95, 0.55), 2.0, SpellArt.AA)
 					draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			"raio":  # arcos elétricos
 				for i in 3:
@@ -1418,7 +1418,7 @@ class StatusAura:
 					SpellArt.root(self, Vector2(cos(a) * 16, 4 + sin(a) * 6), 60, 10, 1.0, Color(0.35, 0.28, 0.15, 0.8), 2.5)
 			_:
 				draw_set_transform(c, 0.0, Vector2(1.0, 1.25))
-				draw_arc(Vector2.ZERO, 30, 0, TAU, 40, Color(shield_col, 0.4), 3.0)
+				ElemArt.arc(self, Vector2.ZERO, 30, 0, TAU, 40, Color(shield_col, 0.4), 3.0)
 				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	func _draw() -> void:
@@ -1430,11 +1430,11 @@ class StatusAura:
 		if hot:
 			for i in 3:
 				var k := fmod(_t * 0.6 + i / 3.0, 1.0)
-				draw_circle(Vector2(sin(_t * 2 + i * 2.1) * 14, -10 - k * 60), 2.0, Color(1, 0.95, 0.6, 1.0 - k))
+				ElemArt.circle(self, Vector2(sin(_t * 2 + i * 2.1) * 14, -10 - k * 60), 2.0, Color(1, 0.95, 0.6, 1.0 - k))
 		if spirit:
 			var p := Vector2(16 + sin(_t * 2.0) * 4, -78 + cos(_t * 3.0) * 4)
-			draw_circle(p, 9, Color(1, 0.95, 0.65, 0.25))
-			draw_circle(p, 4, Color(1, 0.98, 0.85))
+			ElemArt.circle(self, p, 9, Color(1, 0.95, 0.65, 0.25))
+			ElemArt.circle(self, p, 4, Color(1, 0.98, 0.85))
 		if immortal:
 			var fl := 0.8 + 0.2 * sin(_t * 4.0)
 			for wi in 2:
@@ -1473,8 +1473,8 @@ class DebuffFx:
 				var f := fmod(_t * (0.7 + (i % 3) * 0.2) + i * 0.29, 1.0)
 				if f < 0.7:
 					var r := 1.5 + f * 4.0
-					draw_circle(p + Vector2(0, -f * 6.0), r, Color(0.45, 0.95, 0.3, 0.6))
-					draw_arc(p + Vector2(-1, -f * 6.0 - 1), r * 0.6, PI * 1.1, PI * 1.6, 6, Color(0.9, 1, 0.8, 0.8), 1.0)
+					ElemArt.circle(self, p + Vector2(0, -f * 6.0), r, Color(0.45, 0.95, 0.3, 0.6))
+					ElemArt.arc(self, p + Vector2(-1, -f * 6.0 - 1), r * 0.6, PI * 1.1, PI * 1.6, 6, Color(0.9, 1, 0.8, 0.8), 1.0)
 				else:
 					var q := (f - 0.7) / 0.3
 					ElemArt.drop(self, p + Vector2(0, q * 26.0), Vector2(0, 300), 2.0, Color(0.4, 0.85, 0.25, 0.8 * (1.0 - q)))
@@ -1495,7 +1495,7 @@ class DebuffFx:
 				for j in 8:
 					var f := j / 7.0
 					lp.append(b.lerp(Vector2(sin(a + f * 3.0) * 7.0, -8 - f * 26.0), f))
-				draw_polyline(lp, Color(0.95, 0.95, 0.9, 0.75), 1.2)
+				ElemArt.polyline(self, lp, Color(0.95, 0.95, 0.9, 0.75), 1.2)
 				ElemArt.vine(self, lp, 1.0, 2.2, i * 17, 0.8, false)
 		if db.has("atordoado"):
 			for i in 3:

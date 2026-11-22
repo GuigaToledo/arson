@@ -4,13 +4,92 @@ class_name ElemArt
 ## (RenderingServer), para não falhar nem pesar. Usado pelas magias dos jogadores e dos monstros.
 
 
+## Desenha triângulos indexados como "primitivas" (3 ou 4 pontos) em vez de um triangle array.
+## No celular (Android/GLES3) cada triangle array cria e apaga um buffer de vídeo; com dezenas
+## por personagem a cada quadro, o driver de vídeo de alguns aparelhos acabava fechando o jogo.
+## Primitivas vão no lote comum do Godot, sem buffer novo. Dois triângulos seguidos que formam
+## um quadrilátero (leque ou faixa) viram uma primitiva só.
+static func emit(n: CanvasItem, idx: PackedInt32Array, pts: PackedVector2Array, cs: PackedColorArray) -> void:
+	var ci := n.get_canvas_item()
+	var nt := idx.size() / 3
+	var np := pts.size()
+	var k := 0
+	while k < nt:
+		var a := idx[k * 3]
+		var b := idx[k * 3 + 1]
+		var c := idx[k * 3 + 2]
+		if a >= np or b >= np or c >= np:
+			k += 1
+			continue
+		if k + 1 < nt and idx[k * 3 + 3] == a and idx[k * 3 + 4] == c and idx[k * 3 + 5] < np:
+			var d := idx[k * 3 + 5]
+			RenderingServer.canvas_item_add_primitive(ci, PackedVector2Array([pts[a], pts[b], pts[c], pts[d]]),
+				PackedColorArray([cs[a], cs[b], cs[c], cs[d]]), PackedVector2Array(), RID())
+			k += 2
+		else:
+			RenderingServer.canvas_item_add_primitive(ci, PackedVector2Array([pts[a], pts[b], pts[c]]),
+				PackedColorArray([cs[a], cs[b], cs[c]]), PackedVector2Array(), RID())
+			k += 1
+
+
+## Polígono de uma cor (leque), sem triangle array (ver emit).
+static func poly(n: CanvasItem, pts: PackedVector2Array, col: Color) -> void:
+	var m := pts.size()
+	if m < 3:
+		return
+	if m <= 4:
+		var cs := PackedColorArray()
+		cs.resize(m)
+		cs.fill(col)
+		RenderingServer.canvas_item_add_primitive(n.get_canvas_item(), pts, cs, PackedVector2Array(), RID())
+		return
+	fan(n, pts, col)
+
+
+## Círculo cheio como retângulo com textura de disco (vai no lote comum, sem buffer novo de
+## vídeo como o draw_circle, que no Android cria um polígono a cada chamada).
+static var _disc: ImageTexture
+
+
+static func circle(n: CanvasItem, p: Vector2, r: float, col: Color, _filled := true, _w := -1.0, _aa := false) -> void:
+	if r <= 0.0:
+		return
+	if _disc == null:
+		var S := 64
+		var im := Image.create(S, S, false, Image.FORMAT_RGBA8)
+		var c := (S - 1) / 2.0
+		for y in S:
+			for x in S:
+				var d := Vector2(x - c, y - c).length()
+				im.set_pixel(x, y, Color(1, 1, 1, clampf(c + 0.5 - d, 0.0, 1.0)))
+		_disc = ImageTexture.create_from_image(im)
+	n.draw_texture_rect(_disc, Rect2(p - Vector2(r, r), Vector2(r, r) * 2.0), false, col)
+
+
+## Linha com vários pontos feita de segmentos (draw_polyline/draw_arc criam polígono novo a cada
+## chamada no Android; segmentos vão no lote comum).
+static func polyline(n: CanvasItem, pts: PackedVector2Array, col: Color, w := -1.0, _aa := false) -> void:
+	for i in pts.size() - 1:
+		n.draw_line(pts[i], pts[i + 1], col, w)
+
+
+static func arc(n: CanvasItem, c: Vector2, r: float, a0: float, a1: float, segs: int, col: Color, w := -1.0, _aa := false) -> void:
+	segs = maxi(2, segs)
+	var prev := c + Vector2(cos(a0), sin(a0)) * r
+	for i in range(1, segs):
+		var a := lerpf(a0, a1, float(i) / (segs - 1))
+		var q := c + Vector2(cos(a), sin(a)) * r
+		n.draw_line(prev, q, col, w)
+		prev = q
+
+
 static func tris(n: CanvasItem, pts: PackedVector2Array, idx: PackedInt32Array, col: Color) -> void:
 	if pts.size() < 3 or idx.size() < 3:
 		return
 	var cs := PackedColorArray()
 	cs.resize(pts.size())
 	cs.fill(col)
-	RenderingServer.canvas_item_add_triangle_array(n.get_canvas_item(), idx, pts, cs)
+	emit(n, idx, pts, cs)
 
 
 ## Polígono em leque a partir do primeiro ponto (bom para formas quase convexas).
@@ -42,7 +121,7 @@ static func ribbon(n: CanvasItem, line: PackedVector2Array, w0: float, w1: float
 	for i in m - 1:
 		var o := i * 2
 		idx.append_array(PackedInt32Array([o, o + 2, o + 3, o, o + 3, o + 1]))
-	RenderingServer.canvas_item_add_triangle_array(n.get_canvas_item(), idx, pts, cs)
+	emit(n, idx, pts, cs)
 
 
 ## Gota alongada na direção do movimento (frente redonda, rabinho para trás).
@@ -57,14 +136,14 @@ static func drop(n: CanvasItem, p: Vector2, vel: Vector2, r: float, col: Color) 
 	pts.append(p - d * r * stretch * 1.6)
 	pts.append(pts[1])
 	fan(n, pts, col)
-	n.draw_circle(p + q * r * 0.35 + d * r * 0.3, r * 0.28, Color(1, 1, 1, col.a * 0.7))
+	circle(n, p + q * r * 0.35 + d * r * 0.3, r * 0.28, Color(1, 1, 1, col.a * 0.7))
 
 
 ## Nuvem macia (fumaça, poeira, névoa): camadas que se somam.
 static func puff(n: CanvasItem, c: Vector2, r: float, col: Color) -> void:
 	for i in 3:
 		var k := 1.0 - i * 0.28
-		n.draw_circle(c + Vector2(i * r * 0.12, -i * r * 0.1), r * k, Color(col, col.a * (0.35 + i * 0.22)))
+		circle(n, c + Vector2(i * r * 0.12, -i * r * 0.1), r * k, Color(col, col.a * (0.35 + i * 0.22)))
 
 
 ## Estrela de brilho (4 pontas) para luz e faíscas.
@@ -158,9 +237,9 @@ static func bolt(n: CanvasItem, a: Vector2, b: Vector2, sd: int, w: float, al: f
 	for pass_i in 3:
 		var ww: float = [w * 5.0, w * 2.2, w * 0.9][pass_i]
 		var cc: Color = [Color(col, 0.18 * al), Color(col.lightened(0.3), 0.55 * al), Color(1, 1, 1, al)][pass_i]
-		n.draw_polyline(main, cc, ww)
+		polyline(n, main, cc, ww)
 		for br in branches:
-			n.draw_polyline(br, Color(cc, cc.a * 0.7), ww * 0.55)
+			polyline(n, br, Color(cc, cc.a * 0.7), ww * 0.55)
 
 
 ## Cipó crescendo por uma curva: caule que afina, folhas alternadas e espinhos.
@@ -224,7 +303,7 @@ static func gust(n: CanvasItem, from: Vector2, dir: Vector2, length: float, t: f
 	for i in pts.size() - 1:
 		var o := i * 2
 		idx.append_array(PackedInt32Array([o, o + 2, o + 3, o, o + 3, o + 1]))
-	RenderingServer.canvas_item_add_triangle_array(n.get_canvas_item(), idx, p2, cs)
+	emit(n, idx, p2, cs)
 
 
 ## Lençol de água: parede ondulada, escura embaixo e espuma em cima, com gotas soltando.
@@ -244,12 +323,12 @@ static func water_wall(n: CanvasItem, line: PackedVector2Array, h: float, t: flo
 	for i in m - 1:
 		var o := i * 2
 		idx.append_array(PackedInt32Array([o, o + 2, o + 3, o, o + 3, o + 1]))
-	RenderingServer.canvas_item_add_triangle_array(n.get_canvas_item(), idx, pts, cs)
+	emit(n, idx, pts, cs)
 	# crista de espuma
 	var crest := PackedVector2Array()
 	for i in m:
 		crest.append(pts[i * 2 + 1])
-	n.draw_polyline(crest, Color(0.95, 0.99, 1.0, 0.9 * a), 2.5)
+	polyline(n, crest, Color(0.95, 0.99, 1.0, 0.9 * a), 2.5)
 	for i in m:
 		if (i + int(t * 10.0)) % 3 == 0:
-			n.draw_circle(pts[i * 2 + 1] + Vector2(sin(t * 9.0 + i) * 3.0, -2), 2.2, Color(1, 1, 1, 0.8 * a))
+			circle(n, pts[i * 2 + 1] + Vector2(sin(t * 9.0 + i) * 3.0, -2), 2.2, Color(1, 1, 1, 0.8 * a))

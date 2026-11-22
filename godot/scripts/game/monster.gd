@@ -461,8 +461,8 @@ func _roar_fx(col: Color) -> void:
 		for i in 5:
 			var f := fmod(k * 1.6 + i * 0.2, 1.0)
 			var r := (14.0 + f * 70.0) * sc
-			n.draw_arc(Vector2.ZERO, r, -0.9, 0.9, 16, Color(1, 1, 1, 0.35 * (1.0 - f)), 2.0)
-			n.draw_arc(Vector2.ZERO, r, PI - 0.9, PI + 0.9, 16, Color(1, 1, 1, 0.35 * (1.0 - f)), 2.0)
+			ElemArt.arc(n, Vector2.ZERO, r, -0.9, 0.9, 16, Color(1, 1, 1, 0.35 * (1.0 - f)), 2.0)
+			ElemArt.arc(n, Vector2.ZERO, r, PI - 0.9, PI + 0.9, 16, Color(1, 1, 1, 0.35 * (1.0 - f)), 2.0)
 		ElemArt.star(n, Vector2(-5, 2) * sc, 4.0 * sc * (1.0 - k), Color(col, 1.0 - k))
 		ElemArt.star(n, Vector2(5, 2) * sc, 4.0 * sc * (1.0 - k), Color(col, 1.0 - k)))
 	SpellArt.cloud(get_parent(), global_position, 40.0 * sc, Color(0.55, 0.47, 0.38, 0.35), 6, 1.0)
@@ -516,7 +516,7 @@ func _burst(at: Vector2, r_tiles: float, th: String) -> void:
 					var ang := TAU * i / 10.0
 					n.draw_line(Vector2.ZERO, Vector2(cos(ang), sin(ang) * 0.5) * 70.0 * r_tiles * minf(1.0, k * 4.0), Color(0.95, 0.95, 0.9, 0.7 * a), 1.2)
 				for j in 4:
-					n.draw_arc(Vector2.ZERO, 16.0 * (j + 1) * r_tiles * minf(1.0, k * 4.0), 0, TAU, 20, Color(0.95, 0.95, 0.9, 0.5 * a), 1.0))
+					ElemArt.arc(n, Vector2.ZERO, 16.0 * (j + 1) * r_tiles * minf(1.0, k * 4.0), 0, TAU, 20, Color(0.95, 0.95, 0.9, 0.5 * a), 1.0))
 		"trevas":
 			SpellArt.cloud(par, at, 40.0 * r_tiles, Color(0.25, 0.06, 0.32, 0.55), 9, 1.2, 30.0)
 			SpellArt.fx(par, at, 0.9, func(n, k: float):
@@ -844,17 +844,17 @@ class StatusFx:
 		# fumaça das partes queimando (por baixo das chamas)
 		for sm in _smoke:
 			var k: float = 1.0 - float(sm[2]) / 1.2
-			draw_circle(sm[0], float(sm[3]) * (1.0 + k * 1.6) * s, Color(0.18, 0.16, 0.15, 0.32 * (1.0 - k)))
+			ElemArt.circle(self, sm[0], float(sm[3]) * (1.0 + k * 1.6) * s, Color(0.18, 0.16, 0.15, 0.32 * (1.0 - k)))
 		if m._stun_t > 0.0 and el == "gelo":
 			# bloco de gelo facetado em volta do corpo
 			var h := 92.0 * s
 			var w := 24.0 * s
 			var outl := PackedVector2Array([Vector2(-w, 0), Vector2(-w * 1.1, -h * 0.45), Vector2(-w * 0.8, -h), Vector2(w * 0.3, -h * 1.05), Vector2(w * 1.05, -h * 0.7), Vector2(w, 0)])
-			draw_colored_polygon(outl, Color(0.72, 0.9, 1.0, 0.38))
-			draw_colored_polygon(PackedVector2Array([Vector2(-w * 0.8, -h), Vector2(w * 0.3, -h * 1.05), Vector2(w * 0.1, -h * 0.6), Vector2(-w * 0.5, -h * 0.55)]), Color(0.9, 0.97, 1.0, 0.35))
+			ElemArt.poly(self, outl, Color(0.72, 0.9, 1.0, 0.38))
+			ElemArt.poly(self, PackedVector2Array([Vector2(-w * 0.8, -h), Vector2(w * 0.3, -h * 1.05), Vector2(w * 0.1, -h * 0.6), Vector2(-w * 0.5, -h * 0.55)]), Color(0.9, 0.97, 1.0, 0.35))
 			var o2 := outl.duplicate()
 			o2.append(outl[0])
-			draw_polyline(o2, Color(0.92, 1, 1, 0.8), 1.5)
+			ElemArt.polyline(self, o2, Color(0.92, 1, 1, 0.8), 1.5)
 			draw_line(Vector2(-w * 0.6, -h * 0.9), Vector2(-w * 0.2, -h * 0.2), Color(1, 1, 1, 0.55), 1.5)
 			draw_line(Vector2(w * 0.5, -h * 0.75), Vector2(w * 0.7, -h * 0.35), Color(1, 1, 1, 0.4), 1.2)
 		elif m._slow_t > 0.0 and el == "gelo":
@@ -865,13 +865,13 @@ class StatusFx:
 					for j in 3:
 						var a := j * 2.1 + i
 						var d := Vector2(cos(a), sin(a) - 0.6).normalized() * 6.0 * s
-						draw_colored_polygon(PackedVector2Array([p, p + d.rotated(0.4) * 0.5, p + d, p + d.rotated(-0.4) * 0.5]), Color(0.85, 0.96, 1, 0.75))
+						ElemArt.poly(self, PackedVector2Array([p, p + d.rotated(0.4) * 0.5, p + d, p + d.rotated(-0.4) * 0.5]), Color(0.85, 0.96, 1, 0.75))
 		elif el == "agua" and m._st_t > 0.0:
 			for i in an.size():
 				var p: Vector2 = an[i]
 				var f := fmod(_t * 1.4 + i * 0.37, 1.0)
 				var q := p + Vector2(0, f * 22.0 * s)
-				draw_colored_polygon(PackedVector2Array([q + Vector2(0, -3.5), q + Vector2(2, 1), q + Vector2(0, 2.5), q + Vector2(-2, 1)]), Color(0.55, 0.8, 1, 0.8 * (1.0 - f)))
+				ElemArt.poly(self, PackedVector2Array([q + Vector2(0, -3.5), q + Vector2(2, 1), q + Vector2(0, 2.5), q + Vector2(-2, 1)]), Color(0.55, 0.8, 1, 0.8 * (1.0 - f)))
 		elif m._stun_t > 0.0 and el != "raio":
 			for i in 3:
 				var a := _t * 5.0 + TAU * i / 3.0
@@ -883,7 +883,7 @@ class StatusFx:
 					for j in 10:
 						var r := 4.0 if j % 2 == 0 else 1.8
 						st.append(p + Vector2.from_angle(j * TAU / 10.0 - PI / 2 + _t * 3.0) * r)
-					draw_colored_polygon(st, Color(1, 0.9, 0.4))
+					ElemArt.poly(self, st, Color(1, 0.9, 0.4))
 		if m._root_t > 0.0:
 			# raízes subindo pelas pernas e prendendo no chão
 			for i in 6:
@@ -891,7 +891,7 @@ class StatusFx:
 				SpellArt.root(self, Vector2(cos(a) * 12, sin(a) * 5) * s, (26 + (i % 3) * 8) * s, (i % 2 * 2 - 1) * 9, 1.0, Color(0.33, 0.25, 0.12), 3.0)
 			for i in 4:
 				var p2 := Vector2((i - 1.5) * 6, -14 - i * 3) * s
-				draw_colored_polygon(PackedVector2Array([p2, p2 + Vector2(5, -3), p2 + Vector2(1, -6)]), Color(0.35, 0.65, 0.2))
+				ElemArt.poly(self, PackedVector2Array([p2, p2 + Vector2(5, -3), p2 + Vector2(1, -6)]), Color(0.35, 0.65, 0.2))
 
 ## Camada que brilha (chamas, brasas, faíscas), somada à cor do monstro.
 class StatusGlow:
@@ -917,11 +917,11 @@ class StatusGlow:
 				var hh := (10.0 + 9.0 * life) * s
 				SpellArt.flame(self, p, hh, 4.5 * s, t, i * 2.7, 0.9)
 				if el == "lava":
-					draw_circle(p + Vector2(0, 2), 2.2 * s, Color(1, 0.4, 0.05, 0.8))
+					ElemArt.circle(self, p + Vector2(0, 2), 2.2 * s, Color(1, 0.4, 0.05, 0.8))
 			for i in 5:
 				var f := fmod(t * 0.9 + i * 0.21, 1.0)
 				var b: Vector2 = an[i % an.size()] + Vector2(sin(t * 3.0 + i) * 6.0, -f * 36.0 * s)
-				draw_circle(b, 1.3, Color(1, 0.7, 0.25, 1.0 - f))
+				ElemArt.circle(self, b, 1.3, Color(1, 0.7, 0.25, 1.0 - f))
 		elif el == "raio" and (m._dot_t > 0.0 or m._stun_t > 0.0):
 			# arcos pulando de uma parte do corpo para outra
 			for i in 3:
@@ -956,11 +956,11 @@ class RankAura:
 		var c := Color(1.0, 0.25, 0.15) if boss else Color(1.0, 0.8, 0.3)
 		var pulse := 0.75 + 0.25 * sin(_t * 3.0)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1, 0.5))
-		draw_circle(Vector2.ZERO, r * 1.1, Color(c, 0.12 * pulse))
-		draw_arc(Vector2.ZERO, r, 0, TAU, 48, Color(c, 0.55 * pulse), 2.5)
+		ElemArt.circle(self, Vector2.ZERO, r * 1.1, Color(c, 0.12 * pulse))
+		ElemArt.arc(self, Vector2.ZERO, r, 0, TAU, 48, Color(c, 0.55 * pulse), 2.5)
 		if boss:
-			draw_arc(Vector2.ZERO, r * 1.25, 0, TAU, 48, Color(c, 0.3 * pulse), 1.5)
+			ElemArt.arc(self, Vector2.ZERO, r * 1.25, 0, TAU, 48, Color(c, 0.3 * pulse), 1.5)
 			for i in 6:
 				var a := _t * 0.8 + i * TAU / 6.0
-				draw_circle(Vector2(cos(a), sin(a)) * r * 1.12, 3.0, Color(1, 0.6, 0.3, 0.8 * pulse))
+				ElemArt.circle(self, Vector2(cos(a), sin(a)) * r * 1.12, 3.0, Color(1, 0.6, 0.3, 0.8 * pulse))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

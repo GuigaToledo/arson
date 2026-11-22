@@ -89,7 +89,7 @@ func _draw() -> void:
 	if _done:
 		return
 	var c := Vector2(0, -HEIGHT)
-	draw_circle(c, 9.0, Color(1, 0.45, 0.1, 0.35))
-	draw_circle(c, 5.5, Color(1, 0.65, 0.2))
-	draw_circle(c, 2.8, Color(1, 0.95, 0.75))
+	ElemArt.circle(self, c, 9.0, Color(1, 0.45, 0.1, 0.35))
+	ElemArt.circle(self, c, 5.5, Color(1, 0.65, 0.2))
+	ElemArt.circle(self, c, 2.8, Color(1, 0.95, 0.75))
 	PlaceholderPainter.ellipse(self, Vector2.ZERO, 8, 4, Color(0, 0, 0, 0.3))

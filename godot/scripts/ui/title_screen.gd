@@ -255,12 +255,12 @@ class Emblem:
 		var o := size / 2
 		for i in 6:
 			var f := 1.0 - i / 6.0
-			draw_circle(o, 34.0 * f + 4, Color(c1.r, c1.g, c1.b, 0.08 + 0.05 * i))
+			ElemArt.circle(self, o, 34.0 * f + 4, Color(c1.r, c1.g, c1.b, 0.08 + 0.05 * i))
 		for i in 2:
 			var a := _t * 1.4 + PI * i
 			var p := o + Vector2(cos(a) * 26, sin(a) * 12)
 			var cc := c1 if i == 0 else c2
-			draw_circle(p, 11, Color(cc.r, cc.g, cc.b, 0.35))
-			draw_circle(p, 7, cc)
-		draw_circle(o, 6, Color(1, 0.97, 0.85))
-		draw_circle(o, 10, Color(1, 0.95, 0.7, 0.3))
+			ElemArt.circle(self, p, 11, Color(cc.r, cc.g, cc.b, 0.35))
+			ElemArt.circle(self, p, 7, cc)
+		ElemArt.circle(self, o, 6, Color(1, 0.97, 0.85))
+		ElemArt.circle(self, o, 10, Color(1, 0.95, 0.7, 0.3))

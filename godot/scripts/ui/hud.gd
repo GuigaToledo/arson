@@ -423,13 +423,13 @@ class Joystick:
 
 	func _draw() -> void:
 		var c := size * 0.5
-		draw_circle(c, R, Color(0, 0, 0, 0.35))
-		draw_arc(c, R, 0, TAU, 48, Color(0.85, 0.7, 0.45, 0.5), 2.5)
+		ElemArt.circle(self, c, R, Color(0, 0, 0, 0.35))
+		ElemArt.arc(self, c, R, 0, TAU, 48, Color(0.85, 0.7, 0.45, 0.5), 2.5)
 		for a in 4:
 			var d := Vector2.RIGHT.rotated(a * PI / 2) * (R - 10)
-			draw_circle(c + d, 3, Color(0.85, 0.7, 0.45, 0.4))
-		draw_circle(c + knob, 26, Color(0.55, 0.42, 0.28, 0.85))
-		draw_arc(c + knob, 26, 0, TAU, 32, Color(1, 0.85, 0.55, 0.8), 2.0)
+			ElemArt.circle(self, c + d, 3, Color(0.85, 0.7, 0.45, 0.4))
+		ElemArt.circle(self, c + knob, 26, Color(0.55, 0.42, 0.28, 0.85))
+		ElemArt.arc(self, c + knob, 26, 0, TAU, 32, Color(1, 0.85, 0.55, 0.8), 2.0)
 
 
 ## Botão redondo de ação.
@@ -462,9 +462,9 @@ class RoundButton:
 		var col := color if enabled else color.darkened(0.6)
 		if active:
 			col = col.lightened(0.35)
-		draw_circle(c, r, Color(0, 0, 0, 0.45))
-		draw_circle(c, r - 4, col.lerp(Color(1, 0.9, 0.6), _flash * 0.6))
-		draw_arc(c, r - 2, 0, TAU, 48, Color(0.95, 0.8, 0.5, 0.9), 3.0)
+		ElemArt.circle(self, c, r, Color(0, 0, 0, 0.45))
+		ElemArt.circle(self, c, r - 4, col.lerp(Color(1, 0.9, 0.6), _flash * 0.6))
+		ElemArt.arc(self, c, r - 2, 0, TAU, 48, Color(0.95, 0.8, 0.5, 0.9), 3.0)
 		var font := ThemeDB.fallback_font
 		var lines := text.split("\n")
 		for i in lines.size():
@@ -549,15 +549,15 @@ class SpellWheel:
 				var hpk := i == 8
 				col = Color(0.85, 0.15, 0.12) if hpk else Color(0.2, 0.35, 0.95)
 				label = str(player.hp_pot if hpk else player.mp_pot)
-			draw_circle(c, r + 3, Color(0, 0, 0, 0.5))
-			draw_circle(c, r, col.darkened(0.55).lerp(Color(1, 0.9, 0.6), float(_flash.get(i, 0.0)) * 0.5))
-			draw_circle(c, r * 0.45, col)
-			draw_circle(c, r * 0.18, Color(1, 1, 0.92))
+			ElemArt.circle(self, c, r + 3, Color(0, 0, 0, 0.5))
+			ElemArt.circle(self, c, r, col.darkened(0.55).lerp(Color(1, 0.9, 0.6), float(_flash.get(i, 0.0)) * 0.5))
+			ElemArt.circle(self, c, r * 0.45, col)
+			ElemArt.circle(self, c, r * 0.18, Color(1, 1, 0.92))
 			if cdf > 0.0:
-				draw_arc(c, r * 0.75, -PI / 2, -PI / 2 + TAU * cdf, 32, Color(0, 0, 0, 0.7), r * 0.5)
+				ElemArt.arc(self, c, r * 0.75, -PI / 2, -PI / 2 + TAU * cdf, 32, Color(0, 0, 0, 0.7), r * 0.5)
 			if dim > 0.0:
-				draw_circle(c, r, Color(0, 0, 0, dim))
-			draw_arc(c, r, 0, TAU, 40, Color(0.95, 0.8, 0.5, 0.9) if i == 0 else Color(col.lightened(0.3), 0.8), 3.0 if i == 0 else 2.0)
+				ElemArt.circle(self, c, r, Color(0, 0, 0, dim))
+			ElemArt.arc(self, c, r, 0, TAU, 40, Color(0.95, 0.8, 0.5, 0.9) if i == 0 else Color(col.lightened(0.3), 0.8), 3.0 if i == 0 else 2.0)
 			var fs := 14 if i == 0 else 10
 			var w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			var ly := c.y + (r * 0.5 + 4 if i == 0 else r + 12)
@@ -614,9 +614,9 @@ class SpellBar:
 					label = "vazio"
 				else:
 					var col: Color = s.color
-					draw_circle(c, 13, Color(col, 0.3))
-					draw_circle(c, 7, col)
-					draw_circle(c, 3, Color(1, 1, 0.9))
+					ElemArt.circle(self, c, 13, Color(col, 0.3))
+					ElemArt.circle(self, c, 7, col)
+					ElemArt.circle(self, c, 3, Color(1, 1, 0.9))
 					var tw2 := font.get_string_size(str(s.tier), HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
 					draw_string(font, r.position + Vector2(r.size.x - tw2 - 3, 10), str(s.tier), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, col.lightened(0.3))
 					label = s.curto
@@ -634,8 +634,8 @@ class SpellBar:
 				var hpk := i == n
 				var col2 := Color(0.85, 0.15, 0.12) if hpk else Color(0.2, 0.35, 0.95)
 				draw_rect(Rect2(c + Vector2(-3, -12), Vector2(6, 6)), Color(0.6, 0.45, 0.3))
-				draw_circle(c + Vector2(0, 2), 9, col2)
-				draw_circle(c + Vector2(-3, -1), 3, Color(1, 1, 1, 0.5))
+				ElemArt.circle(self, c + Vector2(0, 2), 9, col2)
+				ElemArt.circle(self, c + Vector2(-3, -1), 3, Color(1, 1, 1, 0.5))
 				key = "Q" if hpk else "E"
 				label = str(player.hp_pot if hpk else player.mp_pot)
 			draw_rect(r, Color(0.6, 0.46, 0.27), false, 1.5)
@@ -750,8 +750,8 @@ class NameTags:
 			var c: Vector2 = ct * foe.global_position
 			var r := 20.0 * float(foe.info.scale) * zoom
 			draw_set_transform(c, 0.0, Vector2(1, 0.5))
-			draw_arc(Vector2.ZERO, r, 0, TAU, 40, Color(1, 0.2, 0.12, 0.95), 2.5)
-			draw_arc(Vector2.ZERO, r + 3, 0, TAU, 40, Color(1, 0.4, 0.2, 0.35), 4.0)
+			ElemArt.arc(self, Vector2.ZERO, r, 0, TAU, 40, Color(1, 0.2, 0.12, 0.95), 2.5)
+			ElemArt.arc(self, Vector2.ZERO, r + 3, 0, TAU, 40, Color(1, 0.4, 0.2, 0.35), 4.0)
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		for a in get_tree().get_nodes_in_group("actors"):
 			var actor := a as Actor

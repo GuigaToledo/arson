@@ -89,10 +89,10 @@ static func _golem(ci: CanvasItem, p: Dictionary, el: String) -> void:
 		for k2 in 4:
 			var ang := TAU * k2 / 4.0 + 0.5
 			ci.draw_line(cc, cc + Vector2(cos(ang) * 8, sin(ang) * 6), seam, 1.6, SpellArt.AA)
-		ci.draw_circle(cc, 3.5, seam)
+		ElemArt.circle(ci, cc, 3.5, seam)
 	if el == "terra":
 		for q4 in [p.shL + Vector2(0, -6), p.head + Vector2(-3, -5), p.hipC + Vector2(4, 0)]:
-			ci.draw_circle(q4, 2.2, Color(0.32, 0.5, 0.2))
+			ElemArt.circle(ci, q4, 2.2, Color(0.32, 0.5, 0.2))
 	# cabeça pequena e afundada entre os ombros
 	var hd: Vector2 = p.head + Vector2(0, 5)
 	if el == "gelo":
@@ -105,8 +105,8 @@ static func _golem(ci: CanvasItem, p: Dictionary, el: String) -> void:
 			eye = Color(0.6, 1, 0.4)
 		for s in [-1.0, 1.0]:
 			var e2: Vector2 = hd + lat(p, s * 2.2) + fwd(p, 3) + Vector2(0, 0.5)
-			ci.draw_circle(e2, 2.0, Color(eye, 0.35))
-			ci.draw_circle(e2, 1.0, eye)
+			ElemArt.circle(ci, e2, 2.0, Color(eye, 0.35))
+			ElemArt.circle(ci, e2, 1.0, eye)
 
 
 static func _crystal(ci: CanvasItem, c: Vector2, r: float, col: Color, sd: int) -> void:
@@ -149,10 +149,10 @@ static func _fire(ci: CanvasItem, p: Dictionary) -> void:
 		_flame(ci, e, 8, 3.5, t, e.x)
 	# cabeça: chama com olhos brancos
 	_flame(ci, p.head + Vector2(0, 5), 20, 6, t, 9.0)
-	ci.draw_circle(p.head, 4.0, Color(1, 0.9, 0.5))
+	ElemArt.circle(ci, p.head, 4.0, Color(1, 0.9, 0.5))
 	if p.toward:
 		for s in [-1.0, 1.0]:
-			ci.draw_circle(p.head + lat(p, s * 2.0) + fwd(p, 2.5), 1.1, Color(1, 1, 1))
+			ElemArt.circle(ci, p.head + lat(p, s * 2.0) + fwd(p, 2.5), 1.1, Color(1, 1, 1))
 
 
 # ------------------------------------------------------------ vento: fitas e redemoinho
@@ -165,15 +165,15 @@ static func _wind(ci: CanvasItem, p: Dictionary) -> void:
 		for k0 in 6:
 			var q0: Vector2 = (b[0] as Vector2).lerp(b[1], k0 / 5.0)
 			pts0.append(q0 + Vector2(sin(t * 9 + k0) * 2.0, 0))
-		ci.draw_polyline(pts0, Color(0.9, 1, 0.95, 0.75), 2.4, SpellArt.AA)
+		ElemArt.polyline(ci, pts0, Color(0.9, 1, 0.95, 0.75), 2.4, SpellArt.AA)
 	for q in [p.footL, p.footR]:
-		ci.draw_arc(q + Vector2(0, -2), 5.0, t * 10, t * 10 + 4.0, 12, col, 1.6, SpellArt.AA)
+		ElemArt.arc(ci, q + Vector2(0, -2), 5.0, t * 10, t * 10 + 4.0, 12, col, 1.6, SpellArt.AA)
 	# tronco: fitas girando
 	for i in 5:
 		var y2: float = lerpf(p.shC.y, p.hipC.y, i / 4.0)
 		var r2 := lerpf(10.0, 7.0, i / 4.0)
 		ci.draw_set_transform(Vector2(0, y2), 0.0, Vector2(1.0, 0.45))
-		ci.draw_arc(Vector2.ZERO, r2, t * 7 + i, t * 7 + i + 4.5, 18, Color(0.9, 1, 0.95, 0.7), 2.2, SpellArt.AA)
+		ElemArt.arc(ci, Vector2.ZERO, r2, t * 7 + i, t * 7 + i + 4.5, 18, Color(0.9, 1, 0.95, 0.7), 2.2, SpellArt.AA)
 		ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	for b in arms(p):
 		var a: Vector2 = b[0]
@@ -182,12 +182,12 @@ static func _wind(ci: CanvasItem, p: Dictionary) -> void:
 		for k in 7:
 			var q: Vector2 = a.lerp(e, k / 6.0)
 			pts.append(q + Vector2(sin(t * 9 + k) * 2.5, cos(t * 9 + k) * 1.5))
-		ci.draw_polyline(pts, Color(0.9, 1, 0.95, 0.8), 2.5, SpellArt.AA)
-	ci.draw_circle(p.head, 6.0, Color(0.85, 1, 0.95, 0.35))
-	ci.draw_arc(p.head, 5.0, t * 6, t * 6 + 4.0, 14, Color(1, 1, 1, 0.8), 1.5, SpellArt.AA)
+		ElemArt.polyline(ci, pts, Color(0.9, 1, 0.95, 0.8), 2.5, SpellArt.AA)
+	ElemArt.circle(ci, p.head, 6.0, Color(0.85, 1, 0.95, 0.35))
+	ElemArt.arc(ci, p.head, 5.0, t * 6, t * 6 + 4.0, 14, Color(1, 1, 1, 0.8), 1.5, SpellArt.AA)
 	if p.toward:
 		for s in [-1.0, 1.0]:
-			ci.draw_circle(p.head + lat(p, s * 2.0) + fwd(p, 2.5), 1.0, Color(1, 1, 1))
+			ElemArt.circle(ci, p.head + lat(p, s * 2.0) + fwd(p, 2.5), 1.0, Color(1, 1, 1))
 
 
 # ------------------------------------------------------------ raio: feito só de raios
@@ -201,14 +201,14 @@ static func _lightning(ci: CanvasItem, p: Dictionary) -> void:
 	SpellArt.jag(ci, p.shL, p.shR, col, 1.4, 4, 2.0)
 	SpellArt.jag(ci, p.neck, p.head, col, 1.4, 3, 2.0)
 	var cc: Vector2 = p.shC.lerp(p.hipC, 0.4)
-	ci.draw_circle(cc, 6.0, Color(0.6, 0.6, 1, 0.3))
-	ci.draw_circle(cc, 2.5, Color(1, 1, 1))
+	ElemArt.circle(ci, cc, 6.0, Color(0.6, 0.6, 1, 0.3))
+	ElemArt.circle(ci, cc, 2.5, Color(1, 1, 1))
 	# cabeça: bola de energia estalando
-	ci.draw_circle(p.head, 6.0, Color(0.6, 0.6, 1, 0.35))
+	ElemArt.circle(ci, p.head, 6.0, Color(0.6, 0.6, 1, 0.35))
 	for i in 4:
 		var a := randf() * TAU
 		SpellArt.jag(ci, p.head, p.head + Vector2(cos(a), sin(a)) * 7.0, col, 1.0, 3, 1.5)
-	ci.draw_circle(p.head, 2.5, Color(1, 1, 1))
+	ElemArt.circle(ci, p.head, 2.5, Color(1, 1, 1))
 
 
 # ------------------------------------------------------------ água: corpo líquido
@@ -227,16 +227,16 @@ static func _water(ci: CanvasItem, p: Dictionary) -> void:
 		var rr := 10.0 + sin(a * 3 + t * 4.0) * 1.2
 		pts.append(cc + Vector2(cos(a) * rr, sin(a) * rr * 1.45))
 	SpellArt.poly(ci, pts, col)
-	ci.draw_arc(cc + Vector2(-3, -6), 5, PI, PI * 1.6, 8, hi, 1.5, SpellArt.AA)
-	ci.draw_circle(p.head, 6.0, col)
-	ci.draw_arc(p.head + Vector2(-1.5, -1.5), 3.5, PI, PI * 1.6, 8, hi, 1.2, SpellArt.AA)
+	ElemArt.arc(ci, cc + Vector2(-3, -6), 5, PI, PI * 1.6, 8, hi, 1.5, SpellArt.AA)
+	ElemArt.circle(ci, p.head, 6.0, col)
+	ElemArt.arc(ci, p.head + Vector2(-1.5, -1.5), 3.5, PI, PI * 1.6, 8, hi, 1.2, SpellArt.AA)
 	# gotas caindo das mãos
 	for q in [p.handL, p.handR]:
 		var y := fmod(t * 40.0 + q.x, 16.0)
-		ci.draw_circle(q + Vector2(0, y), 1.4, hi)
+		ElemArt.circle(ci, q + Vector2(0, y), 1.4, hi)
 	if p.toward:
 		for s in [-1.0, 1.0]:
-			ci.draw_circle(p.head + lat(p, s * 2.0) + fwd(p, 2.5), 1.1, Color(0.9, 1, 1))
+			ElemArt.circle(ci, p.head + lat(p, s * 2.0) + fwd(p, 2.5), 1.1, Color(0.9, 1, 1))
 
 
 # ------------------------------------------------------------ natureza: raízes entrelaçadas
@@ -248,7 +248,7 @@ static func _strands(ci: CanvasItem, a: Vector2, b: Vector2, n: int, w: float, c
 		for k in 7:
 			var f := k / 6.0
 			pts.append(a + d * f + nrm * sin(f * 7.0 + s * 2.1) * w)
-		ci.draw_polyline(pts, col.darkened(0.15 * s), 2.0, SpellArt.AA)
+		ElemArt.polyline(ci, pts, col.darkened(0.15 * s), 2.0, SpellArt.AA)
 
 
 static func _roots(ci: CanvasItem, p: Dictionary) -> void:
@@ -265,13 +265,13 @@ static func _roots(ci: CanvasItem, p: Dictionary) -> void:
 		ci.draw_set_transform(q, a, Vector2.ONE)
 		SpellArt.poly(ci, PackedVector2Array([Vector2(0, 0), Vector2(3, -3), Vector2(0, -7), Vector2(-3, -3)]), Color(0.35, 0.65, 0.22))
 		ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	ci.draw_circle(p.head, 5.0, bark)
+	ElemArt.circle(ci, p.head, 5.0, bark)
 	_strands(ci, p.head + Vector2(-5, 0), p.head + Vector2(5, 0), 2, 2.0, bark.darkened(0.2), t)
 	if p.toward:
 		for s in [-1.0, 1.0]:
 			var e: Vector2 = p.head + lat(p, s * 2.0) + fwd(p, 2.5)
-			ci.draw_circle(e, 1.6, Color(0.6, 1, 0.4, 0.4))
-			ci.draw_circle(e, 0.9, Color(0.7, 1, 0.5))
+			ElemArt.circle(ci, e, 1.6, Color(0.6, 1, 0.4, 0.4))
+			ElemArt.circle(ci, e, 0.9, Color(0.7, 1, 0.5))
 
 
 # ------------------------------------------------------------ fundida: detalhe do 2º elemento
