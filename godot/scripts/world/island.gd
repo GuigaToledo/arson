@@ -343,7 +343,7 @@ func on_quality(lv: int) -> void:
 	GlowProps.apply_quality()
 	if _decals:
 		# celular: milhares de detalhes do chão pesam no processamento (nível 2 caía de 60 para 22 FPS)
-		_decals.visible = lv >= (4 if Settings.is_mobile() else 2)
+		_decals.visible = lv >= 2 and not Settings.is_mobile()
 
 
 func _build_ground() -> void:
