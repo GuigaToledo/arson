@@ -431,7 +431,7 @@ func _build_lights() -> void:
 	var camp := piece("fogueira", Vector2(31.0, 36.0), Vector2(30.6, 35.6), Vector2(0.8, 0.8), false, false)
 	camp.fade_when_behind = false
 	Fx.fire(camp, camp.tex_foot + Vector2(0, -6), 0.5)
-	var fl := LightKit.make(Color(1.0, 0.55, 0.2), 1.3, 2.4, true, 0.2)
+	var fl := LightKit.make(Color(1.0, 0.55, 0.2), 1.3, 2.4, false, 0.2)
 	fl.range_item_cull_mask = 3
 	fl.position = camp.tex_foot + Vector2(0, -12)
 	camp.add_child(fl)
@@ -751,6 +751,7 @@ const FOTO_CENAS := [["vila", Vector2(27, 26)], ["vila_casas", Vector2(22, 22)],
 
 func _fotos(dir: String, hud: Node) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
+	player.photo_mode = true
 	for k in Settings.auto:
 		if typeof(Settings.auto[k]) == TYPE_BOOL:
 			Settings.auto[k] = false
@@ -760,8 +761,7 @@ func _fotos(dir: String, hud: Node) -> void:
 			player.global_position = Iso.to_screen(c[1])
 			player.joy = Vector2.ZERO
 			for f in 45:
-				player.hp = player.max_hp  # sem imortalidade (ela desenha asas de luz)
-				player.dead = false
+				player.immortal_t = 999.0
 				await get_tree().process_frame
 			var nome := "%s/%s_%s" % [dir, c[0], hora[0]]
 			get_viewport().get_texture().get_image().save_png(nome + ".png")

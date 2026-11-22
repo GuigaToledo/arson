@@ -63,7 +63,7 @@ func _ready() -> void:
 	var cp := CollisionPolygon2D.new()
 	cp.polygon = foot
 	add_child(cp)
-	if casts_shadow:
+	if casts_shadow and false:  # oclusores davam faixas de sombra; agora a sombra é a mancha macia
 		var occ := LightOccluder2D.new()
 		var op := OccluderPolygon2D.new()
 		op.polygon = foot

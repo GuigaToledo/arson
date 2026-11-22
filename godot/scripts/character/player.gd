@@ -72,7 +72,7 @@ func _ready() -> void:
 	camera.make_current()
 	save()
 	# raio de luz do herói (como no Diablo 2): o mundo é escuro, a luz acompanha o personagem
-	var aura := LightKit.make(Color(1.0, 0.9, 0.78), 0.95, 3.6, true, 0.0)
+	var aura := LightKit.make(Color(1.0, 0.9, 0.78), 0.95, 3.6, false, 0.0)
 	aura.range_item_cull_mask = 3  # ilumina chão (1) e personagens (2)
 	aura.position = Vector2(0, -30)
 	aura.height = 60.0
@@ -500,6 +500,8 @@ var _spirit_acc := 0.0
 var buff_t := 0.0
 var invis := false
 var immortal_t := 0.0
+## Fotos da inspeção visual: imortal sem desenhar as asas.
+var photo_mode := false
 var _aura: StatusAura
 ## Invocações vivas: elemento (ou "fus") -> Summon.
 var summons := {}
@@ -1059,7 +1061,7 @@ func _tick_states(delta: float) -> void:
 		_aura.shield_col = shield_col
 		_aura.shield_els = shield_els
 		_aura.spirit = spirit_t > 0.0
-		_aura.immortal = immortal_t > 0.0
+		_aura.immortal = immortal_t > 0.0 and not photo_mode
 		_aura.wing_cols = [Spellbook.ELEMENTS[elem_a()].cor, Spellbook.ELEMENTS[elem_b()].cor]
 		_aura.hot = hot_t > 0.0
 	visual.modulate.a = 0.35 if invis else 1.0
