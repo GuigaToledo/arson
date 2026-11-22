@@ -77,6 +77,13 @@ func _style(bg: Color, border: Color, radius := 10, margin := 12) -> StyleBoxFla
 	return sb
 
 
+## Rótulo curto que não pode quebrar letra por letra (números, "Longe", "Perto").
+func _nowrap(l: Label) -> Label:
+	l.autowrap_mode = TextServer.AUTOWRAP_OFF
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return l
+
+
 func _lbl(text: String, size := 15, col := GOLD) -> Label:
 	var l := Label.new()
 	l.text = text
@@ -223,8 +230,9 @@ func _refresh_char() -> void:
 		c.queue_free()
 	var cd := MageClass.info(player.classe)
 	_char_box.add_child(_lbl("%s — %s" % [player.display_name if player.display_name != "" else Chars.nome, cd.nome], 20, cd.cor.lightened(0.15)))
-	var a := Rules.xp_to_reach(player.level)
-	var b := Rules.xp_to_reach(player.level + 1)
+	var xl := Rules.level_for(player.xp)
+	var a := Rules.xp_to_reach(xl)
+	var b := Rules.xp_to_reach(xl + 1)
 	_char_box.add_child(_bar_row("Nível", player.level, float(player.xp - a) / maxf(1, b - a),
 		"%d / %d xp — sobe matando criaturas; aumenta vida, mana e dano (sem limite)" % [player.xp - a, b - a], Color(1, 0.62, 0.18)))
 	var grid := GridContainer.new()
@@ -251,7 +259,7 @@ func _bar_row(name: String, lv: int, f: float, txt: String, col: Color) -> Contr
 	var n := _lbl(name, 16, col.lightened(0.2))
 	n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(n)
-	h.add_child(_lbl(str(lv), 18, Color(1, 0.85, 0.35)))
+	h.add_child(_nowrap(_lbl(str(lv), 18, Color(1, 0.85, 0.35))))
 	v.add_child(h)
 	var bar := ProgressBar.new()
 	bar.min_value = 0
@@ -452,7 +460,7 @@ func _page_graphics() -> Control:
 	v.add_child(_lbl("Distância de visão (zoom)", 17))
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 10)
-	h.add_child(_lbl("Longe", 14, DIM))
+	h.add_child(_nowrap(_lbl("Longe", 14, DIM)))
 	_zoom_slider = HSlider.new()
 	_zoom_slider.min_value = Settings.ZOOM_MIN
 	_zoom_slider.max_value = Settings.ZOOM_MAX
@@ -464,7 +472,7 @@ func _page_graphics() -> Control:
 		player.set_zoom(z)
 		Settings.save())
 	h.add_child(_zoom_slider)
-	h.add_child(_lbl("Perto", 14, DIM))
+	h.add_child(_nowrap(_lbl("Perto", 14, DIM)))
 	v.add_child(h)
 	v.add_child(_lbl("No PC também dá para usar a roda do mouse ou as teclas + e −.", 13, DIM))
 	v.add_child(_btn("Alternar tela cheia", func():

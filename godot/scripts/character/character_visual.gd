@@ -88,6 +88,12 @@ func _on_equipment_changed(slot: int, item: EquipmentItem) -> void:
 
 
 func tick(delta: float, new_dir: String, new_anim: String, speed: float) -> void:
+	var t0 := Prof.t()
+	_tick_inner(delta, new_dir, new_anim, speed)
+	Prof.add("pose_personagens", t0)
+
+
+func _tick_inner(delta: float, new_dir: String, new_anim: String, speed: float) -> void:
 	_time += delta
 	if new_anim != anim:
 		_frame = 0

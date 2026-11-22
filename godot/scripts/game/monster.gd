@@ -184,6 +184,12 @@ func _valid_foe(p) -> bool:
 
 
 func _physics_process(delta: float) -> void:
+	var t0 := Prof.t()
+	_physics_inner(delta)
+	Prof.add("monstros", t0)
+
+
+func _physics_inner(delta: float) -> void:
 	if NetSync.is_puppet():
 		_puppet(delta)
 		return

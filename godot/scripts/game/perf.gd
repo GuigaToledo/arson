@@ -75,6 +75,7 @@ func _process(delta: float) -> void:
 	if _acc < 2.0:
 		return
 	fps = _frames / _acc
+	_perf_log(_frames)
 	_acc = 0.0
 	_frames = 0
 	if Settings.quality != 0 or force_full:
@@ -99,3 +100,29 @@ func _process(delta: float) -> void:
 		Settings.level_now += 1
 		_good = 0
 		apply()
+
+
+var _log_n := 0
+
+
+## A cada ~5 s (no Android): FPS, tempo de processamento, desenhos, objetos e o tempo de cada parte.
+func _perf_log(frames: int) -> void:
+	if not Prof.on:
+		return
+	_log_n += 1
+	if _log_n % 2 != 0:
+		Prof.report(frames)
+		return
+	var vis := 0
+	for a in get_tree().get_nodes_in_group("actors"):
+		if a.visual and a.visual.visible:
+			vis += 1
+	var lights := 0
+	for l in get_tree().root.find_children("*", "PointLight2D", true, false):
+		if l.visible and l.enabled:
+			lights += 1
+	print("ARSONPERF fps=%.1f nivel=%d proc=%.1fms fis=%.1fms desenhos=%d objs=%d prims=%d nos=%d atores_visiveis=%d luzes=%d mem=%dMB | %s" % [fps, Settings.level_now,
+		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
+		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), Performance.get_monitor(Performance.OBJECT_NODE_COUNT),
+		vis, lights, int(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0), Prof.report(frames)])

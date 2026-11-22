@@ -65,6 +65,12 @@ func update_pose(dir: String, anim: String, frame: int, pose: Dictionary) -> voi
 
 
 func _draw() -> void:
+	var t0 := Prof.t()
+	_draw_inner()
+	Prof.add("desenho_personagens", t0)
+
+
+func _draw_inner() -> void:
 	if _sprite or _pose.is_empty():
 		return
 	if slot == -1:

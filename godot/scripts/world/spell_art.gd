@@ -52,7 +52,9 @@ class DrawFx:
 		queue_redraw()
 
 	func _draw() -> void:
+		var t0 := Prof.t()
 		fn.call(self, t / life)
+		Prof.add("efeitos", t0)
 
 
 static func fx(parent: Node, pos: Vector2, life: float, f: Callable, add := true, z := 4) -> DrawFx:
