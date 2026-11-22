@@ -543,9 +543,12 @@ def main():
     L, D = 9.0, 4.4
     c.box(0, 0, 0, L, D, 0.5, stone, uv_side=(5, 1))
     c.box(0.1, 0.1, 0.5, L - 0.2, D - 0.2, 3.6, stone_l, uv_side=(4, 2))
+    # janelas na escala do personagem (ART_DIRECTION: altura ≤ 0,45 × personagem), com peitoril e verga de pedra
     for wx in (1.2, 3.0, 5.8):
-        c.face((wx, D - 0.09, 3.2), (0.5, 0, 0), (0, 0, -1.6), win, 1.0, emit=True)
-        c.glow((wx + 0.25, D, 2.4), 30, (1.0, 0.6, 0.2), 0.5)
+        c.face((wx, D - 0.09, 2.9), (0.42, 0, 0), (0, 0, -0.95), win, 1.0, emit=True)
+        c.box(wx - 0.08, D - 0.12, 1.88, 0.58, 0.12, 0.08, stone)
+        c.box(wx - 0.06, D - 0.12, 2.9, 0.54, 0.12, 0.12, stone)
+        c.glow((wx + 0.21, D, 2.4), 26, (1.0, 0.6, 0.2), 0.45)
     c.face((4.0, D - 0.09, 2.7), (1.1, 0, 0), (0, 0, -2.2), dark, 0.5)
     slate = shingles(base=(0.16, 0.16, 0.18), seed=40, rows=16)
     yc = -0.3 + (D + 0.6) / 2

@@ -352,6 +352,12 @@ func piece(nm: String, og: Vector2, fpos: Vector2, fsize: Vector2, flip := false
 	p.with_image(OBJ + nm + ".png", 0.5 * sc, Iso.to_screen(og) - center, flip, an)
 	p.casts_shadow = shadow
 	entities.add_child(p)
+	# variação natural (ART_DIRECTION: tom ±8%) para árvores, pedras e plantas não repetirem
+	if nm.begins_with("arvore") or nm.begins_with("pedra") or nm.begins_with("rochedo") or nm == "pinheiro" or nm == "samambaia" or nm == "pedregulho":
+		var hsh := absi(int(og.x * 73.0) ^ int(og.y * 151.0))
+		var v := 0.92 + float(hsh % 17) / 100.0
+		var w := float((hsh / 17) % 9) / 100.0
+		p.modulate = Color(v - w * 0.5, v, v - w, 1.0)
 	return p
 
 

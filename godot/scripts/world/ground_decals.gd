@@ -81,7 +81,7 @@ func _tile(x: int, y: int) -> void:
 					tuft(self, p, 0.8 + _r(x, y, 40 + i) * 0.6, x * 7 + y + i, false)
 				elif r < 0.72:
 					flowers(self, p, x * 3 + y * 5 + i)
-				elif r < 0.9:
+				elif r < 0.8:
 					pebbles(self, p, x + y * 11 + i)
 				else:
 					moss(self, p, 10.0 + r * 8.0)
@@ -119,8 +119,8 @@ static func tuft(n: CanvasItem, p: Vector2, s: float, sd: int, dry: bool) -> voi
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sd
 	var k := rng.randi_range(5, 9)
-	var base := Color(0.2, 0.28, 0.12) if not dry else Color(0.42, 0.36, 0.2)
-	var tip := Color(0.42, 0.52, 0.22) if not dry else Color(0.66, 0.58, 0.36)
+	var base := Color(0.14, 0.2, 0.08) if not dry else Color(0.34, 0.29, 0.17)
+	var tip := Color(0.32, 0.4, 0.17) if not dry else Color(0.52, 0.45, 0.28)
 	for i in k:
 		var a := lerpf(-1.0, 1.0, (i + rng.randf() * 0.6) / k)
 		var h := rng.randf_range(7.0, 14.0) * s * (1.0 - absf(a) * 0.35)
@@ -145,13 +145,13 @@ static func flowers(n: CanvasItem, p: Vector2, sd: int) -> void:
 static func pebbles(n: CanvasItem, p: Vector2, sd: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sd
-	for i in rng.randi_range(1, 4):
+	for i in rng.randi_range(1, 3):
 		var q := p + Vector2(rng.randf_range(-9, 9), rng.randf_range(-4, 4))
-		var r := rng.randf_range(1.5, 4.0)
+		var r := rng.randf_range(1.2, 3.2)
 		n.draw_set_transform(q + Vector2(0.8, 0.8), 0.0, Vector2(1, 0.6))
 		n.draw_circle(Vector2.ZERO, r * 1.1, Color(0, 0, 0, 0.25))
 		n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		ElemArt.boulder(n, q, r, rng.randi(), rng.randf() * TAU, Color(0.45, 0.42, 0.38).lerp(Color(0.55, 0.5, 0.42), rng.randf()))
+		ElemArt.boulder(n, q, r, rng.randi(), rng.randf() * TAU, Color(0.3, 0.28, 0.25).lerp(Color(0.4, 0.36, 0.3), rng.randf()))
 
 
 static func leaves(n: CanvasItem, p: Vector2, sd: int, autumn: bool) -> void:
@@ -177,8 +177,8 @@ static func twigs(n: CanvasItem, p: Vector2, sd: int) -> void:
 
 static func moss(n: CanvasItem, p: Vector2, r: float) -> void:
 	n.draw_set_transform(p, 0.0, Vector2(1, 0.5))
-	n.draw_circle(Vector2.ZERO, r, Color(0.22, 0.32, 0.12, 0.35))
-	n.draw_circle(Vector2(r * 0.3, -r * 0.2), r * 0.6, Color(0.3, 0.42, 0.16, 0.35))
+	n.draw_circle(Vector2.ZERO, r, Color(0.12, 0.18, 0.07, 0.22))
+	n.draw_circle(Vector2(r * 0.3, -r * 0.2), r * 0.6, Color(0.16, 0.24, 0.09, 0.2))
 	n.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
