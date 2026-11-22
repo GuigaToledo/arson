@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.14.1",
+  "data": "2026-11-22",
+  "titulo": "Edição de teste: nível 100",
+  "itens": [
+   "TEMPORÁRIO: todos os personagens entram no nível 100, com todos os elementos no nível 100 e todas as magias e misturas liberadas",
+   "O progresso real não é alterado: quando o modo teste for desligado, cada personagem volta ao nível em que estava"
+  ]
+ },
+ {
   "versao": "0.14.0",
   "data": "2026-11-22",
   "titulo": "App para Android",
