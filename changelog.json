@@ -10,7 +10,8 @@
    "No app a tela fica sempre ligada e o jogo abre em tela cheia na horizontal",
    "App: nova tela de abertura que procura atualização antes de carregar o mundo",
    "App: se fechar sozinho ao abrir, a próxima abertura mostra onde parou e entra em modo leve (na segunda vez, com chão simplificado)",
-   "App: corrigido o fechamento ao abrir em alguns celulares (o chão agora usa um atlas de texturas em vez do formato que o vídeo do celular não aceitava)"
+   "App: corrigido o fechamento ao abrir em alguns celulares (o chão agora usa um atlas de texturas em vez do formato que o vídeo do celular não aceitava)",
+   "Desenho de personagens, monstros e magias refeito para não criar buffers de vídeo a cada quadro (causava o fechamento do app e as travadas de vídeo no navegador do celular)"
   ]
  },
  {
