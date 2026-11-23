@@ -1470,6 +1470,9 @@ class StatusAura:
 			if shield_els.size() >= 2 and Spellbook.ELEMENTS.has(str(shield_els[1])):
 				c2 = (Spellbook.ELEMENTS[str(shield_els[1])].cor as Color).lightened(0.3)
 			SpellArt.ki_aura(self, Vector2(0, -42), 100.0, c1, c2, _t, force)
+			# e por cima, a cara de cada elemento (chamas, rocha com lava, bolha, cristais, vento, raios, pedra, vinhas)
+			for e in shield_els:
+				_draw_shield(str(e))
 		if hot:
 			for i in 3:
 				var k := fmod(_t * 0.6 + i / 3.0, 1.0)
