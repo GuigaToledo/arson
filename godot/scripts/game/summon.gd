@@ -25,6 +25,9 @@ var foe: Node2D = null
 ## Distância máxima (em quadrados) do dono até o alvo da invocação.
 const LEASH := 15.0
 var _scan_t := 0.0
+var _dono_pos := Vector2.ZERO
+var _dono_dir := Vector2(1, 0)
+var _dono_anda := 0.0
 var last_attacker: Node2D = null
 var color := Color.WHITE
 var _atk_cd := 0.0
@@ -223,10 +226,51 @@ func _physics_process(delta: float) -> void:
 			facing = Iso.dir_from_vector(foe.global_position - global_position)
 			if _atk_cd <= 0.0:
 				_strike()
-	elif od > 2.2:
-		d = owner_p.global_position - global_position
-		running = od > 5.0
+	else:
+		var alvo := _posto_escolta(delta)
+		var to := alvo - global_position
+		if to.length() > 14.0:
+			d = to
+			running = to.length() > 160.0 or _dono_anda > 0.0
+	d += _separacao()
 	move(d, running, delta)
+
+
+## Posição no lado do dono: andando, um de cada lado; parado, rondando ao redor dele.
+func _posto_escolta(delta: float) -> Vector2:
+	var op: Vector2 = owner_p.global_position
+	var mv := op - _dono_pos
+	_dono_pos = op
+	if mv.length() > 0.2:
+		_dono_dir = _dono_dir.lerp(mv.normalized(), 0.2).normalized()
+		_dono_anda = 0.4
+	else:
+		_dono_anda = maxf(0.0, _dono_anda - delta)
+	var lista: Array = owner_p.summons.values() if owner_p.get("summons") != null else [self]
+	var n := maxi(1, lista.size())
+	var i := maxi(0, lista.find(self))
+	if _dono_anda > 0.0:
+		var perp := Vector2(-_dono_dir.y, _dono_dir.x)
+		var lado := -1.0 if i % 2 == 0 else 1.0
+		var fila := float(i / 2)
+		return op + perp * lado * 85.0 - _dono_dir * (20.0 + fila * 55.0)
+	var ang := _t * 0.6 + TAU * float(i) / float(n)
+	return op + Vector2(cos(ang) * 130.0, sin(ang) * 65.0)
+
+
+## Empurra para longe de outras invocações do mesmo dono (colisão suave).
+func _separacao() -> Vector2:
+	var push := Vector2.ZERO
+	if owner_p.get("summons") == null:
+		return push
+	for o in owner_p.summons.values():
+		if o == self or not is_instance_valid(o) or o.dead:
+			continue
+		var df: Vector2 = global_position - o.global_position
+		var dl := df.length()
+		if dl < 70.0:
+			push += (df.normalized() if dl > 0.5 else Vector2(1, 0)) * (70.0 - dl) * 6.0
+	return push
 
 
 ## Golpes em sequência, como um monge: soco, chute, cabeçada (empurra), chute giratório (área),
