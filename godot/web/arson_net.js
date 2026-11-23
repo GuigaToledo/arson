@@ -183,7 +183,7 @@
     const eq = {};
     if (s.eq && typeof s.eq === 'object') for (const k of Object.keys(s.eq).slice(0, 12)) eq[String(k).slice(0, 3)] = String(s.eq[k]).slice(0, 40);
     return {
-      x: Math.max(-5000, Math.min(5000, +s.x)), y: Math.max(-5000, Math.min(5000, +s.y)),
+      x: Math.max(-20000, Math.min(20000, +s.x)), y: Math.max(-20000, Math.min(20000, +s.y)),
       vx: isFinite(s.vx) ? Math.max(-600, Math.min(600, +s.vx)) : 0, vy: isFinite(s.vy) ? Math.max(-600, Math.min(600, +s.vy)) : 0,
       f: String(s.f || 'S').slice(0, 2), a: String(s.a || 'idle').slice(0, 8), n: String(s.n || 'Viajante').slice(0, 16), eq,
       d: s.d ? 1 : 0, sf: s.sf ? 1 : 0, l: Math.max(1, Math.min(9999, s.l | 0)), c: String(s.c || '').replace(/[^a-z]/g, '').slice(0, 8), hp: Math.max(0, Math.min(100, s.hp | 0)),

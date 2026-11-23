@@ -4,6 +4,7 @@
   "data": "2026-11-23",
   "titulo": "Multijogador: posição dos outros jogadores",
   "itens": [
+   "Corrigido: no multijogador, os outros jogadores pareciam bater numa parede invisível nas partes sul e leste do mapa (a posição enviada era cortada)",
    "Os outros jogadores aparecem onde realmente estão: o jogo agora envia a velocidade e prevê a posição atual em vez de mostrar onde o jogador estava há alguns décimos de segundo",
    "Aura do escudo mais redonda, cobrindo o personagem inteiro mesmo correndo ou virando"
   ]
