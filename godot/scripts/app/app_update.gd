@@ -17,6 +17,11 @@ var _bar: ProgressBar
 var _row: HBoxContainer
 var _remote := {}
 var _baixando := false
+## Dentro do jogo: confere sozinho a cada minuto e, se tiver versão nova, baixa e reinicia no mesmo
+## personagem (igual ao navegador). Na abertura (em_jogo = false) a confere uma vez.
+var em_jogo := false
+const RETOMAR := "user://retomar.txt"
+var _aviso_apk := false
 
 
 func _ready() -> void:
@@ -24,6 +29,19 @@ func _ready() -> void:
 	_http = HTTPRequest.new()
 	_http.timeout = 20.0
 	add_child(_http)
+	if em_jogo:
+		var tm := Timer.new()
+		tm.wait_time = 60.0
+		tm.autostart = true
+		tm.timeout.connect(_checar)
+		add_child(tm)
+	else:
+		_checar()
+
+
+func _checar() -> void:
+	if _baixando or _box != null:
+		return
 	_http.request_completed.connect(_on_versao)
 	_http.request(BASE + "versao.json?t=%d" % Time.get_unix_time_from_system())
 
@@ -44,21 +62,32 @@ func _on_versao(result: int, code: int, _h: PackedStringArray, body: PackedByteA
 	if bt:
 		bt.step("resposta da atualização %d/%d" % [result, code])
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
-		done.emit()
+		if not em_jogo:
+			done.emit()
 		return  # sem internet ou sem resposta: joga a versão que já tem
 	var d = JSON.parse_string(body.get_string_from_utf8())
 	if typeof(d) != TYPE_DICTIONARY:
-		done.emit()
+		if not em_jogo:
+			done.emit()
 		return
 	_remote = d
 	var atual := Boot._read("res://app/jogo.txt")
 	if str(d.get("jogo", "")) == atual or atual == "":
-		done.emit()
+		if not em_jogo:
+			done.emit()
 		return
 	var boot := get_node_or_null("/root/Boot")
 	var sig: String = boot.app_sig if boot else ""
 	if str(d.get("assinatura", "")) == sig:
-		_show("Nova versão do jogo disponível!", "Atualizar", _baixar)
+		# atualização automática: baixa sozinha, sem precisar tocar em nada
+		_show("Atualizando o jogo…", "Atualizar", _baixar)
+		_baixar()
+	elif em_jogo:
+		# app novo (APK) precisa de confirmação do Android: avisa uma vez, sem parar o jogo
+		if not _aviso_apk:
+			_aviso_apk = true
+			_show("Saiu uma versão nova do app. Baixe e instale por cima (seu progresso continua).", "Baixar app", func():
+				OS.shell_open(BASE + str(_remote.get("apk", "arson.apk"))))
 	else:
 		_show("Saiu uma versão nova do app. Baixe e instale por cima (seu progresso continua).", "Baixar app", func():
 			OS.shell_open(BASE + str(d.get("apk", "arson.apk"))))
@@ -160,6 +189,15 @@ func _on_pack(result: int, code: int, _h: PackedStringArray, _b: PackedByteArray
 	inf.store_string(JSON.stringify({"jogo": _remote.get("jogo", ""), "assinatura": _remote.get("assinatura", "")}))
 	inf = null
 	_msg.text = "Atualizado! Reiniciando o jogo… (se ele fechar, é só abrir de novo)"
+	if em_jogo:
+		# volta direto no mesmo personagem depois de reiniciar
+		var rf := FileAccess.open(RETOMAR, FileAccess.WRITE)
+		if rf:
+			rf.store_string(str(Chars.slot))
+			rf = null
+		var pl = get_tree().get_first_node_in_group("player")
+		if pl and pl.has_method("save"):
+			pl.save()
 	await get_tree().create_timer(1.5).timeout
 	# fechar para atualizar não é falha: sem isso o app contava como "fechou sozinho" e, na
 	# segunda vez, apagava a atualização (ficava pedindo para atualizar sem parar)

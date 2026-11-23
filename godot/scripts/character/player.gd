@@ -1407,8 +1407,8 @@ class StatusAura:
 	## Fração do escudo que resta (a aura enfraquece quando está quase quebrando).
 	var force := 1.0
 	## Tamanho da aura do escudo: altura e alargamento horizontal (deixa a forma quase redonda).
-	const AURA_ALT := 108.0
-	const AURA_LARG := 1.85
+	const AURA_ALT := 94.0
+	const AURA_LARG := 1.45
 	var spirit := false
 	var immortal := false
 	## Asas da Ascensão: uma de cada elemento que o mago domina.
@@ -1489,7 +1489,7 @@ class StatusAura:
 			if shield_els.size() >= 2 and Spellbook.ELEMENTS.has(str(shield_els[1])):
 				c2 = (Spellbook.ELEMENTS[str(shield_els[1])].cor as Color).lightened(0.3)
 			# arredondada e larga: cobre todo o sprite (correndo, lançando magia, em qualquer direção)
-			draw_set_transform(Vector2(0, -50), 0.0, Vector2(AURA_LARG, 1.0))
+			draw_set_transform(Vector2(0, -46), 0.0, Vector2(AURA_LARG, 1.0))
 			SpellArt.ki_aura(self, Vector2.ZERO, AURA_ALT, c1, c2, _t, force, str(shield_els[0]) if shield_els.size() > 0 else "")
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			# e por cima, a cara de cada elemento (chamas, rocha com lava, bolha, cristais, vento, raios, pedra, vinhas)

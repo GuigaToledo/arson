@@ -1648,7 +1648,7 @@ static func ki_aura(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color
 	for i in 40:
 		var a := TAU * float(i) / 40.0
 		var onda := 1.0 + 0.018 * sin(a * 5.0 - t * 4.0)
-		ring.append(Vector2(cos(a) * 0.3 * h, -0.16 * h + sin(a) * 0.62 * h) * resp * onda)
+		ring.append(Vector2(cos(a) * 0.3 * h, sin(a) * 0.62 * h) * resp * onda)
 	var m := ring.size()
 	if m < 6:
 		return

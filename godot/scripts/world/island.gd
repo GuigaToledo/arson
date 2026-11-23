@@ -99,6 +99,15 @@ func _ready() -> void:
 			Chars.use(r)
 			start_game(r)
 			return
+	# app: reiniciou sozinho para atualizar no meio do jogo -> entra direto no mesmo personagem
+	if FileAccess.file_exists(AppUpdate.RETOMAR):
+		var r2 := int(FileAccess.get_file_as_string(AppUpdate.RETOMAR))
+		DirAccess.remove_absolute(AppUpdate.RETOMAR)
+		if r2 >= 1 and r2 <= Chars.MAX and Chars.info(r2).existe:
+			Chars.use(r2)
+			start_game(r2)
+			_mark_ok()
+			return
 	# ?autoteste=classe (só para testes automáticos): pula a tela inicial na vaga 4
 	# (no computador, sem janela: --autoteste=classe na linha de comando)
 	var at := ""
@@ -182,6 +191,11 @@ func _safety() -> void:
 
 func start_game(slot: int) -> void:
 	Boot.step("entrando no jogo")
+	# app de celular: confere atualização a cada minuto e se atualiza sozinho (como o navegador)
+	if OS.has_feature("android"):
+		var up := AppUpdate.new()
+		up.em_jogo = true
+		add_child(up)
 	var inf := Chars.info(slot)
 	var nome: String = inf.get("nome", "")
 	if nome != "" and OS.has_feature("web") and JavaScriptBridge.eval("typeof window.ArsonNet !== 'undefined'", true):
