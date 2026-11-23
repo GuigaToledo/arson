@@ -30,9 +30,17 @@ func _ready() -> void:
 		if Settings.safe_mode():
 			_ceil = 2
 			_ceil_t = 600.0
+		elif Settings.is_mobile():
+			# no Redmi a automática subia até o 5 e o FPS caía de ~55 para ~27
+			_ceil = 2
 	else:
 		Settings.level_now = Settings.quality
 	apply()
+
+
+## Teto da qualidade automática. No celular para no nível 2 (acima disso o FPS cai pela metade).
+func _teto() -> int:
+	return 2 if Settings.is_mobile() else 6
 
 
 ## Aplica Settings.level_now (ou chame depois de mudar Settings.quality).
@@ -70,7 +78,7 @@ func _process(delta: float) -> void:
 	_warm -= delta
 	_ceil_t -= delta
 	if _ceil_t <= 0.0:
-		_ceil = 6
+		_ceil = _teto()
 	_frames += 1
 	if _acc < 4.0:
 		return
@@ -85,8 +93,8 @@ func _process(delta: float) -> void:
 		return
 	# automática: 2 medições ruins seguidas baixam; 8 boas seguidas (16 s) sobem
 	# subir: medições a 54+ contam; uma queda curta (luta) só desconta 1, não zera.
-	# baixar: 2 medições seguidas abaixo de 40.
-	if fps < 40.0:
+	# baixar: 2 medições seguidas abaixo de 40 (45 no celular, onde o nível sobe fácil demais).
+	if fps < (45.0 if Settings.is_mobile() else 40.0):
 		_bad += 1
 		_good = 0
 	elif fps >= 54.0:
@@ -98,7 +106,7 @@ func _process(delta: float) -> void:
 	if Prof.on:
 		print("ARSONQ fps=%.1f nivel=%d bom=%d ruim=%d teto=%d" % [fps, Settings.level_now, _good, _bad, _ceil])
 	if _bad >= 2 and Settings.level_now > 1:
-		_ceil = Settings.level_now - 1
+		_ceil = mini(Settings.level_now - 1, _teto())
 		_ceil_t = 30.0  # tenta de novo em 30 s
 		Settings.level_now -= 1
 		_bad = 0

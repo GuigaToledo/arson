@@ -11,6 +11,8 @@ const CHAVE := "peerjs"
 const HOST_ID := "arson-godot-taverna-v1-q9w4z"
 const MAX_PLAYERS := 20
 const ICE_STUN := {"iceServers": [{"urls": ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"]}]}
+## TURN gratuito (openrelay.metered.ca) está fora do ar. No celular a coleta espera
+## esses servidores e a oferta não chega no navegador. Sem credencial nova, só STUN.
 const ICE := {"iceServers": [
 	{"urls": ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302", "stun:global.stun.twilio.com:3478"]},
 	{"urls": ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp"],
@@ -43,6 +45,7 @@ var _retry_t := -1.0
 var _last_rx := 0
 var _ws_open := false
 var _connect_t := 0.0
+var _visto := 0.0
 
 
 static func disponivel() -> bool:
@@ -181,6 +184,7 @@ func _open_ws(id: String) -> void:
 	_my_id = id
 	_ws = WebSocketPeer.new()
 	_ws.inbound_buffer_size = 1 << 20
+	_ws.outbound_buffer_size = 1 << 20
 	var url := "%s?key=%s&id=%s&token=%s&version=1.5.4" % [SERVIDOR, CHAVE, id, _rnd(10)]
 	var err := _ws.connect_to_url(url)
 	_ws_open = false
@@ -211,9 +215,10 @@ func _retry(why: String, segundos := 3.0) -> void:
 	_retry_t = segundos + randf()
 
 
-func _ws_send(d: Dictionary) -> void:
-	if _ws and _ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
-		_ws.send_text(JSON.stringify(d))
+func _ws_send(d: Dictionary) -> int:
+	if _ws == null or _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		return ERR_UNCONFIGURED
+	return _ws.send_text(JSON.stringify(d))
 
 
 func _process(delta: float) -> void:
@@ -260,6 +265,11 @@ func _process(delta: float) -> void:
 			_host_tick()
 	elif _ready and Time.get_ticks_msec() - _last_rx > 6000:
 		_retry("O anfitrião parou de responder.", 1.2)
+	elif not _is_host and not _ready and _retry_t < 0.0 and _my_id != "" and _my_id != _host_id():
+		_visto += delta
+		if _visto >= 2.0:
+			_visto = 0.0
+			_diag(_fase_txt())
 
 
 func _on_server(m) -> void:
@@ -300,7 +310,9 @@ func _on_server(m) -> void:
 			var cid := str(p.get("connectionId", ""))
 			if _conns.has(cid):
 				var sdp: Dictionary = p.get("sdp", {})
-				_conns[cid].pc.set_remote_description("answer", str(sdp.get("sdp", "")))
+				var pc_r: WebRTCPeerConnection = _conns[cid].pc
+				var er: int = pc_r.set_remote_description("answer", str(sdp.get("sdp", "")))
+				_diag("Entrando… resposta do anfitrião (erro %d)" % er)
 		"CANDIDATE":
 			var p2: Dictionary = m.get("payload", {})
 			var cid2 := str(p2.get("connectionId", ""))
@@ -310,24 +322,90 @@ func _on_server(m) -> void:
 
 
 # ------------------------------------------------------------ WebRTC
+## Texto curto da etapa, o que a tela do celular mostra (o print antigo não aparecia lá).
+func _fase_txt() -> String:
+	if _host_conn == "" or not _conns.has(_host_conn):
+		var nome := "sem sala"
+		if _ws:
+			var wst: int = _ws.get_ready_state()
+			var nomes := PackedStringArray(["ligando na sala", "sala aberta", "fechando a sala", "sala fechada"])
+			if wst >= 0 and wst < nomes.size():
+				nome = nomes[wst]
+		return "Entrando… " + nome
+	var c: Dictionary = _conns[_host_conn]
+	var pc: WebRTCPeerConnection = c.pc
+	var st: int = pc.get_connection_state()
+	var gs: int = pc.get_gathering_state()
+	var est := PackedStringArray(["novo", "conectando", "conectado", "caiu", "falhou", "fechado"])
+	var gel := PackedStringArray(["gelo novo", "gelo coletando", "gelo pronto"])
+	var sn := est[st] if st >= 0 and st < est.size() else str(st)
+	var gn := gel[gs] if gs >= 0 and gs < gel.size() else str(gs)
+	return "Entrando… %s, %s, cand %d (host %d, pública %d)" % [sn, gn, int(c.get("nc", 0)), int(c.get("nh", 0)), int(c.get("ns", 0))]
+
+
+## estado: 0 novo, 1 conectando, 2 conectado, 3 caiu, 4 falhou, 5 fechado.
+func _falha_rota(st: int, c: Dictionary) -> String:
+	var nh := int(c.get("nh", 0))
+	var ns := int(c.get("ns", 0))
+	if nh == 0 and ns == 0:
+		return "Sem candidatos de rede (estado %d)." % st
+	return "Rota não abriu (estado %d, host %d, pública %d)." % [st, nh, ns]
+
+
 func _new_pc(cid: String, peer: String) -> WebRTCPeerConnection:
 	var pc := WebRTCPeerConnection.new()
-	# se a lista com TURN não for aceita (alguns aparelhos), tenta só STUN e depois o padrão
-	var err := pc.initialize(ICE)
+	# TURN morto trava a coleta no celular. Só STUN; se o aparelho recusar, o padrão.
+	var err := pc.initialize(ICE_STUN)
 	if err != OK:
-		err = pc.initialize(ICE_STUN)
-		if err != OK:
-			err = pc.initialize({})
+		err = pc.initialize({})
 	print("[arson-net] conexão %s iniciada (erro %d)" % [cid, err])
-	pc.session_description_created.connect(func(tipo: String, sdp: String):
-		pc.set_local_description(tipo, sdp)
-		var payload := {"sdp": {"type": tipo, "sdp": sdp}, "type": "data", "connectionId": cid, "browser": "godot"}
-		if tipo == "offer":
-			payload.merge({"label": cid, "serialization": "json", "reliable": true, "metadata": null})
-		_ws_send({"type": tipo.to_upper(), "payload": payload, "dst": peer}))
-	pc.ice_candidate_created.connect(func(mid: String, idx: int, cand: String):
-		_ws_send({"type": "CANDIDATE", "payload": {"candidate": {"candidate": cand, "sdpMid": mid, "sdpMLineIndex": idx}, "type": "data", "connectionId": cid}, "dst": peer}))
+	if not _is_host:
+		_diag("Entrando… iniciada (erro %d)" % err)
+	# método do nó, não lambda: no Android a extensão não entrega o sinal para lambda
+	pc.session_description_created.connect(_on_sdp.bind(cid, peer))
+	pc.ice_candidate_created.connect(_on_ice.bind(cid, peer))
 	return pc
+
+
+func _on_sdp(tipo: String, sdp: String, cid: String, peer: String) -> void:
+	if not _conns.has(cid):
+		return
+	var pc: WebRTCPeerConnection = _conns[cid].pc
+	pc.set_local_description(tipo, sdp)
+	var payload := {"sdp": {"type": tipo, "sdp": sdp}, "type": "data", "connectionId": cid, "browser": "godot"}
+	if tipo == "offer":
+		payload.merge({"label": cid, "serialization": "json", "reliable": true, "metadata": null})
+	var err := _ws_send({"type": tipo.to_upper(), "payload": payload, "dst": peer})
+	print("[arson-net] %s %s enviada (erro %d, %d bytes)" % [cid, tipo, err, sdp.length()])
+	if not _is_host:
+		_diag("Entrando… %s enviada (erro %d)" % [tipo, err])
+
+
+func _on_ice(mid: String, idx: int, cand: String, cid: String, peer: String) -> void:
+	var linha := cand
+	if linha.begins_with("a="):
+		linha = linha.substr(2)
+	if not linha.begins_with("candidate:"):
+		linha = "candidate:" + linha
+	var meio := mid if mid != "" else "0"
+	var tipo := "outro"
+	if " typ host" in linha:
+		tipo = "host"
+	elif " typ srflx" in linha:
+		tipo = "pública"
+	elif " typ relay" in linha:
+		tipo = "relay"
+	if _conns.has(cid):
+		var c: Dictionary = _conns[cid]
+		c["nc"] = int(c.get("nc", 0)) + 1
+		if tipo == "host":
+			c["nh"] = int(c.get("nh", 0)) + 1
+		elif tipo == "pública":
+			c["ns"] = int(c.get("ns", 0)) + 1
+	var err := _ws_send({"type": "CANDIDATE", "payload": {"candidate": {"candidate": linha, "sdpMid": meio, "sdpMLineIndex": idx}, "type": "data", "connectionId": cid}, "dst": peer})
+	print("[arson-net] %s candidato %s mid=%s (erro %d)" % [cid, tipo, meio, err])
+	if not _is_host and _conns.has(cid) and int(_conns[cid].get("nc", 0)) <= 4:
+		_diag(_fase_txt())
 
 
 ## Cliente: conecta no anfitrião (eu ofereço, como o PeerJS do navegador faz).
@@ -337,10 +415,12 @@ func _connect_to_host() -> void:
 	var ch := pc.create_data_channel(cid, {"ordered": true})
 	if ch == null:
 		ch = pc.create_data_channel(cid)
-	_conns[cid] = {"pc": pc, "ch": ch, "peer": _host_id(), "uid": "", "open": false, "t0": Time.get_ticks_msec(), "st": -1}
+	_conns[cid] = {"pc": pc, "ch": ch, "peer": _host_id(), "uid": "", "open": false, "t0": Time.get_ticks_msec(), "st": -1, "nc": 0, "nh": 0, "ns": 0}
 	_host_conn = cid
+	_diag("Entrando… canal %s" % ["ok" if ch != null else "NULO"])
 	var eo := pc.create_offer()
-	print("[arson-net] canal %s, oferta (erro %d)" % ["ok" if ch != null else "NULO", eo])
+	if eo != OK:
+		_diag("Entrando… oferta falhou (%d)" % eo)
 
 
 ## Anfitrião: alguém pediu para entrar.
@@ -351,12 +431,15 @@ func _on_offer(src: String, p) -> void:
 		return
 	var cid := str(p.get("connectionId", "dc_" + _rnd(12)))
 	var pc := _new_pc(cid, src)
-	_conns[cid] = {"pc": pc, "ch": null, "peer": src, "uid": "", "open": false, "t0": Time.get_ticks_msec()}
-	pc.data_channel_received.connect(func(ch: WebRTCDataChannel):
-		if _conns.has(cid):
-			_conns[cid].ch = ch)
+	_conns[cid] = {"pc": pc, "ch": null, "peer": src, "uid": "", "open": false, "t0": Time.get_ticks_msec(), "nc": 0, "nh": 0, "ns": 0}
+	pc.data_channel_received.connect(_on_canal.bind(cid))
 	var sdp: Dictionary = p.get("sdp", {})
 	pc.set_remote_description("offer", str(sdp.get("sdp", "")))
+
+
+func _on_canal(ch: WebRTCDataChannel, cid: String) -> void:
+	if _conns.has(cid):
+		_conns[cid].ch = ch
 
 
 func _drop(cid: String) -> void:
@@ -377,20 +460,25 @@ func _poll_conn(cid: String) -> void:
 	var pc: WebRTCPeerConnection = c.pc
 	pc.poll()
 	var ch: WebRTCDataChannel = c.ch
-	var st := pc.get_connection_state()
+	var st: int = pc.get_connection_state()
 	if int(c.get("st", -1)) != st:
 		c["st"] = st
-		print("[arson-net] %s estado %d gelo %d" % [cid, st, pc.get_gathering_state()])
+		var gs: int = pc.get_gathering_state()
+		print("[arson-net] %s estado %d gelo %d" % [cid, st, gs])
+		if cid == _host_conn and not _is_host:
+			_diag(_fase_txt())
 	if st == WebRTCPeerConnection.STATE_FAILED or st == WebRTCPeerConnection.STATE_CLOSED:
+		var porque := _falha_rota(st, c)
 		_drop(cid)
 		if cid == _host_conn:
-			_retry("Conexão com o anfitrião perdida.", 1.2)
+			_retry(porque, 1.2)
 		return
 	if ch == null:
 		if Time.get_ticks_msec() - int(c.t0) > 15000:
+			var porque2 := _falha_rota(st, c)
 			_drop(cid)
 			if cid == _host_conn:
-				_retry("Não deu para abrir o canal com o anfitrião.")
+				_retry(porque2)
 		return
 	if not c.open:
 		if ch.get_ready_state() == WebRTCDataChannel.STATE_OPEN:
@@ -400,9 +488,10 @@ func _poll_conn(cid: String) -> void:
 				_last_rx = Time.get_ticks_msec()
 				_diag("Online — conectado ao mundo.")
 		elif Time.get_ticks_msec() - int(c.t0) > 15000:
+			var porque3 := _falha_rota(st, c)
 			_drop(cid)
 			if cid == _host_conn:
-				_retry("A conexão com o anfitrião demorou demais.")
+				_retry(porque3)
 			return
 	while ch.get_available_packet_count() > 0:
 		var raw := ch.get_packet()
