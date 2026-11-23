@@ -113,6 +113,38 @@ jobs:
           PY
           cat saida/versao.json
 
+      # A extensão WebRTC nativa (multijogador) foi compilada com um libc++ mais novo que o do Godot 4.4.1
+      # (no celular: dlopen failed, símbolo _ZTTNSt6__ndk119basic_istringstream... não encontrado).
+      # Troca o libc++_shared.so do app pelo do NDK do servidor, realinha e assina de novo com a mesma chave.
+      # Se algo falhar, mantém o APK original (o pacote do jogo não depende disso).
+      - name: Trocar libc++ do app (rede nativa)
+        if: github.event_name != 'schedule'
+        run: |
+          cd saida
+          trocar() {
+            set -e
+            NDK="${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_ROOT:-$ANDROID_NDK_HOME}}"
+            LIBCXX=$(find "$NDK/toolchains/llvm/prebuilt" -path "*aarch64-linux-android/libc++_shared.so" | head -1)
+            BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+            echo "NDK=$NDK LIBCXX=$LIBCXX BT=$BT"
+            test -f "$LIBCXX"
+            grep -q _ZTTNSt6__ndk119basic_istringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE "$LIBCXX"
+            mkdir -p t/lib/arm64-v8a
+            cp "$LIBCXX" t/lib/arm64-v8a/libc++_shared.so
+            (cd t && zip -0 -q ../arson.apk lib/arm64-v8a/libc++_shared.so)
+            zip -q -d arson.apk 'META-INF/*' || true
+            "$BT/zipalign" -f -p 4 arson.apk alinhado.apk
+            S=$(cat $HOME/arson-chave/senha)
+            "$BT/apksigner" sign --ks $HOME/arson-chave/arson.jks --ks-pass "pass:$S" --key-pass "pass:$S" --ks-key-alias arson --out assinado.apk alinhado.apk
+            "$BT/apksigner" verify assinado.apk
+            mv assinado.apk arson.apk
+          }
+          cp arson.apk arson-original.apk
+          if (trocar); then echo "libc++ trocada"; else cp arson-original.apk arson.apk; echo "::warning::não deu para trocar o libc++ (app sem rede nativa)"; fi
+          rm -rf t arson-original.apk alinhado.apk assinado.apk
+          ls -la arson.apk
+          unzip -l arson.apk | grep -E "libc\+\+_shared|libwebrtc" || true
+
       - name: Publicar no lançamento "app"
         if: github.event_name != 'schedule'
         env:
