@@ -1,5 +1,16 @@
 [
  {
+  "versao": "0.19.1",
+  "data": "2026-11-23",
+  "titulo": "Livro, escudo e cajado nas mãos",
+  "itens": [
+   "O escudo (mímico) agora fica preso no braço, segurado pela mão, visível em todas as direções",
+   "Os livros flutuam abertos ao lado do mago, com as páginas viradas para ele",
+   "O cajado, o cetro e a varinha apontam para a frente na hora da magia",
+   "Magia lançada andando ou correndo: as pernas continuam e o braço faz o gesto (no corpo e em parte dos itens; o resto chega na próxima atualização)"
+  ]
+ },
+ {
   "versao": "0.19.0",
   "data": "2026-11-23",
   "titulo": "Multijogador no app de celular",
