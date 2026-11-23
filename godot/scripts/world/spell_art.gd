@@ -1642,40 +1642,13 @@ static func ki_aura(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color
 	var gain := 0.35 + 0.65 * clampf(force, 0.0, 1.0)
 	# chama em volta do corpo, em coordenadas locais (origem = c). y positivo = para baixo.
 	# base arredondada um pouco abaixo dos pés, laterais que incham (~0.55*h) e coroa de pontas.
+	# contorno OVAL liso (sem pontas), respirando devagar e com uma leve ondulação subindo
 	var ring := PackedVector2Array()
-	var bulb := Vector2(0.0, h * 0.42)
-	for i in 7:
-		var ang := lerpf(PI, 0.0, float(i) / 6.0)
-		ring.append(bulb + Vector2(cos(ang) * h * 0.17, sin(ang) * h * 0.10))
-	var right := PackedVector2Array()
-	for i in 7:
-		var sf := float(i + 1) / 7.0
-		var ss := sin(sf * PI)
-		# onda sobe com o tempo (a crista vai para sf maior)
-		var wave := sin(t * 5.2 - sf * 6.6) * 0.012 * ss
-		var nx := 0.17 + 0.105 * ss * ss + wave
-		if sf > 0.72:
-			nx = lerpf(nx, 0.155, (sf - 0.72) / 0.28)
-		var ny := lerpf(0.42, -0.40, sf) + sin(t * 4.0 - sf * 5.2) * 0.01 * ss
-		right.append(Vector2(nx * h, ny * h))
-	for i in right.size():
-		ring.append(right[i])
-	# cinco línguas, da direita para a esquerda; cada ponta tem a própria fase
-	var tip_x := [0.145, 0.07, 0.0, -0.065, -0.14]
-	var tip_y := [0.62, 0.71, 0.80, 0.69, 0.60]
-	for i in 5:
-		var ph := float(i)
-		var s1 := sin(t * 6.4 + ph * 1.7)
-		var flick := 0.022 * s1 + 0.012 * sin(t * 11.2 + ph * 2.6)
-		var sway := sin(t * 4.3 + ph * 1.35) * 0.012
-		ring.append(Vector2((tip_x[i] + sway) * h, -(tip_y[i] + flick) * h))
-		if i < 4:
-			var vx: float = (tip_x[i] + tip_x[i + 1]) * 0.5 + sin(t * 3.4 + ph) * 0.008
-			var valley := 0.55 + 0.012 * sin(t * 5.2 + ph * 2.1)
-			ring.append(Vector2(vx * h, -valley * h))
-	for i in range(right.size() - 1, -1, -1):
-		var rp: Vector2 = right[i]
-		ring.append(Vector2(-rp.x, rp.y))
+	var resp := 1.0 + 0.025 * sin(t * 2.2)
+	for i in 40:
+		var a := TAU * float(i) / 40.0
+		var onda := 1.0 + 0.018 * sin(a * 5.0 - t * 4.0)
+		ring.append(Vector2(cos(a) * 0.3 * h, -0.16 * h + sin(a) * 0.62 * h) * resp * onda)
 	var m := ring.size()
 	if m < 6:
 		return

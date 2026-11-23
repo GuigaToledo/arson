@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.18.8",
+  "data": "2026-11-23",
+  "titulo": "Escudo oval e magia saindo do cajado",
+  "itens": [
+   "Escudo mágico em forma de oval liso (sem as pontas), respirando devagar",
+   "O projétil da magia sai da ponta do cajado, na direção do alvo (o cajado apontando aparece na próxima atualização das animações)"
+  ]
+ },
+ {
   "versao": "0.18.7",
   "data": "2026-11-23",
   "titulo": "Multijogador: magias dos outros jogadores",

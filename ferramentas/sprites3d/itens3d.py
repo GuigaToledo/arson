@@ -319,27 +319,42 @@ def construir(arm, body, item_id, it):
             pecas.append(lo)
         # na mão direita: o cajado fica em pé com a mão um pouco abaixo do meio
         _segue_mao(s, arm, "hand_r", {"staff": (0, -0.03, -0.22), "rod": (0, -0.03, 0.18), "wand": (0, -0.04, 0.1)}[e])
-    elif e in ("book", "mimic"):
+    elif e == "book":
+        # grimório ABERTO flutuando à frente e ao lado do mago (preso ao tronco, não balança com o braço),
+        # inclinado com as páginas viradas para ele
+        bx, by, bz = 0.4, -0.34, 1.2
+        m_pap = couro("papel_" + tag, (0.62, 0.55, 0.4))
+        lv = []
+        for k, sx in enumerate((-1, 1)):
+            cp = _cubo(tag + "_capa%d" % k, (0.25, 0.36, 0.018), (bx + sx * 0.122, by, bz), m_couro, 0.004)
+            cp.rotation_euler = (math.radians(-35), sx * math.radians(-12), 0)
+            fl = _cubo(tag + "_folhas%d" % k, (0.225, 0.335, 0.03), (bx + sx * 0.115, by - 0.004, bz + 0.01), m_pap, 0.003)
+            fl.rotation_euler = (math.radians(-35), sx * math.radians(-12), 0)
+            lv += [cp, fl]
+        lomb = _cubo(tag + "_lombada", (0.03, 0.36, 0.04), (bx, by + 0.004, bz - 0.006), m_ouro, 0.004)
+        lomb.rotation_euler = (math.radians(-35), 0, 0)
+        runa = _esfera(tag + "_runa", 0.05, (bx, by - 0.07, bz + 0.12), m_gema, (1.2, 1.2, 0.35))
+        lv += [lomb, runa]
+        for p in lv:
+            bpy.context.view_layer.update()
+            _no_osso(p, arm, "spine_02", p.location)
+            pecas.append(p)
+    elif e == "mimic":
+        # escudo mímico preso ao antebraço esquerdo: na pose de descanso (braço em T) fica por cima do
+        # antebraço, deitado; com o braço caído, fica em pé do lado de fora, segurado pela mão
         hp = _osso_pos(arm, "hand_l")
-        if e == "book":
-            capa_l = _cubo(tag + "_livro", (0.05, 0.17, 0.22), (hp.x + 0.03, hp.y - 0.02, hp.z - 0.06), m_couro, 0.01)
-            folhas = _cubo(tag + "_folhas", (0.042, 0.158, 0.205), (hp.x + 0.033, hp.y - 0.025, hp.z - 0.06), couro("papel_" + tag, (0.55, 0.48, 0.34)), 0.003)
-            emb = _esfera(tag + "_emblema", 0.025, (hp.x + 0.058, hp.y - 0.02, hp.z - 0.06), m_gema, (0.4, 1, 1))
-            cant = [_cubo(tag + "_canto%d" % k, (0.054, 0.03, 0.03), (hp.x + 0.03, hp.y - 0.02 + sy * 0.075, hp.z - 0.06 + sz * 0.1), m_ouro, 0.004)
-                    for k, (sy, sz) in enumerate(((1, 1), (-1, 1), (1, -1), (-1, -1)))]
-            for p in [capa_l, folhas, emb] + cant:
-                bpy.context.view_layer.update()
-                _no_osso(p, arm, "hand_l", p.location)
-                pecas.append(p)
-        else:
-            cx = _cubo(tag + "_bau", (0.14, 0.2, 0.15), (hp.x + 0.07, hp.y, hp.z - 0.02), m_couro, 0.012)
-            tp = _cubo(tag + "_tampa", (0.15, 0.21, 0.05), (hp.x + 0.07, hp.y, hp.z + 0.07), m_couro, 0.015)
-            fe = _cubo(tag + "_ferragem", (0.152, 0.03, 0.17), (hp.x + 0.07, hp.y, hp.z), m_ouro, 0.004)
-            ol = [_esfera(tag + "_olho%d" % k, 0.014, (hp.x + 0.148, hp.y + sy * 0.05, hp.z + 0.05), m_gema) for k, sy in enumerate((-1, 1))]
-            for p in [cx, tp, fe] + ol:
-                bpy.context.view_layer.update()
-                _no_osso(p, arm, "hand_l", p.location)
-                pecas.append(p)
+        la = _osso_pos(arm, "lowerarm_l")
+        cx = (hp.x + la.x) * 0.5 + 0.02
+        cz = (hp.z + la.z) * 0.5 + 0.075
+        corpo = _cubo(tag + "_escudo", (0.45, 0.37, 0.05), (cx, hp.y, cz), m_couro, 0.02)
+        borda = _cubo(tag + "_borda", (0.47, 0.39, 0.035), (cx, hp.y, cz - 0.004), m_ouro, 0.01)
+        boca = _cubo(tag + "_boca", (0.26, 0.035, 0.02), (cx - 0.03, hp.y, cz + 0.03), couro("boca_" + tag, (0.05, 0.01, 0.01)), 0.004)
+        dentes = [_cubo(tag + "_dente%d" % k, (0.018, 0.016, 0.02), (cx - 0.14 + k * 0.04, hp.y + 0.02 * (1 if k % 2 else -1), cz + 0.042), m_ouro, 0.002) for k in range(7)]
+        olhos = [_esfera(tag + "_olho%d" % k, 0.022, (cx + 0.1, hp.y + sy * 0.07, cz + 0.035), m_gema, (1, 1, 0.5)) for k, sy in enumerate((-1, 1))]
+        for p in [corpo, borda, boca] + dentes + olhos:
+            bpy.context.view_layer.update()
+            _no_osso(p, arm, "lowerarm_l", p.location)
+            pecas.append(p)
     elif e == "amulet":
         n = _osso_pos(arm, "neck_01")
         pend = _toro(tag + "_aro", 0.026, 0.006, (0, n.y - 0.135, n.z - 0.16), m_ouro, rot=(math.radians(80), 0, 0))

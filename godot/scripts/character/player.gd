@@ -828,7 +828,8 @@ func cast_spell(id: String, world_pos = null) -> void:
 				var big: bool = s.get("big", false)
 				# visual do nome: Pedrada = pedra em arco, Espinho = espinhos, Faísca = raio...
 				var pel: String = els[els.size() - 1] if big else els[0]
-				SpellArt.projectile(get_parent(), global_position, tgt, pel, big, els, func():
+				facing = Iso.dir_from_vector(tgt.global_position - global_position)
+				SpellArt.projectile(get_parent(), staff_tip(), tgt, pel, big, els, func():
 					if is_instance_valid(tgt) and not tgt.dead:
 						tgt.take_damage(Rules.roll(pw, float(tgt.info.def)), self)
 						for e in els:

@@ -257,6 +257,9 @@ func _show_spell(caster, e: Dictionary) -> void:
 			var big: bool = sp.get("big", false)
 			var pel: String = els[els.size() - 1] if big else els[0]
 			var alvo := tgt
+			if caster.has_method("staff_tip"):
+				caster.facing = Iso.dir_from_vector(tgt.global_position - pos)
+				pos = caster.staff_tip()
 			SpellArt.projectile(parent, pos, tgt, pel, big, els, func():
 				if is_instance_valid(alvo):
 					for el in els:
