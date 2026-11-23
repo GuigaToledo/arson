@@ -12,7 +12,7 @@ const LEFT := [EquipSlot.Slot.HEAD, EquipSlot.Slot.CHEST, EquipSlot.Slot.HANDS, 
 const RIGHT := [EquipSlot.Slot.ACCESSORIES, EquipSlot.Slot.SHOULDERS, EquipSlot.Slot.CAPE]
 const HINTS := {0: "elmo", 1: "peito", 2: "ombros", 3: "luvas", 4: "calça", 5: "botas", 6: "capa", 7: "arma", 8: "mão", 9: "colar"}
 const GRID_COLS := 9
-const CELL := 40.0
+const CELL := 36.0
 
 var player: Player
 var panel: PanelContainer
@@ -34,6 +34,8 @@ var _bag_ids: Array = []
 
 func bind(p: Player) -> void:
 	player = p
+	# por cima dos nomes e números do mundo
+	layer = 6
 	_build()
 	player.equipment.equipment_changed.connect(func(_s, _i): _refresh())
 	get_viewport().size_changed.connect(_place)
@@ -68,7 +70,7 @@ func _build() -> void:
 	vb.add_child(body)
 	_show = Control.new()
 	_show.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_show.custom_minimum_size = Vector2(300, 6 * 44 + 8)
+	_show.custom_minimum_size = Vector2(300, 6 * 40 + 4)
 	_show.clip_contents = true
 	body.add_child(_show)
 	var bg := ColorRect.new()
@@ -95,8 +97,8 @@ func _build() -> void:
 		var b := ItemSlot.new()
 		b.slot = slot
 		b.hint = HINTS.get(slot, "")
-		b.custom_minimum_size = Vector2(42, 42)
-		b.size = Vector2(42, 42)
+		b.custom_minimum_size = Vector2(38, 38)
+		b.size = Vector2(38, 38)
 		b.pressed.connect(_cycle.bind(slot))
 		_show.add_child(b)
 		buttons[slot] = b
@@ -203,13 +205,13 @@ func _place() -> void:
 func _lay_show() -> void:
 	var w := _show.size.x
 	var h := _show.size.y
-	var step := (h - 8.0) / 6.0
+	var step := (h - 4.0) / 6.0
 	for i in LEFT.size():
-		(buttons[LEFT[i]] as Control).position = Vector2(6, 4 + i * step)
+		(buttons[LEFT[i]] as Control).position = Vector2(5, 2 + i * step)
 	for i in RIGHT.size():
-		(buttons[RIGHT[i]] as Control).position = Vector2(w - 48, 4 + (i + 1) * step)
-	(buttons[EquipSlot.Slot.MAIN_HAND] as Control).position = Vector2(6, 4 + 5 * step)
-	(buttons[EquipSlot.Slot.OFF_HAND] as Control).position = Vector2(w - 48, 4 + 5 * step)
+		(buttons[RIGHT[i]] as Control).position = Vector2(w - 44, 2 + (i + 1) * step)
+	(buttons[EquipSlot.Slot.MAIN_HAND] as Control).position = Vector2(5, 2 + 5 * step)
+	(buttons[EquipSlot.Slot.OFF_HAND] as Control).position = Vector2(w - 44, 2 + 5 * step)
 	_pots.position = Vector2(w - 50, 10)
 	_fit_portrait()
 
