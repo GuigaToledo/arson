@@ -25,6 +25,8 @@ var foe: Node2D = null
 ## Distância máxima (em quadrados) do dono até o alvo da invocação.
 const LEASH := 15.0
 var _scan_t := 0.0
+var _vaga := Vector2.ZERO
+var _vaga_t := 0.0
 var _dono_pos := Vector2.ZERO
 var _dono_dir := Vector2(1, 0)
 var _dono_anda := 0.0
@@ -194,7 +196,9 @@ func _physics_process(delta: float) -> void:
 	# que estiver na tela (agressiva) ou quem a atacou (passiva)
 	var of = owner_p.get("foe")
 	if _ok(of) and of != foe and Rules.gdist(owner_p.global_position, of.global_position) < LEASH:
-		foe = of
+		# com vários bichos por perto, só pega o alvo do dono se nenhum irmão já estiver nele
+		if not _irmao_mira(of) or _outros_alvos(of) == 0:
+			foe = of
 	if not _ok(foe):
 		foe = null
 		if Settings.auto.get("summon_agressivo", true):
@@ -208,8 +212,9 @@ func _physics_process(delta: float) -> void:
 						continue
 					var na_tela := vr.size.x > 0.0 and vr.has_point(m.global_position)
 					var d := Rules.gdist(owner_p.global_position, m.global_position)
-					if (na_tela or d < 9.0) and d < bd:
-						bd = d
+					var pont := d + (100.0 if _irmao_mira(m) else 0.0)
+					if (na_tela or d < 9.0) and pont < bd:
+						bd = pont
 						foe = m
 		if foe == null and _ok(last_attacker):
 			foe = last_attacker
@@ -254,8 +259,15 @@ func _posto_escolta(delta: float) -> Vector2:
 		var lado := -1.0 if i % 2 == 0 else 1.0
 		var fila := float(i / 2)
 		return op + perp * lado * 85.0 - _dono_dir * (20.0 + fila * 55.0)
-	var ang := _t * 0.6 + TAU * float(i) / float(n)
-	return op + Vector2(cos(ang) * 130.0, sin(ang) * 65.0)
+	# parado: vaga ao acaso por perto, cada um para um canto diferente
+	_vaga_t -= delta
+	if _vaga_t <= 0.0 or (_vaga - global_position).length() < 20.0:
+		_vaga_t = randf_range(1.5, 4.5)
+		var a := randf() * TAU
+		var r := randf_range(60.0, 320.0)
+		_vaga = op + Vector2(cos(a) * r, sin(a) * r * 0.6)
+	return _vaga
+
 
 
 ## Empurra para longe de outras invocações do mesmo dono (colisão suave).
@@ -314,3 +326,25 @@ func _strike() -> void:
 		owner_p.shield_t = maxf(float(owner_p.shield_t), 8.0)
 		owner_p.shield_col = color
 		CombatText.add(owner_p.global_position + Vector2(0, -110), "Proteção de %s" % display_name, color)
+
+
+## Algum irmão (outra invocação do mesmo dono) já está mirando neste monstro?
+func _irmao_mira(m: Node2D) -> bool:
+	if owner_p.get("summons") == null:
+		return false
+	for o in owner_p.summons.values():
+		if o != self and is_instance_valid(o) and o.foe == m:
+			return true
+	return false
+
+
+## Quantos monstros na tela/perto (fora o dado) ainda sem irmão mirando.
+func _outros_alvos(excl: Node2D) -> int:
+	var n := 0
+	var vr := CharacterVisual.view_rect
+	for m in _monsters():
+		if m == excl or _irmao_mira(m) or Rules.is_safe(m.global_position):
+			continue
+		if (vr.size.x > 0.0 and vr.has_point(m.global_position)) or Rules.gdist(owner_p.global_position, m.global_position) < 9.0:
+			n += 1
+	return n
