@@ -364,7 +364,11 @@ func _process_hud(_d: float) -> void:
 	var b := Rules.xp_to_reach(player.level + 1)
 	bars.xp = float(player.xp - a) / float(maxi(1, b - a))
 	bars.gold = player.gold
-	bars.sub = "%s %s" % [net.status, online]
+	# a linha de status é curta (o registro completo fica na aba Diagnóstico do menu)
+	var stt: String = net.status
+	if stt.length() > 30:
+		stt = stt.substr(0, 29) + "…"
+	bars.sub = "%s %s" % [stt, online]
 	bars.fps = int(Engine.get_frames_per_second())
 	bars.update_avatar(player)
 	CombatText.step(get_process_delta_time())

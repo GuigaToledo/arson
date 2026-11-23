@@ -140,7 +140,7 @@ func _build() -> void:
 	var t := _lbl("ARSON", 24, Color(1, 0.62, 0.22))
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	side.add_child(t)
-	var names := ["Personagem", "Magias", "Inventário", "Automação", "Gráficos", "Progresso"]
+	var names := ["Personagem", "Magias", "Inventário", "Automação", "Gráficos", "Progresso", "Diagnóstico"]
 	for i in names.size():
 		var b := _btn(names[i], func(): _tab(i), 16)
 		_tab_btns.append(b)
@@ -169,7 +169,7 @@ func _build() -> void:
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_theme_stylebox_override("panel", _style(Color(0.09, 0.065, 0.05), Color(0.35, 0.26, 0.15), 8, 14))
 	row.add_child(content)
-	for pg in [_page_char(), _page_spells(), _page_equip(), _page_auto(), _page_graphics(), _page_save()]:
+	for pg in [_page_char(), _page_spells(), _page_equip(), _page_auto(), _page_graphics(), _page_save(), _page_diag()]:
 		content.add_child(pg)
 		_pages.append(pg)
 	# X no canto de cima à direita (por cima de tudo, só o botão recebe toque)
@@ -209,6 +209,8 @@ func _show(i: int) -> void:
 		_refresh_char()
 	elif i == 4:
 		_refresh_quality()
+	elif i == 6:
+		_refresh_diag()
 
 
 func _vbox(sep := 10) -> VBoxContainer:
@@ -275,6 +277,100 @@ func _bar_row(name: String, lv: int, f: float, txt: String, col: Color) -> Contr
 	v.add_child(bar)
 	v.add_child(_lbl(txt, 12, DIM))
 	return v
+
+
+# ------------------------------------------------------------ Diagnóstico (testes)
+var _diag_lbl: Label
+var _diag_scroll: ScrollContainer
+var _diag_t := 0.0
+
+
+func _page_diag() -> Control:
+	var v := _vbox(6)
+	v.add_child(_lbl("Informações para testes: versão, rede, erros do motor e desempenho. Arraste para rolar.", 13, DIM))
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 8)
+	for b in [_btn("Atualizar", _refresh_diag), _btn("Copiar tudo", func():
+			DisplayServer.clipboard_set(_diag_lbl.text)
+			_diag_lbl.text = "(copiado)\n" + _diag_lbl.text)]:
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		h.add_child(b)
+	v.add_child(h)
+	_diag_scroll = ScrollContainer.new()
+	_diag_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_diag_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_diag_scroll.custom_minimum_size = Vector2(0, 280)
+	v.add_child(_diag_scroll)
+	_diag_lbl = Label.new()
+	_diag_lbl.add_theme_font_size_override("font_size", 11)
+	_diag_lbl.add_theme_color_override("font_color", Color(0.85, 0.8, 0.72))
+	_diag_lbl.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	_diag_lbl.custom_minimum_size = Vector2(640, 0)
+	_diag_scroll.add_child(_diag_lbl)
+	return v
+
+
+## Repete linhas iguais seguidas como "linha ×N".
+func _juntar(linhas: Array) -> Array:
+	var out := []
+	var i := 0
+	while i < linhas.size():
+		var j := i
+		while j + 1 < linhas.size() and linhas[j + 1] == linhas[i]:
+			j += 1
+		out.append(linhas[i] if j == i else "%s  ×%d" % [linhas[i], j - i + 1])
+		i = j + 1
+	return out
+
+
+func _refresh_diag() -> void:
+	if _diag_lbl == null:
+		return
+	var t := PackedStringArray()
+	t.append("== App ==")
+	var jogo := FileAccess.get_file_as_string("res://app/jogo.txt").strip_edges() if FileAccess.file_exists("res://app/jogo.txt") else "(navegador/teste)"
+	t.append("jogo: %s  assinatura: %s" % [jogo, str(Boot.app_sig)])
+	t.append("plataforma: %s  modelo: %s" % [OS.get_name(), OS.get_model_name()])
+	t.append("motor: %s  vídeo: %s" % [Engine.get_version_info().string, RenderingServer.get_video_adapter_name()])
+	t.append("pacote baixado carregado: %s  quedas: %d  parou em: %s" % [str(Boot.pack_loaded), int(Boot.crashes), str(Boot.last_step)])
+	t.append("")
+	t.append("== Desempenho ==")
+	t.append("fps: %d  nível de qualidade: %d  celular: %s" % [int(Engine.get_frames_per_second()), Settings.level_now, str(Settings.is_mobile())])
+	t.append("")
+	t.append("== Rede ==")
+	var ns: NetSync = NetSync.inst
+	if ns == null:
+		t.append("(rede não iniciada)")
+	else:
+		t.append("status: %s" % ns.status)
+		t.append("habilitada: %s  anfitrião: %s  pronta: %s  online: %d" % [str(ns.enabled), str(ns.is_host), str(ns.net_ready), ns.online_count])
+		var nomes := PackedStringArray()
+		for id in ns.remotes:
+			var rp = ns.remotes[id]
+			if is_instance_valid(rp):
+				nomes.append("%s (nv %d)" % [rp.display_name, int(rp.level)])
+		t.append("outros jogadores: %s" % (", ".join(nomes) if nomes.size() > 0 else "nenhum"))
+	if OS.has_feature("android") or OS.get_cmdline_user_args().has("--rede"):
+		t.append(load("res://scripts/net/net_nativo.gd").teste_webrtc())
+	var rede := Array(NetSync.diag_lines)
+	t.append("-- registro da rede (%d linhas) --" % rede.size())
+	t.append_array(PackedStringArray(_juntar(rede.slice(maxi(0, rede.size() - 40)))))
+	t.append("")
+	t.append("== Erros do motor (registro atual) ==")
+	var erros := []
+	var d := DirAccess.open("user://logs")
+	if d:
+		var arqs := Array(d.get_files()).filter(func(x): return x.ends_with(".log"))
+		arqs.sort()
+		if arqs.size() > 0:
+			for ln in FileAccess.get_file_as_string("user://logs/" + str(arqs[arqs.size() - 1])).split("\n", false):
+				if (ln.contains("ERROR") or ln.contains("WARNING") or ln.contains("arson-net")) and not ln.contains("ARSONPERF"):
+					erros.append(ln.strip_edges().substr(0, 220))
+	if erros.is_empty():
+		t.append("(nenhum erro registrado)")
+	else:
+		t.append_array(PackedStringArray(_juntar(erros.slice(maxi(0, erros.size() - 60)))))
+	_diag_lbl.text = "\n".join(t)
 
 
 # ------------------------------------------------------------ Magias

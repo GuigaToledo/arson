@@ -48,8 +48,24 @@ var _connect_t := 0.0
 var _visto := 0.0
 
 
+## Texto do teste do WebRTC nativo (aba Diagnóstico): diz se a extensão carregou e se cria canal de dados.
+static func teste_webrtc() -> String:
+	var t := PackedStringArray()
+	t.append("classe WebRTCPeerConnection: %s" % ClassDB.class_exists("WebRTCPeerConnection"))
+	t.append("extensão nativa (WebRTCLibPeerConnection) carregada: %s" % ClassDB.class_exists("WebRTCLibPeerConnection"))
+	if ClassDB.class_exists("WebRTCPeerConnection"):
+		var pc := WebRTCPeerConnection.new()
+		var e := pc.initialize({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]})
+		t.append("initialize: erro %d" % e)
+		var ch := pc.create_data_channel("teste")
+		t.append("create_data_channel: %s" % ("OK" if ch != null else "NULO (WebRTC não funciona neste aparelho)"))
+		pc.close()
+	return "\n".join(t)
+
+
 static func disponivel() -> bool:
-	if not ClassDB.class_exists("WebRTCPeerConnection"):
+	# a classe vazia do motor responde "ok" a tudo: só vale se a extensão nativa carregou de verdade
+	if not ClassDB.class_exists("WebRTCPeerConnection") or not ClassDB.class_exists("WebRTCLibPeerConnection"):
 		return false
 	var pc := WebRTCPeerConnection.new()
 	var ok := pc.initialize({}) == OK
@@ -69,9 +85,14 @@ func _rnd(n: int) -> String:
 	return s
 
 
+func _log(m: String) -> void:
+	print("[arson-net] ", m)
+	NetSync.diag_log(m)
+
+
 func _diag(m: String) -> void:
 	_status = m
-	print("[arson-net] ", m)
+	_log(m)
 
 
 # ------------------------------------------------------------ API (igual ao ArsonNet do navegador)
@@ -166,10 +187,15 @@ func reloadForUpdate(_slot) -> void:
 func _kill() -> void:
 	for cid in _conns:
 		var c: Dictionary = _conns[cid]
-		if c.ch:
-			c.ch.close()
-		if c.pc:
-			c.pc.close()
+		var no: Node = c.get("no")
+		if no and is_instance_valid(no):
+			no.fechar()
+			no.queue_free()
+		else:
+			if c.ch:
+				c.ch.close()
+			if c.pc:
+				c.pc.close()
 	_conns.clear()
 	_host_conn = ""
 	if _ws:
@@ -318,7 +344,13 @@ func _on_server(m) -> void:
 			var cid2 := str(p2.get("connectionId", ""))
 			if _conns.has(cid2):
 				var c: Dictionary = p2.get("candidate", {})
-				_conns[cid2].pc.add_ice_candidate(str(c.get("sdpMid", "0")), int(c.get("sdpMLineIndex", 0)), str(c.get("candidate", "")))
+				var meio := str(c.get("sdpMid", "0"))
+				if meio == "" or meio == "<null>":
+					meio = "0"
+				var linha := str(c.get("candidate", ""))
+				var er_ice: int = _conns[cid2].pc.add_ice_candidate(meio, int(c.get("sdpMLineIndex", 0)), linha)
+				if er_ice != OK:
+					_log("%s candidato remoto recusado (erro %d) %s" % [cid2, er_ice, linha.substr(0, 80)])
 
 
 # ------------------------------------------------------------ WebRTC
@@ -352,19 +384,20 @@ func _falha_rota(st: int, c: Dictionary) -> String:
 	return "Rota não abriu (estado %d, host %d, pública %d)." % [st, nh, ns]
 
 
-func _new_pc(cid: String, peer: String) -> WebRTCPeerConnection:
-	var pc := WebRTCPeerConnection.new()
+## Nó próprio por ligação: no Android a extensão não chama lambda nem Callable.bind.
+func _novo_no(cid: String, peer: String) -> Node:
+	var no := Node.new()
+	no.set_script(load("res://scripts/net/net_pc.gd"))
+	no.cid = cid
+	no.peer_id = peer
+	no.dono = self
+	add_child(no)
 	# TURN morto trava a coleta no celular. Só STUN; se o aparelho recusar, o padrão.
-	var err := pc.initialize(ICE_STUN)
-	if err != OK:
-		err = pc.initialize({})
-	print("[arson-net] conexão %s iniciada (erro %d)" % [cid, err])
+	var err: int = no.montar(ICE_STUN)
+	_log("conexão %s iniciada (erro %d)" % [cid, err])
 	if not _is_host:
 		_diag("Entrando… iniciada (erro %d)" % err)
-	# método do nó, não lambda: no Android a extensão não entrega o sinal para lambda
-	pc.session_description_created.connect(_on_sdp.bind(cid, peer))
-	pc.ice_candidate_created.connect(_on_ice.bind(cid, peer))
-	return pc
+	return no
 
 
 func _on_sdp(tipo: String, sdp: String, cid: String, peer: String) -> void:
@@ -376,7 +409,7 @@ func _on_sdp(tipo: String, sdp: String, cid: String, peer: String) -> void:
 	if tipo == "offer":
 		payload.merge({"label": cid, "serialization": "json", "reliable": true, "metadata": null})
 	var err := _ws_send({"type": tipo.to_upper(), "payload": payload, "dst": peer})
-	print("[arson-net] %s %s enviada (erro %d, %d bytes)" % [cid, tipo, err, sdp.length()])
+	_log("%s %s enviada (erro %d, %d bytes)" % [cid, tipo, err, sdp.length()])
 	if not _is_host:
 		_diag("Entrando… %s enviada (erro %d)" % [tipo, err])
 
@@ -403,7 +436,7 @@ func _on_ice(mid: String, idx: int, cand: String, cid: String, peer: String) -> 
 		elif tipo == "pública":
 			c["ns"] = int(c.get("ns", 0)) + 1
 	var err := _ws_send({"type": "CANDIDATE", "payload": {"candidate": {"candidate": linha, "sdpMid": meio, "sdpMLineIndex": idx}, "type": "data", "connectionId": cid}, "dst": peer})
-	print("[arson-net] %s candidato %s mid=%s (erro %d)" % [cid, tipo, meio, err])
+	_log("%s candidato %s mid=%s (erro %d)" % [cid, tipo, meio, err])
 	if not _is_host and _conns.has(cid) and int(_conns[cid].get("nc", 0)) <= 4:
 		_diag(_fase_txt())
 
@@ -411,14 +444,17 @@ func _on_ice(mid: String, idx: int, cand: String, cid: String, peer: String) -> 
 ## Cliente: conecta no anfitrião (eu ofereço, como o PeerJS do navegador faz).
 func _connect_to_host() -> void:
 	var cid := "dc_" + _rnd(12)
-	var pc := _new_pc(cid, _host_id())
-	var ch := pc.create_data_channel(cid, {"ordered": true})
+	var no := _novo_no(cid, _host_id())
+	var pc: WebRTCPeerConnection = no.pc
+	var ch: WebRTCDataChannel = pc.create_data_channel(cid, {"ordered": true})
 	if ch == null:
 		ch = pc.create_data_channel(cid)
-	_conns[cid] = {"pc": pc, "ch": ch, "peer": _host_id(), "uid": "", "open": false, "t0": Time.get_ticks_msec(), "st": -1, "nc": 0, "nh": 0, "ns": 0}
+	no.ch = ch
+	_conns[cid] = {"pc": pc, "ch": ch, "peer": _host_id(), "uid": "", "open": false, "t0": Time.get_ticks_msec(), "st": -1, "nc": 0, "nh": 0, "ns": 0, "no": no}
 	_host_conn = cid
 	_diag("Entrando… canal %s" % ["ok" if ch != null else "NULO"])
 	var eo := pc.create_offer()
+	pc.poll()
 	if eo != OK:
 		_diag("Entrando… oferta falhou (%d)" % eo)
 
@@ -430,11 +466,12 @@ func _on_offer(src: String, p) -> void:
 	if _conns.size() >= MAX_PLAYERS:
 		return
 	var cid := str(p.get("connectionId", "dc_" + _rnd(12)))
-	var pc := _new_pc(cid, src)
-	_conns[cid] = {"pc": pc, "ch": null, "peer": src, "uid": "", "open": false, "t0": Time.get_ticks_msec(), "nc": 0, "nh": 0, "ns": 0}
-	pc.data_channel_received.connect(_on_canal.bind(cid))
+	var no := _novo_no(cid, src)
+	var pc: WebRTCPeerConnection = no.pc
+	_conns[cid] = {"pc": pc, "ch": null, "peer": src, "uid": "", "open": false, "t0": Time.get_ticks_msec(), "nc": 0, "nh": 0, "ns": 0, "no": no}
 	var sdp: Dictionary = p.get("sdp", {})
 	pc.set_remote_description("offer", str(sdp.get("sdp", "")))
+	pc.poll()
 
 
 func _on_canal(ch: WebRTCDataChannel, cid: String) -> void:
@@ -448,10 +485,15 @@ func _drop(cid: String) -> void:
 	var c: Dictionary = _conns[cid]
 	if c.uid != "":
 		_players.erase(c.uid)
-	if c.ch:
-		c.ch.close()
-	if c.pc:
-		c.pc.close()
+	var no: Node = c.get("no")
+	if no and is_instance_valid(no):
+		no.fechar()
+		no.queue_free()
+	else:
+		if c.ch:
+			c.ch.close()
+		if c.pc:
+			c.pc.close()
 	_conns.erase(cid)
 
 
@@ -464,7 +506,7 @@ func _poll_conn(cid: String) -> void:
 	if int(c.get("st", -1)) != st:
 		c["st"] = st
 		var gs: int = pc.get_gathering_state()
-		print("[arson-net] %s estado %d gelo %d" % [cid, st, gs])
+		_log("%s estado %d gelo %d" % [cid, st, gs])
 		if cid == _host_conn and not _is_host:
 			_diag(_fase_txt())
 	if st == WebRTCPeerConnection.STATE_FAILED or st == WebRTCPeerConnection.STATE_CLOSED:

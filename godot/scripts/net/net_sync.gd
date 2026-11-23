@@ -14,6 +14,14 @@ static var inst: NetSync = null
 var enabled := false
 var net_ready := false
 var status := "offline"
+## Registro da rede em memória (aba Diagnóstico do menu): últimas linhas, com a hora.
+static var diag_lines: PackedStringArray = PackedStringArray()
+
+
+static func diag_log(m: String) -> void:
+	diag_lines.append("%s %s" % [Time.get_time_string_from_system(), m])
+	if diag_lines.size() > 120:
+		diag_lines = diag_lines.slice(diag_lines.size() - 120)
 var is_host := false
 var online_count := 1
 var uid := ""

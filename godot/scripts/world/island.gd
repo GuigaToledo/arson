@@ -399,6 +399,9 @@ func start_game(slot: int) -> void:
 		if str(arg).begins_with("--teste-vermenu="):
 			gm.toggle()
 			gm._show(int(str(arg).split("=")[1]))
+			if int(str(arg).split("=")[1]) == 6:
+				print("TESTE diagnostico:
+", gm._diag_lbl.text)
 
 
 func _process(delta: float) -> void:
