@@ -1,5 +1,15 @@
 [
  {
+  "versao": "0.19.3",
+  "data": "2026-11-23",
+  "titulo": "Aba Diagnóstico e correção da rede no celular",
+  "itens": [
+   "Nova aba \"Diagnóstico\" no menu: versão, plataforma, desempenho, estado da rede, teste do WebRTC, registro da conexão e erros do motor (com botão para copiar)",
+   "A linha de status ao lado do FPS ficou curta (o detalhe fica na aba Diagnóstico)",
+   "Corrigido no app: o celular não conseguia criar a conexão porque a biblioteca de rede precisava de um libc++ mais novo; o app novo traz a biblioteca certa"
+  ]
+ },
+ {
   "versao": "0.19.2",
   "data": "2026-11-23",
   "titulo": "App: tela de abertura com registro rolável",
