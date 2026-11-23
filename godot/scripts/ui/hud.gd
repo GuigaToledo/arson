@@ -370,6 +370,12 @@ func _process_hud(_d: float) -> void:
 		stt = stt.substr(0, 29) + "…"
 	bars.sub = "%s %s" % [stt, online]
 	bars.fps = int(Engine.get_frames_per_second())
+	var inv: Array = []
+	for sm in player.summons.values():
+		if is_instance_valid(sm) and not sm.dead:
+			var lk: Dictionary = Summon.LOOK[sm.els[0]]
+			inv.append([lk.under, sm.hp / maxf(1.0, sm.max_hp), lk.hair])
+	bars.invoc = inv
 	bars.update_avatar(player)
 	CombatText.step(get_process_delta_time())
 	var tk: Dictionary = player.task
@@ -715,6 +721,8 @@ class StatusBars:
 	extends Control
 	var portrait: Texture2D
 	var fps := 0
+	## Invocações vivas: [cor, vida (0-1), cor do detalhe]. Vazio = nada é desenhado.
+	var invoc: Array = []
 	## Avatar: o personagem renderizado (corpo + itens vestidos) do peito para cima.
 	var _av: Control
 	var _av_body: AnimatedSprite2D
@@ -821,6 +829,20 @@ class StatusBars:
 		var fw := font.get_string_size(ft, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 		draw_string_outline(font, Vector2(32 - fw * 0.5, 78), ft, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, 3, Color.BLACK)
 		draw_string(font, Vector2(32 - fw * 0.5, 78), ft, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, fc)
+		# retratos das invocações, abaixo do FPS (somem quando não há nenhuma)
+		var ix := 2.0
+		for iv in invoc:
+			var ic: Color = iv[0]
+			var ic2: Color = iv[2]
+			var hf: float = iv[1]
+			draw_rect(Rect2(ix, 86, 26, 26), Color(0, 0, 0, 0.65))
+			ElemArt.circle(self, Vector2(ix + 13, 99), 10, ic2.darkened(0.2))
+			ElemArt.circle(self, Vector2(ix + 13, 101), 7, ic)
+			ElemArt.circle(self, Vector2(ix + 10, 97), 2.5, Color(1, 1, 1, 0.6))
+			draw_rect(Rect2(ix, 86, 26, 26), Color(0.7, 0.55, 0.32), false, 1.5)
+			draw_rect(Rect2(ix, 114, 26, 5), Color(0, 0, 0, 0.7))
+			draw_rect(Rect2(ix + 1, 115, 24.0 * clampf(hf, 0, 1), 3), Color(0.35, 0.85, 0.3) if hf > 0.35 else Color(0.9, 0.25, 0.2))
+			ix += 30.0
 		draw_string_outline(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color.BLACK)
 		draw_string(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.4, 0.95, 0.4))
 		_bar(Vector2(72, 19), 190, hp, Color(0.72, 0.08, 0.06), "Vida " + hp_txt)
