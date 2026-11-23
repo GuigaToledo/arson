@@ -1627,3 +1627,147 @@ static func light(parent: Node, kind: String, pos: Vector2) -> void:
 					ElemArt.star(n, p, rng.randf_range(2, 4.5) * sin(fmod(k * 3.0 + i * 0.3, 1.0) * PI), Color(0.9, 0.95, 1, 0.9), k * 4.0))
 		_:
 			_light_old(parent, kind, pos)
+
+
+# ------------------------------------------------------------ aura de ki (escudo mágico)
+## Aura de ki em volta do corpo (escudo mágico).
+## c = centro do corpo (o personagem tem ~90 px de altura, pés em y=0, então use c ≈ Vector2(0, -42));
+## h = altura da aura (~100); col = cor principal, col2 = cor do brilho interno; t = tempo em segundos;
+## force = 0..1 (fica mais fraca quando o escudo está quase quebrado).
+static func ki_aura(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, force := 1.0) -> void:
+	if h < 4.0:
+		return
+	# alpha geral: escudo cheio brilha; quase quebrado fica no mínimo, ainda visível
+	var gain := 0.35 + 0.65 * clampf(force, 0.0, 1.0)
+	# chama em volta do corpo, em coordenadas locais (origem = c). y positivo = para baixo.
+	# base arredondada um pouco abaixo dos pés, laterais que incham (~0.55*h) e coroa de pontas.
+	var ring := PackedVector2Array()
+	var bulb := Vector2(0.0, h * 0.42)
+	for i in 7:
+		var ang := lerpf(PI, 0.0, float(i) / 6.0)
+		ring.append(bulb + Vector2(cos(ang) * h * 0.17, sin(ang) * h * 0.10))
+	var right := PackedVector2Array()
+	for i in 7:
+		var sf := float(i + 1) / 7.0
+		var ss := sin(sf * PI)
+		# onda sobe com o tempo (a crista vai para sf maior)
+		var wave := sin(t * 5.2 - sf * 6.6) * 0.012 * ss
+		var nx := 0.17 + 0.105 * ss * ss + wave
+		if sf > 0.72:
+			nx = lerpf(nx, 0.155, (sf - 0.72) / 0.28)
+		var ny := lerpf(0.42, -0.40, sf) + sin(t * 4.0 - sf * 5.2) * 0.01 * ss
+		right.append(Vector2(nx * h, ny * h))
+	for i in right.size():
+		ring.append(right[i])
+	# cinco línguas, da direita para a esquerda; cada ponta tem a própria fase
+	var tip_x := [0.145, 0.07, 0.0, -0.065, -0.14]
+	var tip_y := [0.62, 0.71, 0.80, 0.69, 0.60]
+	for i in 5:
+		var ph := float(i)
+		var s1 := sin(t * 6.4 + ph * 1.7)
+		var flick := 0.022 * s1 + 0.012 * sin(t * 11.2 + ph * 2.6)
+		var sway := sin(t * 4.3 + ph * 1.35) * 0.012
+		ring.append(Vector2((tip_x[i] + sway) * h, -(tip_y[i] + flick) * h))
+		if i < 4:
+			var vx: float = (tip_x[i] + tip_x[i + 1]) * 0.5 + sin(t * 3.4 + ph) * 0.008
+			var valley := 0.55 + 0.012 * sin(t * 5.2 + ph * 2.1)
+			ring.append(Vector2(vx * h, -valley * h))
+	for i in range(right.size() - 1, -1, -1):
+		var rp: Vector2 = right[i]
+		ring.append(Vector2(-rp.x, rp.y))
+	var m := ring.size()
+	if m < 6:
+		return
+	# cápsula vazia em volta do corpo (pés até o chapéu). O brilho fica FORA dela,
+	# então o personagem continua visível e as pontas acima da cabeça ficam cheias.
+	var rx := h * 0.15
+	var ry := h * 0.48
+	var ey := -h * 0.05
+	var inner := PackedVector2Array()
+	var hot := PackedVector2Array()
+	var edge := PackedVector2Array()
+	var far := PackedVector2Array()
+	for i in m:
+		var p: Vector2 = ring[i]
+		var plen := maxf(p.length(), 1.0)
+		var d := p / plen
+		var A := (d.x * d.x) / (rx * rx) + (d.y * d.y) / (ry * ry)
+		var B := -2.0 * d.y * ey / (ry * ry)
+		var C := (ey * ey) / (ry * ry) - 1.0
+		var disc := maxf(0.0, B * B - 4.0 * A * C)
+		var inv := 1.0 / (2.0 * maxf(A, 0.0000001))
+		var rad := maxf((-B + sqrt(disc)) * inv, (-B - sqrt(disc)) * inv)
+		# fica dentro da chama, com um vão mínimo, e nunca cola no centro
+		var rad_max := maxf(h * 0.08, plen - h * 0.035)
+		rad = clampf(rad, h * 0.06, rad_max)
+		var inn := d * rad
+		inner.append(inn)
+		hot.append(inn.lerp(p, 0.4))
+		edge.append(p)
+		far.append(p * 1.08)
+	# três faixas concêntricas: fora larga e suave, dentro mais clara e estreita
+	var c_far := Color(col, 0.0)
+	var c_edge := Color(col.lerp(col2, 0.2), col.a * gain * 0.16)
+	var c_hot := Color(col2.lightened(0.3), col2.a * gain * 0.38)
+	var c_near := Color(col2, col2.a * gain * 0.05)
+	var idx := PackedInt32Array()
+	for i in m - 1:
+		var o := i * 2
+		idx.append_array(PackedInt32Array([o, o + 2, o + 3, o, o + 3, o + 1]))
+	var oc := (m - 1) * 2
+	idx.append_array(PackedInt32Array([oc, 0, 1, oc, 1, oc + 1]))
+	var shells := [far, edge, hot, inner]
+	var scols := [c_far, c_edge, c_hot, c_near]
+	for si in 3:
+		var oa := shells[si] as PackedVector2Array
+		var ia := shells[si + 1] as PackedVector2Array
+		var co := scols[si] as Color
+		var ci := scols[si + 1] as Color
+		var pts := PackedVector2Array()
+		var cs := PackedColorArray()
+		for i in m:
+			pts.append(c + oa[i])
+			pts.append(c + ia[i])
+			cs.append(co)
+			cs.append(ci)
+		ElemArt.emit(n, idx, pts, cs)
+	# contorno claro e fino na camada de fora (mais um halo largo e suave)
+	var line := PackedVector2Array()
+	for i in m:
+		line.append(c + edge[i])
+	line.append(line[0])
+	ElemArt.polyline(n, line, Color(col, col.a * gain * 0.16), maxf(2.0, h * 0.032))
+	var rim := col.lightened(0.5).lerp(Color.WHITE, 0.35)
+	ElemArt.polyline(n, line, Color(rim, rim.a * col.a * gain * 0.88), maxf(1.0, h * 0.013))
+	# faíscas sobem e somem. A posição sai só de t, para o desenho não piscar.
+	var spark_x := [0.2, -0.18, 0.15, -0.22, 0.11, -0.16, 0.23, -0.12, 0.17, -0.2, 0.08, -0.14]
+	for i in spark_x.size():
+		var spd := 0.62 + float(i % 4) * 0.16
+		var kf := fposmod(t * spd + float(i) * 0.173, 1.0)
+		var life := clampf(kf * 4.0, 0.0, 1.0) * (1.0 - kf)
+		if life <= 0.03:
+			continue
+		var kx: float = spark_x[i] * lerpf(1.0, 0.38, kf)
+		var ky := lerpf(0.28, -0.72, kf)
+		var sp := c + Vector2(kx * h + sin(t * 3.1 + float(i)) * h * 0.01, ky * h)
+		var hot_c := col2.lightened(0.4) if i % 2 == 0 else col.lightened(0.3)
+		var sc := Color(hot_c, hot_c.a * gain * life * 0.9)
+		var rr := maxf(0.7, h * 0.016 * (1.0 - kf * 0.5))
+		if i % 4 == 0:
+			ElemArt.star(n, sp, rr * 1.8, sc, t * 2.4 + float(i))
+		else:
+			ElemArt.circle(n, sp, rr, sc)
+	# três riscos verticais rápidos na faixa de energia
+	var streak_x := [-0.19, 0.1, 0.18]
+	for i in 3:
+		var qf := fposmod(t * (2.5 + float(i) * 0.55) + float(i) * 0.37, 1.0)
+		var sa := gain * sin(qf * PI)
+		if sa <= 0.03:
+			continue
+		var qx: float = streak_x[i] + sin(t * 2.4 + float(i) * 2.1) * 0.012
+		var y0 := lerpf(0.22, -0.48, qf)
+		var ln := 0.15 + float(i) * 0.02
+		var p0 := c + Vector2(qx * h, y0 * h)
+		var p1 := c + Vector2(qx * h, (y0 - ln) * h)
+		ElemArt.ribbon(n, PackedVector2Array([p0, p1]), maxf(1.6, h * 0.026), maxf(0.3, h * 0.004), Color(col, col.a * sa * 0.4), true)
+		n.draw_line(p0, p1, Color(col2.lightened(0.45), col2.a * sa * 0.85), maxf(1.0, h * 0.011), SpellArt.AA)

@@ -355,6 +355,13 @@ func start_game(slot: int) -> void:
 			print("TESTE melhorias luz1 nivel=", player.spell_lvl("luz:1"), " melhorias=", player.spell_up("luz:1"))
 		if str(arg) == "--teste-levelup":
 			player.skill_gain(player.elem_a(), Rules.skill_need("magia", player.magia()))
+		# --teste-escudo: lança o escudo mágico (aura de ki) para conferir o desenho
+		if str(arg) == "--teste-escudo":
+			player.skills.magia = [12, 0.0]
+			get_tree().create_timer(1.0).timeout.connect(func():
+				player.mp = player.max_mp
+				player.cast_spell(player.elem_a() + ":3")
+				print("TESTE escudo aura=", player.shield_hp > 0.0))
 		if str(arg) == "--teste-bolsa":
 			ui.toggle()
 		if str(arg).begins_with("--teste-vermenu="):

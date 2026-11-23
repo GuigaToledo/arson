@@ -1094,6 +1094,7 @@ func _tick_states(delta: float) -> void:
 		immortal_t -= delta
 	if _aura:
 		_aura.shield = shield_hp > 0.0
+		_aura.force = shield_hp / maxf(1.0, shield_max)
 		_aura.shield_col = shield_col
 		_aura.shield_els = shield_els
 		_aura.spirit = spirit_t > 0.0
@@ -1387,6 +1388,8 @@ class StatusAura:
 	var shield := false
 	var shield_col := Color.WHITE
 	var shield_els: Array = []
+	## Fração do escudo que resta (a aura enfraquece quando está quase quebrando).
+	var force := 1.0
 	var spirit := false
 	var immortal := false
 	## Asas da Ascensão: uma de cada elemento que o mago domina.
@@ -1458,10 +1461,15 @@ class StatusAura:
 
 	func _draw() -> void:
 		if shield:
-			for e in shield_els:
-				_draw_shield(str(e))
-			if shield_els.is_empty():
-				_draw_shield("")
+			# escudo mágico: aura de ki envolvendo o corpo todo, nas cores do(s) elemento(s) do escudo
+			var c1: Color = shield_col
+			var c2: Color = shield_col.lightened(0.5)
+			if shield_els.size() >= 1 and Spellbook.ELEMENTS.has(str(shield_els[0])):
+				c1 = Spellbook.ELEMENTS[str(shield_els[0])].cor
+				c2 = c1.lightened(0.55)
+			if shield_els.size() >= 2 and Spellbook.ELEMENTS.has(str(shield_els[1])):
+				c2 = (Spellbook.ELEMENTS[str(shield_els[1])].cor as Color).lightened(0.3)
+			SpellArt.ki_aura(self, Vector2(0, -42), 100.0, c1, c2, _t, force)
 		if hot:
 			for i in 3:
 				var k := fmod(_t * 0.6 + i / 3.0, 1.0)

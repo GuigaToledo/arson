@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.18.2",
+  "data": "2026-11-23",
+  "titulo": "Escudo mágico como aura de ki",
+  "itens": [
+   "O escudo mágico virou uma aura de energia em volta do corpo todo, tremulando para cima com faíscas, nas cores do elemento (o escudo fundido mistura as duas cores)",
+   "A aura enfraquece conforme o escudo vai quebrando"
+  ]
+ },
+ {
   "versao": "0.18.1",
   "data": "2026-11-23",
   "titulo": "Bolsa de 100 espaços e loja completa",
