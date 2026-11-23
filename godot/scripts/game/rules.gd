@@ -3,7 +3,7 @@ extends RefCounted
 
 ## MODO TESTE: todos os personagens e magias no nível 100 (não salva no progresso).
 ## Desligar (false) devolve cada personagem ao nível real.
-const TESTE_NIVEL_100 := true
+const TESTE_NIVEL_100 := false
 ## Regras do jogo: níveis, experiência, dano. Distâncias de jogo em tiles (grade).
 
 

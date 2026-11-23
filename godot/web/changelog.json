@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.16.1",
+  "data": "2026-11-23",
+  "titulo": "Ícones na barra e fim do modo teste",
+  "itens": [
+   "Barra de magias (computador) e roda de magias (celular) com os ícones novos de cada magia",
+   "Modo teste do nível 100 desligado: cada personagem volta ao nível e às magias que realmente conquistou"
+  ]
+ },
+ {
   "versao": "0.16.0",
   "data": "2026-11-23",
   "titulo": "Grimório e ficha do personagem",

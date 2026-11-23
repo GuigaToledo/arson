@@ -534,6 +534,7 @@ class SpellWheel:
 			var c: Vector2 = b[0]
 			var r: float = b[1]
 			var label := ""
+			var sid := ""
 			var col := Color(0.4, 0.35, 0.3)
 			var dim := 0.0
 			var cdf := 0.0
@@ -543,8 +544,9 @@ class SpellWheel:
 					col = s.color
 					label = s.curto
 					var id := str(player.bar[i])
+					sid = id
 					if not player.spell_unlocked(id):
-						dim = 0.7
+						dim = 0.4
 					else:
 						var cd := float(player.cds.get(id, 0.0))
 						if cd > 0.0:
@@ -556,9 +558,14 @@ class SpellWheel:
 				col = Color(0.85, 0.15, 0.12) if hpk else Color(0.2, 0.35, 0.95)
 				label = str(player.hp_pot if hpk else player.mp_pot)
 			ElemArt.circle(self, c, r + 3, Color(0, 0, 0, 0.5))
-			ElemArt.circle(self, c, r, col.darkened(0.55).lerp(Color(1, 0.9, 0.6), float(_flash.get(i, 0.0)) * 0.5))
-			ElemArt.circle(self, c, r * 0.45, col)
-			ElemArt.circle(self, c, r * 0.18, Color(1, 1, 0.92))
+			if sid != "":
+				SpellTree.icon_round(self, c, r, sid, player.classe, player.spell_unlocked(sid), Time.get_ticks_msec() / 1000.0)
+				if _flash.has(i):
+					ElemArt.circle(self, c, r, Color(1, 0.9, 0.6, float(_flash[i]) * 0.4))
+			else:
+				ElemArt.circle(self, c, r, col.darkened(0.55).lerp(Color(1, 0.9, 0.6), float(_flash.get(i, 0.0)) * 0.5))
+				ElemArt.circle(self, c, r * 0.45, col)
+				ElemArt.circle(self, c, r * 0.18, Color(1, 1, 0.92))
 			if cdf > 0.0:
 				ElemArt.arc(self, c, r * 0.75, -PI / 2, -PI / 2 + TAU * cdf, 32, Color(0, 0, 0, 0.7), r * 0.5)
 			if dim > 0.0:
@@ -619,18 +626,14 @@ class SpellBar:
 				if s.is_empty():
 					label = "vazio"
 				else:
-					var col: Color = s.color
-					ElemArt.circle(self, c, 13, Color(col, 0.3))
-					ElemArt.circle(self, c, 7, col)
-					ElemArt.circle(self, c, 3, Color(1, 1, 0.9))
-					var tw2 := font.get_string_size(str(s.tier), HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
-					draw_string(font, r.position + Vector2(r.size.x - tw2 - 3, 10), str(s.tier), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, col.lightened(0.3))
+					var bid := str(player.bar[i])
+					SpellTree.icon(self, Rect2(r.position + Vector2(4, 3), Vector2(SZ - 8, SZ - 8)), bid, player.classe, player.spell_unlocked(bid), Time.get_ticks_msec() / 1000.0)
 					label = s.curto
 				var cd := float(player.cds.get(str(player.bar[i]) if i < player.bar.size() else "", 0.0))
 				if s.is_empty():
 					pass
 				elif not player.spell_unlocked(str(player.bar[i])):
-					draw_rect(r, Color(0, 0, 0, 0.72))
+					draw_rect(r, Color(0, 0, 0, 0.35))
 				elif cd > 0.0:
 					var f := cd / float(s.cd)
 					draw_rect(Rect2(r.position + Vector2(0, r.size.y * (1.0 - f)), Vector2(r.size.x, r.size.y * f)), Color(0, 0, 0, 0.65))

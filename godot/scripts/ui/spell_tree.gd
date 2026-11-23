@@ -445,6 +445,28 @@ static func icon(n: CanvasItem, r: Rect2, id: String, classe: String, ok: bool, 
 	_gray = false
 
 
+## Ícone redondo (roda de magias do celular): fundo em círculo e o mesmo símbolo, sem moldura quadrada.
+static func icon_round(n: CanvasItem, p: Vector2, rad: float, id: String, classe: String, ok: bool, t := 0.0) -> void:
+	var parts := id.split(":")
+	if parts.size() != 2:
+		return
+	var el := parts[0]
+	var tier := int(parts[1])
+	if el == "fus":
+		medal(n, p, rad, id, classe, ok, t)
+		return
+	_gray = not ok
+	var col: Color = Spellbook.ELEMENTS[el].cor if Spellbook.ELEMENTS.has(el) else Color.WHITE
+	var s := rad * 1.62
+	ElemArt.circle(n, p, rad, _g(col.darkened(0.8)))
+	ElemArt.circle(n, p + Vector2(0, s * 0.06), rad * 0.85, _g(Color(col.darkened(0.45), 0.5)))
+	if el == "luz":
+		_luz_glyph(n, p, s, tier, col, t)
+	else:
+		_glyph(n, p, s, el, tier, col, t)
+	_gray = false
+
+
 ## Medalhão redondo das fusões: as duas cores da classe, uma de cada lado.
 static func medal(n: CanvasItem, p: Vector2, rad: float, id: String, classe: String, ok: bool, t := 0.0) -> void:
 	_gray = not ok
