@@ -160,7 +160,8 @@ def saia(arm, nome, mat, z_top=1.02, z_bot=0.16, r_top=(0.19, 0.14), r_bot=(0.42
     for v in me.vertices:
         t = (z_top - v.co.z) / (z_top - z_bot)
         lado = max(-1.0, min(1.0, v.co.x / 0.12))
-        perna = min(1.0, t * 1.4)
+        # perna puxa pouco: com muito peso a saia abria como um sino ao correr
+        perna = min(0.42, t * 0.7)
         o.vertex_groups["pelvis"].add([v.index], max(0.0, 1.0 - perna), "REPLACE")
         coxa = perna * (1.0 - max(0.0, t - 0.5))
         canela = perna * max(0.0, t - 0.5)
