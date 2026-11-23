@@ -2557,10 +2557,10 @@
   "name": "Dragão Rubro",
   "regiao": "Acampamento dos Ciclopes",
   "desc": "Dragão antigo de escamas cor de brasa que fez ninho nas rochas ao sul. Cospe fogo e derruba tudo com o bater das asas.",
-  "hp": 25272,
-  "atk": 95,
-  "def": 12.5,
-  "xp": 18295,
+  "hp": 31500,
+  "atk": 103,
+  "def": 13.5,
+  "xp": 23400,
   "gold": [
    200,
    420
@@ -2633,7 +2633,7 @@
   ],
   "chefe": true,
   "respawn": 300,
-  "nivel": 46,
+  "nivel": 50,
   "hp_base": 1800,
   "atk_base": 38
  }
