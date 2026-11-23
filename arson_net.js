@@ -186,6 +186,7 @@
       x: Math.max(-20000, Math.min(20000, +s.x)), y: Math.max(-20000, Math.min(20000, +s.y)),
       vx: isFinite(s.vx) ? Math.max(-600, Math.min(600, +s.vx)) : 0, vy: isFinite(s.vy) ? Math.max(-600, Math.min(600, +s.vy)) : 0,
       f: String(s.f || 'S').slice(0, 2), a: String(s.a || 'idle').slice(0, 8), n: String(s.n || 'Viajante').slice(0, 16), eq,
+      sh: Array.isArray(s.sh) ? s.sh.slice(0, 2).map(x => String(x).replace(/[^a-z]/g, '').slice(0, 9)) : [], shf: isFinite(s.shf) ? Math.max(0, Math.min(1, +s.shf)) : 0,
       d: s.d ? 1 : 0, sf: s.sf ? 1 : 0, l: Math.max(1, Math.min(9999, s.l | 0)), c: String(s.c || '').replace(/[^a-z]/g, '').slice(0, 8), hp: Math.max(0, Math.min(100, s.hp | 0)),
       sm: Array.isArray(s.sm) ? s.sm.slice(0, 2).filter(a => Array.isArray(a) && a.length === 6).map(a => [a[0] | 0, a[1] | 0, String(a[2]).replace(/[^a-z]/g, '').slice(0, 9), a[3] ? 1 : 0, String(a[4]).slice(0, 2), String(a[5]).replace(/[^a-z]/g, '').slice(0, 8)]) : [],
     };
