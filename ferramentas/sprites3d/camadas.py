@@ -135,6 +135,7 @@ pe = world_to_camera_view(sc, cam, Vector((0, 0, 0)))
 meta = {"tamanho": SIZE, "pe": [round(pe.x * SIZE, 1), round((1 - pe.y) * SIZE, 1)], "anims": {}}
 # animação mista "Pernas+Braços" (ex.: Walk_Loop+Spell_Simple_Shoot): pernas e quadril de uma, tronco e braços da outra
 HASTES = [o for o in bpy.data.objects if o.name.endswith("_haste")]
+BASE_LOC = {o.name: o.location.copy() for o in HASTES}
 CIMA = [b.name for b in arm.data.bones if b.name == "spine_01" or "spine_01" in [p.name for p in b.parent_recursive]]
 for item in SPEC.split(","):
     jogo, resto = item.split("=")
@@ -165,10 +166,14 @@ for item in SPEC.split(","):
             for hs in HASTES:
                 if jogo.startswith("cast"):
                     u = k / max(1, nq - 1)
-                    tilt = math.radians(72) * math.sin(math.pi * min(1.0, u * 1.25))
+                    g = math.sin(math.pi * min(1.0, u * 1.25))
+                    tilt = math.radians(62) * g
+                    sobe = 0.32 * g
                 else:
                     tilt = 0.0
+                    sobe = 0.0
                 hs.rotation_euler = (tilt, 0.0, R.pivot.rotation_euler.z)
+                hs.location = BASE_LOC[hs.name] + Vector((0, 0, sobe))
             if HASTES:
                 bpy.context.view_layer.update()
             nomeq = "%s_%s_%02d" % (jogo, d, k)
