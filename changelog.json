@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.17.0",
+  "data": "2026-11-23",
+  "titulo": "Itens renderizados em 3D",
+  "itens": [
+   "Os 70 itens ganharam ícones renderizados em 3D (mantos, capas, chapéus, elmos, botas, luvas, cajados, grimórios, amuletos e anéis), com luz quente e contraluz no estilo das fichas de personagem",
+   "Os ícones aparecem na bolsa, nos espaços de equipamento e na loja"
+  ]
+ },
+ {
   "versao": "0.16.1",
   "data": "2026-11-23",
   "titulo": "Ícones na barra e fim do modo teste",
