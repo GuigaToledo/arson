@@ -104,7 +104,7 @@ func play_action(a: String, duration: float) -> void:
 static var _bodies := {}
 const SPRITE_DIRS := ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
 ## Animações do jogo que usam outra animação renderizada.
-const SPRITE_ALIAS := {"spell": "cast", "attack": "cast", "punch": "cast", "kick": "cast", "headbutt": "cast", "grab": "cast", "spin": "cast", "run": "walk"}
+const SPRITE_ALIAS := {"spell": "cast", "attack": "cast", "punch": "cast", "kick": "cast", "headbutt": "cast", "grab": "cast", "spin": "cast", "run": "walk", "cast_walk": "walk", "cast_run": "run"}
 
 
 ## Corpo renderizado de uma classe: o corpo base (roupa de baixo, os itens vestidos aparecem por
