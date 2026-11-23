@@ -24,6 +24,11 @@ func gain_xp(n: int, g: int, src: String) -> void:
 		NetSync.inst.send_to(uid, {"t": "xp", "n": n, "g": g, "src": src})
 
 var _target := Vector2.ZERO
+## Velocidade informada e tempo desde o último estado: prevê onde o jogador está agora
+## (o estado chega com atraso: ele -> anfitrião -> eu).
+var _vel := Vector2.ZERO
+var _age := 0.0
+const LATENCIA := 0.12
 var _eq_key := ""
 
 
@@ -49,6 +54,8 @@ func _ready() -> void:
 
 func apply_state(s: Dictionary) -> void:
 	_target = Vector2(float(s.get("x", position.x)), float(s.get("y", position.y)))
+	_vel = Vector2(float(s.get("vx", 0.0)), float(s.get("vy", 0.0)))
+	_age = 0.0
 	dead = int(s.get("d", 0)) == 1
 	level = int(s.get("l", 1))
 	hp_pct = int(s.get("hp", 100))
@@ -125,11 +132,13 @@ func _exit_tree() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	var to := _target - position
+	_age += delta
+	var alvo := _target + _vel * minf(_age + LATENCIA, 0.35)
+	var to := alvo - position
 	if to.length() > 400.0:
-		position = _target
+		position = alvo
 	else:
-		position += to * minf(1.0, delta * 10.0)
+		position += to * minf(1.0, delta * 14.0)
 	var spd := 210.0 if anim == "run" else (120.0 if anim == "walk" else 0.0)
 	# magia lançada andando: a posição ainda está mudando
 	var andando := to.length() > 2.0

@@ -116,6 +116,7 @@ func _process(delta: float) -> void:
 			eq[str(k)] = ids[k]
 		_net.setMe(JSON.stringify({
 			"x": snappedf(player.global_position.x, 0.1), "y": snappedf(player.global_position.y, 0.1),
+			"vx": snappedf(player.velocity.x, 1.0), "vy": snappedf(player.velocity.y, 1.0),
 			"f": player.facing, "a": player.anim, "n": player.display_name, "eq": eq,
 			"d": player.dead, "sf": Rules.is_safe(player.global_position), "l": player.level, "c": player.classe, "hp": int(round(player.hp * 100.0 / player.max_hp)), "sm": player.summons_state(),
 		}))

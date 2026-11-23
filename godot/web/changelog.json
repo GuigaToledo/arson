@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.18.5",
+  "data": "2026-11-23",
+  "titulo": "Multijogador: posição dos outros jogadores",
+  "itens": [
+   "Os outros jogadores aparecem onde realmente estão: o jogo agora envia a velocidade e prevê a posição atual em vez de mostrar onde o jogador estava há alguns décimos de segundo",
+   "Aura do escudo mais redonda, cobrindo o personagem inteiro mesmo correndo ou virando"
+  ]
+ },
+ {
   "versao": "0.18.4",
   "data": "2026-11-23",
   "titulo": "Minimapa",
