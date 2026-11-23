@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.18.9",
+  "data": "2026-11-23",
+  "titulo": "App se atualiza sozinho",
+  "itens": [
+   "App de celular: atualização automática, sem tocar em nada, como no navegador (ao abrir e a cada minuto durante o jogo; reinicia e volta no mesmo personagem)",
+   "Escudo mágico menor e centralizado no corpo (os pés ficam dentro)"
+  ]
+ },
+ {
   "versao": "0.18.8",
   "data": "2026-11-23",
   "titulo": "Escudo oval e magia saindo do cajado",
