@@ -1,0 +1,369 @@
+# Itens do jogo modelados em 3D por cima do corpo Quaternius (mesmo esqueleto das animações).
+# Cada estilo (placeholder_style do .tres) vira uma ou mais peças que seguem os ossos.
+# Usado para os ícones (icones.py) e para as camadas vestidas nos personagens (camadas.py).
+import bpy, bmesh, math, re, os, glob
+import roupas
+from roupas import casca, saia, capa, dobras, tecido, metal, cristal
+from roupas import _no_osso as _no_osso0
+from roupas import couro as _couro0
+
+
+def _no_osso(obj, arm, osso, pos=None):
+    bpy.context.view_layer.update()
+    _no_osso0(obj, arm, osso, pos)
+
+
+def couro(name, cor):
+    """Couro mais liso que o das roupas (nos itens pequenos o relevo grosso parecia pedra)."""
+    m = _couro0(name, cor)
+    for nd in m.node_tree.nodes:
+        if nd.type == "BUMP":
+            nd.inputs["Strength"].default_value = 0.12
+        if nd.type == "TEX_NOISE":
+            nd.inputs["Scale"].default_value = 110.0
+    return m
+
+ITENS = r"E:\Claude Jobs\arson\godot\data\items"
+
+
+def lin(c):
+    """Cor do Godot (sRGB) para a cor linear do Blender."""
+    return tuple((x / 12.92) if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in c[:3])
+
+
+def ler_itens():
+    """id -> {estilo, cor, acento, brilho, slot, nome} lido dos .tres."""
+    out = {}
+    for f in sorted(glob.glob(os.path.join(ITENS, "*.tres"))):
+        t = open(f, encoding="utf-8").read()
+
+        def cor(campo, padrao):
+            m = re.search(campo + r" = Color\(([^)]*)\)", t)
+            return tuple(float(x) for x in m.group(1).split(",")) if m else padrao
+        idm = re.search(r'id = &"([^"]+)"', t)
+        st = re.search(r'placeholder_style = &"([^"]+)"', t)
+        if not idm or not st:
+            continue
+        gl = re.search(r"glow = ([0-9.]+)", t)
+        sl = re.search(r"slot = (\d+)", t)
+        nm = re.search(r'display_name = "([^"]*)"', t)
+        out[idm.group(1)] = dict(estilo=st.group(1), cor=cor("placeholder_color", (0.3, 0.3, 0.3, 1)),
+            acento=cor("placeholder_accent", (1, 0.5, 0.1, 1)), brilho=float(gl.group(1)) if gl else 0.0,
+            slot=int(sl.group(1)) if sl else 1, nome=nm.group(1) if nm else idm.group(1))
+    return out
+
+
+DEDOS = {f"{d}_{i:02d}_{s}" for d in ["index", "middle", "ring", "pinky", "thumb"] for i in (1, 2, 3) for s in "lr"}
+
+
+def _osso_pos(arm, osso, cauda=False):
+    b = arm.data.bones[osso]
+    return arm.matrix_world @ (b.tail_local if cauda else b.head_local)
+
+
+def _malha(nome, bm, mat):
+    me = bpy.data.meshes.new(nome)
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new(nome, me)
+    bpy.context.scene.collection.objects.link(o)
+    me.materials.append(mat)
+    for p in me.polygons:
+        p.use_smooth = True
+    return o
+
+
+def _torno(nome, perfil, mat, seg=32):
+    """Sólido de revolução em volta de Z: perfil = [(raio, z), ...]."""
+    bm = bmesh.new()
+    rings = []
+    for r, z in perfil:
+        rings.append([bm.verts.new((math.cos(2 * math.pi * j / seg) * r, math.sin(2 * math.pi * j / seg) * r, z)) for j in range(seg)])
+    for i in range(len(rings) - 1):
+        for j in range(seg):
+            bm.faces.new((rings[i][j], rings[i][(j + 1) % seg], rings[i + 1][(j + 1) % seg], rings[i + 1][j]))
+    return _malha(nome, bm, mat)
+
+
+def _cubo(nome, tam, pos, mat, bevel=0.006):
+    bpy.ops.mesh.primitive_cube_add(size=1.0)
+    o = bpy.context.active_object
+    o.name = nome
+    o.scale = tam
+    o.location = pos
+    o.data.materials.append(mat)
+    if bevel:
+        b = o.modifiers.new("bev", "BEVEL")
+        b.width = bevel
+        b.segments = 2
+    return o
+
+
+def _esfera(nome, r, pos, mat, esc=(1, 1, 1)):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=20, ring_count=12, radius=r)
+    o = bpy.context.active_object
+    o.name = nome
+    o.location = pos
+    o.scale = esc
+    o.data.materials.append(mat)
+    for p in o.data.polygons:
+        p.use_smooth = True
+    return o
+
+
+def _toro(nome, R, r, pos, mat, esc=(1, 1, 1), rot=(0, 0, 0)):
+    bpy.ops.mesh.primitive_torus_add(major_radius=R, minor_radius=r, major_segments=36, minor_segments=10)
+    o = bpy.context.active_object
+    o.name = nome
+    o.location = pos
+    o.scale = esc
+    o.rotation_euler = rot
+    o.data.materials.append(mat)
+    for p in o.data.polygons:
+        p.use_smooth = True
+    return o
+
+
+def _segue_mao(obj, arm, mao, offset):
+    """Objeto em pé acompanhando a posição da mão (cajados, varinhas)."""
+    cl = obj.constraints.new("COPY_LOCATION")
+    cl.target = arm
+    cl.subtarget = mao
+    cl.use_offset = True
+    obj.location = offset
+
+
+def _grosso(o, esp=0.008):
+    s = o.modifiers.new("esp", "SOLIDIFY")
+    s.thickness = esp
+    s.offset = 1.0
+    return o
+
+
+def construir(arm, body, item_id, it):
+    """Peças 3D de um item. Devolve a lista de objetos (sem o corpo)."""
+    e = it["estilo"]
+    c = lin(it["cor"])
+    a = lin(it["acento"])
+    tag = item_id
+    m_pano = tecido("pano_" + tag, c)
+    m_couro = couro("couro_" + tag, c)
+    m_metal = metal("metal_" + tag, tuple(min(1.0, x * 1.6 + 0.05) for x in c))
+    m_ouro = metal("ouro_" + tag, a)
+    m_gema = cristal("gema_" + tag, a)
+    if it["brilho"] <= 0.0:
+        bs = m_gema.node_tree.nodes["Principled BSDF"]
+        bs.inputs["Emission Strength"].default_value = 0.6
+    pecas = []
+    cabeca = {"Head", "neck_01"}
+    if e == "hood":
+        def corta_rosto(co):
+            return co.y < -0.02 and 1.6 < co.z < 1.76 and abs(co.x) < 0.075
+        def ponta(co):
+            return 0.03 + 0.05 * max(0.0, co.y) * 8.0 * max(0.0, co.z - 1.66) * 6.0
+        o = _grosso(casca(body, tag + "_capuz", cabeca, 0.5, 0.045, m_pano, alarga=ponta, corta=corta_rosto))
+        dobras(o, 0.008)
+        pecas.append(o)
+    elif e in ("helm",):
+        o = _grosso(casca(body, tag + "_elmo", {"Head"}, 0.5, 0.03, m_metal,
+            corta=lambda co: (co.y < -0.03 and 1.6 < co.z < 1.73 and abs(co.x) < 0.06) or co.z < 1.6), 0.012)
+        pecas.append(o)
+        n = _cubo(tag + "_nasal", (0.016, 0.012, 0.09), (0, -0.115, 1.66), m_metal)
+        _no_osso(n, arm, "Head", n.location)
+        pecas.append(n)
+        hz = _osso_pos(arm, "Head").z + 0.035
+        cr = _toro(tag + "_aro", 0.118, 0.012, (0, 0.012, hz), m_ouro, esc=(1, 1.12, 1))
+        _no_osso(cr, arm, "Head", cr.location)
+        pecas.append(cr)
+    elif e in ("wizardhat",):
+        topo = _osso_pos(arm, "Head").z + 0.13
+        perfil = [(0.0, topo - 0.02), (0.24, topo - 0.03), (0.25, topo - 0.015), (0.11, topo - 0.005),
+                  (0.1, topo + 0.06), (0.075, topo + 0.16), (0.045, topo + 0.27), (0.015, topo + 0.36), (0.001, topo + 0.4)]
+        o = _torno(tag + "_chapeu", perfil, m_pano)
+        o.location.y = 0.02
+        # ponta caída para trás
+        for v in o.data.vertices:
+            k = max(0.0, v.co.z - (topo + 0.12)) / 0.28
+            v.co.y += 0.12 * k * k
+        pecas.append(o)
+        f = _torno(tag + "_faixa", [(0.104, topo - 0.004), (0.1, topo + 0.035)], m_ouro)
+        f.location.y = 0.02
+        pecas.append(f)
+        for p in (o, f):
+            bpy.context.view_layer.update()
+            _no_osso(p, arm, "Head", p.location)
+    elif e == "circlet":
+        hz = _osso_pos(arm, "Head").z + 0.085
+        o = _toro(tag + "_diadema", 0.098, 0.009, (0, 0.012, hz), m_ouro, esc=(1, 1.12, 1))
+        g = _esfera(tag + "_gema", 0.018, (0, -0.1, hz + 0.01), m_gema, (1, 0.6, 1.3))
+        for p in (o, g):
+            bpy.context.view_layer.update()
+            _no_osso(p, arm, "Head", p.location)
+            pecas.append(p)
+    elif e == "turban":
+        o = _grosso(casca(body, tag + "_turbante", {"Head"}, 0.5, 0.06, m_pano, corta=lambda co: co.z < 1.74,
+            alarga=lambda co: 0.025 * max(0.0, co.z - 1.8) * 10.0))
+        dobras(o, 0.012, 0.05)
+        pecas.append(o)
+        hz = _osso_pos(arm, "Head").z + 0.06
+        for k in range(2):
+            t = _toro(tag + "_volta%d" % k, 0.115 - k * 0.01, 0.022, (0, 0.012, hz + k * 0.045), m_pano, esc=(1, 1.1, 1), rot=(0.15 * (k - 0.5), 0, 0))
+            bpy.context.view_layer.update()
+            _no_osso(t, arm, "Head", t.location)
+            pecas.append(t)
+        g = _esfera(tag + "_gema", 0.02, (0, -0.125, hz + 0.03), m_gema)
+        bpy.context.view_layer.update()
+        _no_osso(g, arm, "Head", g.location)
+        pecas.append(g)
+    elif e in ("robe",):
+        o = _grosso(casca(body, tag + "_tunica", {"pelvis", "spine_01", "spine_02", "spine_03", "clavicle_l", "clavicle_r",
+            "upperarm_l", "upperarm_r", "lowerarm_l", "lowerarm_r", "neck_01"}, 0.4, 0.02, m_pano,
+            alarga=lambda co: 0.035 * max(0.0, min(1.0, (abs(co.x) - 0.45) / 0.2)),
+            corta=lambda co: co.z > 1.58 or abs(co.x) > 0.68))
+        dobras(o, 0.014)
+        s = saia(arm, tag + "_saia", m_pano)
+        dobras(s, 0.014)
+        pecas += [o, s, roupas.faixa_barra(arm, m_ouro), roupas.cinto(arm, m_couro if sum(c) > 0.3 else couro("cinto_" + tag, (0.08, 0.05, 0.03)), m_ouro)]
+    elif e in ("vest", "apron"):
+        frente = e == "apron"
+        o = _grosso(casca(body, tag + "_colete", {"pelvis", "spine_01", "spine_02", "spine_03", "clavicle_l", "clavicle_r"}, 0.45, 0.024,
+            m_pano if frente else m_couro, corta=lambda co: co.z > 1.52 or abs(co.x) > 0.24 or co.z < 0.9 or (frente and co.y > 0.0)), 0.01)
+        pecas.append(o)
+        if not frente:
+            for k in range(4):
+                b = _esfera(tag + "_botao%d" % k, 0.009, (0, -0.135, 1.42 - k * 0.1), m_ouro)
+                bpy.context.view_layer.update()
+                _no_osso(b, arm, "spine_02", b.location)
+                pecas.append(b)
+    elif e in ("cape", "wolfcape"):
+        o = capa(arm, tag + "_capa", m_pano)
+        dobras(o, 0.014)
+        pecas.append(o)
+        fe = _esfera(tag + "_fecho", 0.022, (0, -0.12, 1.47), m_ouro, (1, 0.5, 1))
+        bpy.context.view_layer.update()
+        _no_osso(fe, arm, "spine_03", fe.location)
+        pecas.append(fe)
+        if e == "wolfcape":
+            m_pelo = tecido("pelo_" + tag, tuple(x * 0.7 for x in c), 60.0)
+            g = _toro(tag + "_gola", 0.15, 0.05, (0, 0.03, 1.5), m_pelo, esc=(1.05, 0.85, 0.7))
+            bpy.context.view_layer.update()
+            _no_osso(g, arm, "spine_03", g.location)
+            dobras(g, 0.03, 0.03)
+            pecas.append(g)
+    elif e == "pauldron":
+        for lado in "lr":
+            pecas.append(roupas.ombreira(arm, lado, m_metal))
+            sx = 1 if lado == "l" else -1
+            r = _toro(tag + "_borda_" + lado, 0.085, 0.01, (sx * 0.25, 0.05, 1.49), m_ouro, esc=(1, 1.1, 1), rot=(0, sx * math.radians(-25), 0))
+            bpy.context.view_layer.update()
+            _no_osso(r, arm, "upperarm_" + lado, r.location)
+            pecas.append(r)
+    elif e == "gloves":
+        pecas.append(_grosso(casca(body, tag + "_luvas", {"hand_l", "hand_r"} | DEDOS, 0.3, 0.006, m_couro), 0.004))
+        pecas.append(_grosso(casca(body, tag + "_punho", {"lowerarm_l", "lowerarm_r", "hand_l", "hand_r"}, 0.3, 0.02, m_couro,
+            corta=lambda co: abs(co.x) < 0.62 or abs(co.x) > 0.72), 0.006))
+    elif e == "pants":
+        pecas.append(_grosso(casca(body, tag + "_calca", {"thigh_l", "thigh_r", "calf_l", "calf_r", "pelvis"}, 0.5, 0.014, m_pano,
+            corta=lambda co: co.z > 1.05), 0.006))
+    elif e in ("kilt", "wolfskirt"):
+        s = saia(arm, tag + "_saia", m_pano, z_top=1.02, z_bot=0.55, r_bot=(0.3, 0.24), aneis=6)
+        dobras(s, 0.012)
+        pecas += [s, roupas.cinto(arm, m_couro if e == "kilt" else couro("cinto_" + tag, (0.06, 0.03, 0.02)), m_ouro)]
+    elif e in ("boots", "sandals"):
+        alto = 0.42 if e == "boots" else 0.1
+        pecas.append(_grosso(casca(body, tag + "_botas", {"foot_l", "foot_r", "ball_l", "ball_r", "calf_l", "calf_r"}, 0.4, 0.02 if e == "boots" else 0.01, m_couro,
+            corta=lambda co: co.z > alto), 0.006))
+        if e == "boots":
+            for lado, x in (("l", 0.1), ("r", -0.1)):
+                f = _toro(tag + "_dobra_" + lado, 0.065, 0.014, (x, 0.02, alto - 0.02), m_couro, esc=(1, 1.1, 1))
+                bpy.context.view_layer.update()
+                _no_osso(f, arm, "calf_" + lado, f.location)
+                pecas.append(f)
+    elif e in ("staff", "rod", "wand"):
+        m_mad = couro("madeira_" + tag, c)
+        comp = {"staff": 1.75, "rod": 0.95, "wand": 0.42}[e]
+        raio = {"staff": 0.022, "rod": 0.018, "wand": 0.011}[e]
+        bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=raio, depth=comp)
+        s = bpy.context.active_object
+        s.name = tag + "_haste"
+        s.data.materials.append(m_mad)
+        top = comp * 0.5
+        gr = {"staff": 0.06, "rod": 0.055, "wand": 0.022}[e]
+        g = _esfera(tag + "_cristal", gr, (0, 0, top + gr * 0.9), m_gema, (0.8, 0.8, 1.5) if e != "rod" else (1, 1, 1))
+        g.parent = s
+        for k in range(3 if e != "wand" else 0):
+            bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=0.008, depth=gr * 2.6)
+            gg = bpy.context.active_object
+            an = k * 2 * math.pi / 3
+            gg.location = (math.cos(an) * gr * 0.85, math.sin(an) * gr * 0.85, top + gr * 0.6)
+            gg.rotation_euler = (math.sin(an) * 0.5, -math.cos(an) * 0.5, 0)
+            gg.data.materials.append(m_ouro)
+            gg.parent = s
+            pecas.append(gg)
+        an2 = _torno(tag + "_anel", [(raio * 1.5, top - 0.03), (raio * 1.6, top), (raio * 1.2, top + 0.02)], m_ouro, 16)
+        an2.parent = s
+        pecas += [s, g, an2]
+        if it["brilho"] > 0:
+            luz = bpy.data.lights.new("luz_" + tag, "POINT")
+            luz.energy = 6.0 * it["brilho"]
+            luz.color = a
+            lo = bpy.data.objects.new("luz_" + tag, luz)
+            bpy.context.scene.collection.objects.link(lo)
+            lo.parent = s
+            lo.location = (0, 0, top + gr)
+            pecas.append(lo)
+        # na mão direita: o cajado fica em pé com a mão um pouco abaixo do meio
+        _segue_mao(s, arm, "hand_r", {"staff": (0, -0.03, -0.22), "rod": (0, -0.03, 0.18), "wand": (0, -0.04, 0.1)}[e])
+    elif e in ("book", "mimic"):
+        hp = _osso_pos(arm, "hand_l")
+        if e == "book":
+            capa_l = _cubo(tag + "_livro", (0.05, 0.17, 0.22), (hp.x + 0.03, hp.y - 0.02, hp.z - 0.06), m_couro, 0.01)
+            folhas = _cubo(tag + "_folhas", (0.042, 0.158, 0.205), (hp.x + 0.033, hp.y - 0.025, hp.z - 0.06), couro("papel_" + tag, (0.55, 0.48, 0.34)), 0.003)
+            emb = _esfera(tag + "_emblema", 0.025, (hp.x + 0.058, hp.y - 0.02, hp.z - 0.06), m_gema, (0.4, 1, 1))
+            cant = [_cubo(tag + "_canto%d" % k, (0.054, 0.03, 0.03), (hp.x + 0.03, hp.y - 0.02 + sy * 0.075, hp.z - 0.06 + sz * 0.1), m_ouro, 0.004)
+                    for k, (sy, sz) in enumerate(((1, 1), (-1, 1), (1, -1), (-1, -1)))]
+            for p in [capa_l, folhas, emb] + cant:
+                bpy.context.view_layer.update()
+                _no_osso(p, arm, "hand_l", p.location)
+                pecas.append(p)
+        else:
+            cx = _cubo(tag + "_bau", (0.14, 0.2, 0.15), (hp.x + 0.07, hp.y, hp.z - 0.02), m_couro, 0.012)
+            tp = _cubo(tag + "_tampa", (0.15, 0.21, 0.05), (hp.x + 0.07, hp.y, hp.z + 0.07), m_couro, 0.015)
+            fe = _cubo(tag + "_ferragem", (0.152, 0.03, 0.17), (hp.x + 0.07, hp.y, hp.z), m_ouro, 0.004)
+            ol = [_esfera(tag + "_olho%d" % k, 0.014, (hp.x + 0.148, hp.y + sy * 0.05, hp.z + 0.05), m_gema) for k, sy in enumerate((-1, 1))]
+            for p in [cx, tp, fe] + ol:
+                bpy.context.view_layer.update()
+                _no_osso(p, arm, "hand_l", p.location)
+                pecas.append(p)
+    elif e == "amulet":
+        n = _osso_pos(arm, "neck_01")
+        pend = _toro(tag + "_aro", 0.026, 0.006, (0, n.y - 0.135, n.z - 0.16), m_ouro, rot=(math.radians(80), 0, 0))
+        gema = _esfera(tag + "_gema", 0.022, (0, n.y - 0.137, n.z - 0.16), m_gema, (1, 0.6, 1))
+        cords = []
+        for k, sx in enumerate((-1, 1)):
+            a0 = (sx * 0.07, n.y + 0.01, n.z - 0.02)
+            a1 = (sx * 0.012, n.y - 0.13, n.z - 0.135)
+            mid = tuple((x + y) * 0.5 for x, y in zip(a0, a1))
+            dv = [y - x for x, y in zip(a0, a1)]
+            ln = math.sqrt(sum(x * x for x in dv))
+            bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=0.003, depth=ln, location=mid)
+            cy = bpy.context.active_object
+            cy.name = tag + "_corrente%d" % k
+            cy.rotation_mode = "QUATERNION"
+            from mathutils import Vector as _V
+            cy.rotation_quaternion = _V(dv).to_track_quat("Z", "Y")
+            cy.data.materials.append(m_ouro)
+            cords.append(cy)
+        for p in cords + [pend, gema]:
+            bpy.context.view_layer.update()
+            _no_osso(p, arm, "spine_03", p.location)
+            pecas.append(p)
+    elif e == "ring":
+        dp = _osso_pos(arm, "ring_01_r")
+        r = _toro(tag + "_anel", 0.011, 0.0028, dp, m_ouro, rot=(math.radians(75), 0, math.radians(20)))
+        g = _esfera(tag + "_gema", 0.0055, (dp.x, dp.y, dp.z + 0.0135), m_gema)
+        for p in (r, g):
+            bpy.context.view_layer.update()
+            _no_osso(p, arm, "ring_01_r", p.location)
+            pecas.append(p)
+    return pecas

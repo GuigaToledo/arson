@@ -59,7 +59,11 @@ func _draw() -> void:
 	var c := size * 0.5
 	var u := size.x / 52.0
 	if item:
-		_equip_icon(c, u, item.placeholder_color.lightened(0.15), item.placeholder_accent)
+		var tex := icon_tex(String(item.id))
+		if tex:
+			draw_texture_rect(tex, r.grow(-2), false)
+		else:
+			_equip_icon(c, u, item.placeholder_color.lightened(0.15), item.placeholder_accent)
 	elif loot_id != "":
 		_loot_icon(c, u, Loot.cor(loot_id), Loot.forma(loot_id))
 		if count > 1:
@@ -75,6 +79,17 @@ func _draw() -> void:
 		var f2 := get_theme_default_font()
 		var hw := f2.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
 		draw_string(f2, Vector2((size.x - hw) * 0.5, size.y - 3), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.6, 0.52, 0.4, 0.8))
+
+
+## Ícone do item renderizado em 3D (ferramentas/sprites3d/icones.py), se existir.
+static var _icons := {}
+
+
+static func icon_tex(id: String) -> Texture2D:
+	if not _icons.has(id):
+		var p := "res://assets/itens/%s.png" % id
+		_icons[id] = load(p) if ResourceLoader.exists(p) else null
+	return _icons[id]
 
 
 func _poly(pts: Array, col: Color) -> void:
