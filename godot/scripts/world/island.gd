@@ -387,6 +387,13 @@ func start_game(slot: int) -> void:
 						net._show_spell(rp, {"id": sid, "c": "fogo", "ax": p0.x + 200, "ay": p0.y + 60, "ti": -1, "dx": 1.0, "dy": 0.0, "gx": 1.0, "gy": 0.0})
 						n += 1
 				print("TESTE magia remota desenhadas=", n))
+		# --teste-rede: mostra o estado da rede a cada 3 s (usar com --rede --sala=teste)
+		if str(arg) == "--teste-rede":
+			var tm := Timer.new()
+			tm.wait_time = 3.0
+			tm.autostart = true
+			tm.timeout.connect(func(): print("TESTE rede status=", net.status, " anfitriao=", net.is_host, " online=", net.online_count, " remotos=", net.remotes.size(), " monstros_rede=", net._dbg.mundo))
+			add_child(tm)
 		if str(arg) == "--teste-bolsa":
 			ui.toggle()
 		if str(arg).begins_with("--teste-vermenu="):

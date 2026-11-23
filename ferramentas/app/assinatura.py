@@ -19,6 +19,10 @@ proj = (raiz / "project.godot").read_text(encoding="utf-8")
 auto = re.search(r"\[autoload\](.*?)(\n\[|\Z)", proj, re.S)
 partes.append("autoload:" + (auto.group(1).strip() if auto else ""))
 partes.append("boot:" + hashlib.md5((raiz / "scripts/app/boot.gd").read_bytes()).hexdigest())
+# extensões nativas (ex.: WebRTC do multijogador) vão dentro do APK
+for g in sorted(raiz.rglob("*.gdextension")):
+    if ".godot" not in g.parts:
+        partes.append("ext:" + g.relative_to(raiz).as_posix() + ":" + hashlib.md5(g.read_bytes()).hexdigest())
 partes.append("godot:" + (sys.argv[2] if len(sys.argv) > 2 else "4.4.1"))
 sig = hashlib.md5("\n".join(partes).encode()).hexdigest()[:12]
 (raiz / "app").mkdir(exist_ok=True)

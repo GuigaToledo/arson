@@ -46,7 +46,26 @@ func setup(p: Player, w: Node2D) -> void:
 	player = p
 	world = w
 	if not OS.has_feature("web"):
-		status = "offline (a rede funciona no navegador)"
+		# app (celular): mesma rede do navegador, em GDScript com WebRTC nativo. No computador só
+		# com --rede (testes), e --sala=x usa uma sala separada.
+		var args := OS.get_cmdline_user_args()
+		var quer: bool = OS.has_feature("android") or args.has("--rede")
+		var NN = load("res://scripts/net/net_nativo.gd")
+		if not quer or not NN.disponivel():
+			status = "offline" if not quer else "offline (rede indisponível)"
+			return
+		_net = NN.new()
+		for a in args:
+			if str(a).begins_with("--sala="):
+				_net.sala = str(a).split("=")[1]
+		add_child(_net)
+		enabled = true
+		var nm0 := player.display_name if player.display_name != "" else str(_net.savedName())
+		if nm0 == "":
+			nm0 = "Mago %d" % randi_range(100, 999)
+		_net.saveName(nm0)
+		player.display_name = nm0
+		_net.start(nm0)
 		return
 	if not JavaScriptBridge.eval("typeof window.ArsonNet !== 'undefined'", true):
 		status = "offline (rede não carregou)"
