@@ -286,8 +286,7 @@ func _draw_stats() -> void:
 	var step := minf(34.0, (h - 56.0) / 7.2)
 	for r in rows:
 		_emblem(c, Vector2(22, y + 9), str(r[2]), r[3])
-		c.draw_string(font, Vector2(42, y + 5), str(r[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, (r[3] as Color).lightened(0.25))
-		c.draw_string(font, Vector2(42, y + 20), str(r[1]), HORIZONTAL_ALIGNMENT_LEFT, w - 46, 14, Color(0.95, 0.92, 0.86))
+		_row(c, font, y, step, str(r[0]), str(r[1]), (r[3] as Color).lightened(0.25))
 		y += step
 	c.draw_line(Vector2(10, y - 4), Vector2(w - 10, y - 4), Color(0.4, 0.4, 0.36, 0.6), 1.0)
 	var els := Spellbook.elements_of(player.classe) + ["luz"]
@@ -296,10 +295,20 @@ func _draw_stats() -> void:
 		ElemArt.circle(c, Vector2(22, y + 9), 12, Color(0, 0, 0, 0.6))
 		ElemArt.arc(c, Vector2(22, y + 9), 12, 0, TAU, 24, Color(ce, 0.7), 1.5)
 		SpellTree._motif(c, Vector2(22, y + 9), 5.5, el, ce)
-		c.draw_string(font, Vector2(42, y + 5), Spellbook.ELEMENTS[el].nome, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, ce.lightened(0.3))
 		var lv := player.elem_level(el)
-		c.draw_string(font, Vector2(42, y + 20), str(lv) if lv > 0 else "adormecido", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.95, 0.92, 0.86))
+		_row(c, font, y, step, Spellbook.ELEMENTS[el].nome, str(lv) if lv > 0 else "adormecido", ce.lightened(0.3))
 		y += step
+
+
+## Nome e valor: em duas linhas se couber, senão na mesma linha (valor à direita).
+func _row(c: Control, font: Font, y: float, step: float, nome: String, val: String, col: Color) -> void:
+	var w := c.size.x
+	if step >= 31.0:
+		c.draw_string(font, Vector2(42, y + 5), nome, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, col)
+		c.draw_string(font, Vector2(42, y + 20), val, HORIZONTAL_ALIGNMENT_LEFT, w - 46, 14, Color(0.95, 0.92, 0.86))
+	else:
+		c.draw_string(font, Vector2(40, y + 14), nome, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, col)
+		c.draw_string(font, Vector2(40, y + 14), val, HORIZONTAL_ALIGNMENT_RIGHT, w - 48, 13, Color(0.95, 0.92, 0.86))
 
 
 func _emblem(c: Control, p: Vector2, k: String, col: Color) -> void:

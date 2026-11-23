@@ -1,5 +1,17 @@
 [
  {
+  "versao": "0.16.0",
+  "data": "2026-11-23",
+  "titulo": "Grimório e ficha do personagem",
+  "itens": [
+   "Árvore de magias nova (Grimório): um painel pintado para cada elemento e para a Luz, ícones desenhados para cada magia (cinza enquanto bloqueada) e setas mostrando a ordem em que liberam",
+   "As fusões ficam na costura entre os dois elementos, como medalhões das duas cores, com setas vindo dos dois lados",
+   "Cada magia mostra o nível de melhoria (ou o nível que falta) e a barra de magias do Grimório mostra os ícones",
+   "Ficha do personagem nova (Bolsa): o mago aparece no meio com os equipamentos dos dois lados, atributos com emblemas e abas de Itens, Saque e Poções",
+   "Tocar num item da bolsa veste o item"
+  ]
+ },
+ {
   "versao": "0.15.0",
   "data": "2026-11-23",
   "titulo": "Dragão Rubro e magos em 2.5D",
