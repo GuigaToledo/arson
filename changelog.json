@@ -1,5 +1,18 @@
 [
  {
+  "versao": "0.18.0",
+  "data": "2026-11-23",
+  "titulo": "Itens aparecem no personagem e nível mágico único",
+  "itens": [
+   "Os itens vestidos aparecem no personagem: cada tipo de item foi renderizado em 3D em todas as animações e direções e é pintado com as cores do item (capuz, chapéu, elmo, manto, capa, ombreiras, luvas, calça, saias, cajados e mais; botas, cetros, varinhas, livros e amuletos chegam na próxima atualização)",
+   "As classes agora se vestem com os próprios itens iniciais (o corpo base usa roupa de baixo simples)",
+   "Nível mágico único: qualquer magia sobe o mesmo nível; ele libera as magias do elemento base e da Luz, e a partir do 31 as do segundo elemento e depois as misturas",
+   "Retrato do HUD mostra o seu personagem com o que ele está vestindo, e o FPS aparece embaixo do retrato",
+   "Lançar magia andando ou correndo não para mais as pernas",
+   "Ícones dos capuzes refeitos (pano com gola nos ombros)"
+  ]
+ },
+ {
   "versao": "0.17.0",
   "data": "2026-11-23",
   "titulo": "Itens renderizados em 3D",
