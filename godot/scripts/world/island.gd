@@ -915,8 +915,22 @@ func _spawn_characters(classe: String) -> void:
 	var guard := Npc.new().configure("Guarda do Templo",
 		{"skin": Color(0.55, 0.42, 0.33), "under": Color(0.2, 0.18, 0.16), "hair": Color(0.1, 0.08, 0.06), "eyes": Color(0.2, 0.15, 0.1)},
 		["elmo_ferro", "peitoral_couro", "ombreiras_ferro", "calca_tecido", "botas_couro"], "S")
-	guard.position = g(25.6, 26.5)
+	guard.guarda = true
+	guard.run_speed = 150.0
+	var ronda := []
+	for p in [Vector2(20, 31), Vector2(27.5, 33), Vector2(34, 31), Vector2(37, 25), Vector2(34, 20), Vector2(27.5, 19), Vector2(20, 20), Vector2(17, 26)]:
+		ronda.append(Iso.to_screen(_free_tile(p)))
+	guard.waypoints = ronda
+	guard.position = Iso.to_screen(_free_tile(Vector2(27.5, 31.0)))
 	entities.add_child(guard)
+	# segundo guarda na entrada da ponte leste
+	var guard2 := Npc.new().configure("Guarda da Ponte",
+		{"skin": Color(0.5, 0.38, 0.3), "under": Color(0.2, 0.18, 0.16), "hair": Color(0.2, 0.12, 0.06), "eyes": Color(0.2, 0.15, 0.1)},
+		["elmo_ferro", "peitoral_couro", "ombreiras_ferro", "calca_tecido", "botas_couro"], "E")
+	guard2.guarda = true
+	guard2.run_speed = 150.0
+	guard2.position = Iso.to_screen(_free_tile(Vector2(36.0, 27.5)))
+	entities.add_child(guard2)
 
 	var pts := []
 	for p in [Vector2(27.5, 31), Vector2(27.5, 42), Vector2(27.5, 31), Vector2(12, 28), Vector2(27.5, 28),
