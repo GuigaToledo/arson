@@ -2634,6 +2634,7 @@
   "chefe": true,
   "respawn": 300,
   "nivel": 50,
+  "sem_teto": true,
   "hp_base": 1800,
   "atk_base": 38
  }

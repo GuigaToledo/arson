@@ -104,7 +104,7 @@ func configure(t: String, at: Vector2, is_elite := false, cap := 999) -> Monster
 		info["nivel"] = int(info.get("nivel", 1)) + 3
 	# perto da vila os monstros são mais fracos: nível limitado pela distância
 	var l0 := int(info.get("nivel", 1))
-	if l0 > cap and not info.get("dummy", false):
+	if l0 > cap and not info.get("dummy", false) and not info.get("sem_teto", false):
 		if not elite:
 			info = info.duplicate(true)
 		var l1 := maxi(1, cap)
