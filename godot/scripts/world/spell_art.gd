@@ -1634,7 +1634,8 @@ static func light(parent: Node, kind: String, pos: Vector2) -> void:
 ## c = centro do corpo (o personagem tem ~90 px de altura, pés em y=0, então use c ≈ Vector2(0, -42));
 ## h = altura da aura (~100); col = cor principal, col2 = cor do brilho interno; t = tempo em segundos;
 ## force = 0..1 (fica mais fraca quando o escudo está quase quebrado).
-static func ki_aura(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, force := 1.0) -> void:
+## el = elemento (fogo, lava, agua, gelo, vento, raio, terra, natureza). Vazio mantém as faíscas.
+static func ki_aura(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, force := 1.0, el := "") -> void:
 	if h < 4.0:
 		return
 	# alpha geral: escudo cheio brilha; quase quebrado fica no mínimo, ainda visível
@@ -1739,35 +1740,336 @@ static func ki_aura(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color
 	ElemArt.polyline(n, line, Color(col, col.a * gain * 0.16), maxf(2.0, h * 0.032))
 	var rim := col.lightened(0.3)
 	ElemArt.polyline(n, line, Color(rim, rim.a * col.a * gain * 0.88), maxf(1.0, h * 0.013))
-	# faíscas sobem e somem. A posição sai só de t, para o desenho não piscar.
-	var spark_x := [0.2, -0.18, 0.15, -0.22, 0.11, -0.16, 0.23, -0.12, 0.17, -0.2, 0.08, -0.14]
-	for i in spark_x.size():
-		var spd := 0.62 + float(i % 4) * 0.16
-		var kf := fposmod(t * spd + float(i) * 0.173, 1.0)
-		var life := clampf(kf * 4.0, 0.0, 1.0) * (1.0 - kf)
-		if life <= 0.03:
+	# Partículas do elemento por cima da chama. A posição sai só de t, para não piscar.
+	match el:
+		"fogo":
+			_ki_fogo(n, c, h, col, col2, t, gain)
+		"lava":
+			_ki_lava(n, c, h, col, col2, t, gain, line)
+		"agua":
+			_ki_agua(n, c, h, col, col2, t, gain)
+		"gelo":
+			_ki_gelo(n, c, h, col, col2, t, gain)
+		"vento":
+			_ki_vento(n, c, h, col, col2, t, gain)
+		"raio":
+			_ki_raio(n, c, h, col, col2, t, gain)
+		"terra":
+			_ki_terra(n, c, h, col, col2, t, gain)
+		"natureza":
+			_ki_natureza(n, c, h, col, col2, t, gain)
+		_:
+			# faíscas sobem e somem
+			var spark_x := [0.2, -0.18, 0.15, -0.22, 0.11, -0.16, 0.23, -0.12, 0.17, -0.2, 0.08, -0.14]
+			for i in spark_x.size():
+				var spd := 0.62 + float(i % 4) * 0.16
+				var kf := fposmod(t * spd + float(i) * 0.173, 1.0)
+				var life := clampf(kf * 4.0, 0.0, 1.0) * (1.0 - kf)
+				if life <= 0.03:
+					continue
+				var kx: float = spark_x[i] * lerpf(1.0, 0.38, kf)
+				var ky := lerpf(0.28, -0.72, kf)
+				var sp := c + Vector2(kx * h + sin(t * 3.1 + float(i)) * h * 0.01, ky * h)
+				var hot_c := col2.lightened(0.4) if i % 2 == 0 else col.lightened(0.3)
+				var sc := Color(hot_c, hot_c.a * gain * life * 0.9)
+				var rr := maxf(0.7, h * 0.016 * (1.0 - kf * 0.5))
+				if i % 4 == 0:
+					ElemArt.star(n, sp, rr * 1.8, sc, t * 2.4 + float(i))
+				else:
+					ElemArt.circle(n, sp, rr, sc)
+			# três riscos verticais rápidos na faixa de energia
+			var streak_x := [-0.19, 0.1, 0.18]
+			for i in 3:
+				var qf := fposmod(t * (2.5 + float(i) * 0.55) + float(i) * 0.37, 1.0)
+				var sa := gain * sin(qf * PI)
+				if sa <= 0.03:
+					continue
+				var qx: float = streak_x[i] + sin(t * 2.4 + float(i) * 2.1) * 0.012
+				var y0 := lerpf(0.22, -0.48, qf)
+				var ln := 0.15 + float(i) * 0.02
+				var p0 := c + Vector2(qx * h, y0 * h)
+				var p1 := c + Vector2(qx * h, (y0 - ln) * h)
+				ElemArt.ribbon(n, PackedVector2Array([p0, p1]), maxf(1.6, h * 0.026), maxf(0.3, h * 0.004), Color(col, col.a * sa * 0.4), true)
+				n.draw_line(p0, p1, Color(col2.lightened(0.45), col2.a * sa * 0.85), maxf(1.0, h * 0.011), SpellArt.AA)
+
+
+## Ponto na borda da chama, em coordenadas locais (ainda sem somar o centro).
+## side = ±1; sf = 0 nos pés e 1 na coroa.
+static func _ki_rim(side: float, sf: float, h: float) -> Vector2:
+	var u := clampf(sf, 0.0, 1.0)
+	var bulge := sin(u * PI)
+	var nx := 0.168 + 0.108 * bulge * bulge
+	var ny := lerpf(0.40, -0.64, u)
+	return Vector2(side * nx * h, ny * h)
+
+
+## Línguas de fogo nas bordas e brasas subindo. Tudo derivado de t.
+static func _ki_fogo(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, gain: float) -> void:
+	var side := 1.0
+	var kf := 0.0
+	var life := 0.0
+	var local := Vector2.ZERO
+	var p := Vector2.ZERO
+	var fc := col
+	for i in 8:
+		side = 1.0 if i % 2 == 0 else -1.0
+		kf = fposmod(t * (0.7 + float(i % 4) * 0.09) + float(i) * 0.137, 1.0)
+		life = sin(kf * PI)
+		if life <= 0.05:
 			continue
-		var kx: float = spark_x[i] * lerpf(1.0, 0.38, kf)
-		var ky := lerpf(0.28, -0.72, kf)
-		var sp := c + Vector2(kx * h + sin(t * 3.1 + float(i)) * h * 0.01, ky * h)
-		var hot_c := col2.lightened(0.4) if i % 2 == 0 else col.lightened(0.3)
-		var sc := Color(hot_c, hot_c.a * gain * life * 0.9)
-		var rr := maxf(0.7, h * 0.016 * (1.0 - kf * 0.5))
-		if i % 4 == 0:
-			ElemArt.star(n, sp, rr * 1.8, sc, t * 2.4 + float(i))
-		else:
-			ElemArt.circle(n, sp, rr, sc)
-	# três riscos verticais rápidos na faixa de energia
-	var streak_x := [-0.19, 0.1, 0.18]
+		local = _ki_rim(side, lerpf(0.06, 0.94, kf), h)
+		p = c + local + local.normalized() * (h * 0.02) + Vector2(sin(t * 6.2 + float(i) * 1.6) * h * 0.012, 0.0)
+		fc = col2.lightened(0.38) if i % 3 == 0 else col.lightened(0.1)
+		ElemArt.drop(n, p, Vector2(side * 36.0, -460.0), h * (0.02 + 0.012 * sin(kf * PI)), Color(fc, fc.a * gain * life * 0.92))
+	for i in 6:
+		kf = fposmod(t * (0.45 + float(i) * 0.04) + float(i) * 0.21, 1.0)
+		life = sin(kf * PI)
+		if life <= 0.05:
+			continue
+		p = c + Vector2(sin(t * 1.6 + float(i) * 1.35) * h * 0.1, lerpf(0.22, -0.74, kf) * h)
+		fc = col.darkened(0.08) if i % 2 == 0 else col.lightened(0.42)
+		var er := h * 0.013 * (1.15 - kf * 0.4)
+		ElemArt.circle(n, p, er, Color(fc, fc.a * gain * life * 0.8))
+		if i % 2 == 1:
+			var core := col2.lightened(0.45)
+			ElemArt.circle(n, p, er * 0.4, Color(core, core.a * gain * life * 0.7))
+
+
+## Gotas de magma pingando, veios laranja, brasas escuras e borda de rocha.
+static func _ki_lava(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, gain: float, edge: PackedVector2Array) -> void:
+	var rock := col.darkened(0.68)
+	var crust := PackedVector2Array()
+	for i in edge.size():
+		var ep: Vector2 = edge[i]
+		crust.append(c + (ep - c) * 1.065)
+	ElemArt.polyline(n, crust, Color(rock, rock.a * gain * 0.82), maxf(2.5, h * 0.028))
+	var vein := col.lightened(0.32)
+	var side := 1.0
+	var local := Vector2.ZERO
+	var al := 0.0
+	for i in 4:
+		side = 1.0 if i % 2 == 0 else -1.0
+		local = _ki_rim(side, 0.18 + float(i) * 0.12, h) * 0.78
+		var bend := sin(t * 2.4 + float(i) * 1.7) * h * 0.015
+		al = gain * (0.45 + 0.35 * sin(t * 3.1 + float(i) * 1.4))
+		if al < 0.04:
+			al = 0.04
+		ElemArt.polyline(n, PackedVector2Array([
+			c + local,
+			c + local * 0.62 + Vector2(bend, -h * 0.06),
+			c + local * 0.4 + Vector2(-bend * 0.4, -h * 0.12),
+		]), Color(vein, vein.a * al), maxf(1.15, h * 0.012))
+	var kf := 0.0
+	var life := 0.0
+	var p := Vector2.ZERO
+	var dc := col
+	for i in 6:
+		side = 1.0 if i % 2 == 0 else -1.0
+		kf = fposmod(t * (0.42 + float(i % 3) * 0.06) + float(i) * 0.19, 1.0)
+		life = sin(kf * PI)
+		if life <= 0.05:
+			continue
+		local = _ki_rim(side, lerpf(0.58, 0.06, kf), h)
+		p = c + local + Vector2(side * h * 0.012, kf * h * 0.18)
+		dc = col.lightened(0.18) if i % 2 == 0 else col
+		ElemArt.drop(n, p, Vector2(side * 18.0, 420.0), h * 0.02 * (1.05 - kf * 0.35), Color(dc, dc.a * gain * life * 0.9))
+	for i in 4:
+		kf = fposmod(t * (0.3 + float(i) * 0.05) + float(i) * 0.27, 1.0)
+		life = sin(kf * PI)
+		if life <= 0.05:
+			continue
+		p = c + Vector2(sin(t * 1.1 + float(i) * 1.8) * h * 0.12, lerpf(0.15, -0.55, kf) * h)
+		var dark := col.darkened(0.45)
+		var er := h * 0.014 * (1.0 - kf * 0.3)
+		ElemArt.circle(n, p, er, Color(dark, dark.a * gain * life * 0.75))
+		var hot := col2.lightened(0.2)
+		ElemArt.circle(n, p, er * 0.4, Color(hot, hot.a * gain * life * 0.55))
+
+
+## Bolhas com brilho subindo e ondulação nas laterais.
+static func _ki_agua(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, gain: float) -> void:
+	var wave := col2.lightened(0.32)
+	var side := 1.0
+	var pts := PackedVector2Array()
+	var sf := 0.0
+	for s in 2:
+		side = 1.0 if s == 0 else -1.0
+		pts = PackedVector2Array()
+		for i in 8:
+			sf = float(i) / 7.0
+			var wob := sin(t * 4.2 + sf * 8.0 + side) * h * 0.018
+			pts.append(c + _ki_rim(side, lerpf(0.08, 0.92, sf), h) + Vector2(side * wob, 0.0))
+		ElemArt.ribbon(n, pts, maxf(1.6, h * 0.014), maxf(0.4, h * 0.004), Color(wave, wave.a * gain * 0.45), true)
+	var kf := 0.0
+	var life := 0.0
+	var p := Vector2.ZERO
+	var r := 0.0
+	for i in 8:
+		kf = fposmod(t * (0.38 + float(i % 3) * 0.07) + float(i) * 0.13, 1.0)
+		life = sin(kf * PI)
+		if life <= 0.05:
+			continue
+		side = 1.0 if i % 2 == 0 else -1.0
+		p = c + _ki_rim(side, lerpf(0.1, 0.9, kf), h) * lerpf(0.72, 0.96, life)
+		p += Vector2(sin(t * 2.4 + float(i)) * h * 0.01, 0.0)
+		r = h * lerpf(0.014, 0.032, life) * (0.75 + float(i % 3) * 0.12)
+		var bc := col.lightened(0.12)
+		ElemArt.circle(n, p, r, Color(bc, bc.a * gain * life * 0.5))
+		var hi := col2.lightened(0.55)
+		ElemArt.circle(n, p + Vector2(-r * 0.28, -r * 0.3), maxf(0.6, r * 0.38), Color(hi, hi.a * gain * life * 0.8))
+
+
+## Cristais pontudos na borda e flocos caindo devagar.
+static func _ki_gelo(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, gain: float) -> void:
+	var side := 1.0
+	var sf := 0.0
+	var local := Vector2.ZERO
+	var outward := Vector2.UP
+	var len := 0.0
+	var base := Vector2.ZERO
+	var tip := Vector2.ZERO
+	var q := Vector2.ZERO
+	var shade := col.darkened(0.18)
+	var lit := col2.lightened(0.35)
+	for i in 6:
+		side = 1.0 if i < 3 else -1.0
+		sf = 0.2 + float(i % 3) * 0.26
+		local = _ki_rim(side, sf, h)
+		outward = local.normalized()
+		len = h * (0.075 + 0.02 * sin(t * 1.4 + float(i) * 1.1))
+		base = c + local
+		tip = base + outward * len
+		q = Vector2(-outward.y, outward.x) * len * 0.34
+		ElemArt.poly(n, PackedVector2Array([base, base + q, tip]), Color(shade, shade.a * gain * 0.9))
+		ElemArt.poly(n, PackedVector2Array([base, tip, base - q]), Color(lit, lit.a * gain * 0.9))
+		n.draw_line(base + outward * len * 0.2, tip, Color(col2.lightened(0.55), col2.a * gain * 0.75), maxf(1.0, h * 0.008), SpellArt.AA)
+	var kf := 0.0
+	var life := 0.0
+	var fc := col2.lightened(0.42)
+	for i in 6:
+		kf = fposmod(t * (0.16 + float(i) * 0.02) + float(i) * 0.19, 1.0)
+		life = sin(kf * PI)
+		if life <= 0.05:
+			continue
+		var fp := c + Vector2(h * (-0.24 + float(i) * 0.09) + sin(t * 0.7 + float(i) * 1.5) * h * 0.02, lerpf(-0.72, 0.42, kf) * h)
+		ElemArt.flake(n, fp, h * (0.03 + float(i % 3) * 0.006), t * 0.35 + float(i), Color(fc, fc.a * gain * life * 0.85))
+
+
+## Correntes curvas em volta do corpo e folhas/riscos rápidos na horizontal.
+static func _ki_vento(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, gain: float) -> void:
+	var band := col.lightened(0.22)
+	var pts := PackedVector2Array()
+	var a0 := 0.0
 	for i in 3:
-		var qf := fposmod(t * (2.5 + float(i) * 0.55) + float(i) * 0.37, 1.0)
-		var sa := gain * sin(qf * PI)
-		if sa <= 0.03:
+		pts = PackedVector2Array()
+		a0 = t * (1.55 + float(i) * 0.2) + float(i) * TAU / 3.0
+		for s in 8:
+			var a := a0 + float(s) * 0.4
+			pts.append(c + Vector2(cos(a) * h * 0.26, sin(a) * h * 0.48 + sin(a0 * 0.7) * h * 0.05))
+		var al := gain * (0.3 + 0.12 * sin(t * 3.0 + float(i)))
+		ElemArt.ribbon(n, pts, maxf(1.4, h * 0.015), maxf(0.3, h * 0.004), Color(band, band.a * al), true)
+	var dir := 1.0
+	var kf := 0.0
+	var life := 0.0
+	var p := Vector2.ZERO
+	var streak := col2.lightened(0.4)
+	for i in 8:
+		kf = fposmod(t * (2.2 + float(i % 4) * 0.25) + float(i) * 0.131, 1.0)
+		life = sin(kf * PI)
+		if life <= 0.05:
 			continue
-		var qx: float = streak_x[i] + sin(t * 2.4 + float(i) * 2.1) * 0.012
-		var y0 := lerpf(0.22, -0.48, qf)
-		var ln := 0.15 + float(i) * 0.02
-		var p0 := c + Vector2(qx * h, y0 * h)
-		var p1 := c + Vector2(qx * h, (y0 - ln) * h)
-		ElemArt.ribbon(n, PackedVector2Array([p0, p1]), maxf(1.6, h * 0.026), maxf(0.3, h * 0.004), Color(col, col.a * sa * 0.4), true)
-		n.draw_line(p0, p1, Color(col2.lightened(0.45), col2.a * sa * 0.85), maxf(1.0, h * 0.011), SpellArt.AA)
+		dir = 1.0 if i % 2 == 0 else -1.0
+		p = c + Vector2(dir * lerpf(-0.32, 0.32, kf) * h, lerpf(0.28, -0.62, float(i) / 7.0) * h)
+		if i % 3 == 0:
+			var leaf_c := col.lightened(0.16)
+			ElemArt.leaf(n, p, Vector2(dir, sin(t * 7.0 + float(i)) * 0.35).normalized(), h * 0.044, Color(leaf_c, leaf_c.a * gain * life * 0.85))
+		else:
+			n.draw_line(p, p + Vector2(dir * h * 0.12, 0.0), Color(streak, streak.a * gain * life * 0.75), maxf(1.0, h * 0.009), SpellArt.AA)
+
+
+## Raios curtos na borda (a forma troca ~12 vezes por segundo) e faíscas.
+static func _ki_raio(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, gain: float) -> void:
+	var step := int(floor(t * 12.0))
+	var bolt_c := col.lightened(0.22)
+	var side := 1.0
+	var local := Vector2.ZERO
+	var a := Vector2.ZERO
+	for i in 5:
+		side = 1.0 if i % 2 == 0 else -1.0
+		local = _ki_rim(side, 0.14 + fposmod(float(i) * 0.17 + t * 0.35, 0.72), h)
+		a = c + local
+		var hop := 0.055 + 0.028 * float((step + i * 3) % 4)
+		var al := gain * (0.6 + 0.4 * absf(sin(float(step) * 0.9 + float(i) * 1.3)))
+		ElemArt.bolt(n, a, a + Vector2(side * h * 0.035, -h * hop), step * 13 + i * 29, maxf(0.8, h * 0.01), al, bolt_c)
+	var spark := col2.lightened(0.5)
+	var kf := 0.0
+	var life := 0.0
+	var p := Vector2.ZERO
+	for i in 6:
+		kf = fposmod(t * (3.2 + float(i % 3) * 0.35) + float(i) * 0.19, 1.0)
+		life = sin(kf * PI)
+		if life <= 0.08:
+			continue
+		side = 1.0 if i % 2 == 0 else -1.0
+		p = c + _ki_rim(side, 0.18 + float(i) * 0.12, h) + Vector2(side * h * 0.02, -h * 0.03 * kf)
+		ElemArt.star(n, p, h * 0.02 * (0.55 + life), Color(spark, spark.a * gain * life), t * 3.0 + float(i))
+
+
+## Pedrinhas orbitando devagar na base e poeira.
+static func _ki_terra(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, gain: float) -> void:
+	var ang := 0.0
+	var p := Vector2.ZERO
+	var rc := col
+	for i in 5:
+		ang = t * 0.65 + float(i) * TAU / 5.0
+		p = c + Vector2(cos(ang) * h * 0.22, h * 0.38 + sin(ang) * h * 0.055)
+		rc = col.darkened(0.12) if i % 2 == 0 else col.lightened(0.08)
+		ElemArt.boulder(n, p, h * (0.034 + float(i % 3) * 0.008), 1800 + i * 23, ang * 0.8, rc, gain * col.a * 0.95)
+	var kf := 0.0
+	var life := 0.0
+	var dc := col.lightened(0.18).lerp(col2, 0.35)
+	for i in 8:
+		kf = fposmod(t * (0.28 + float(i % 4) * 0.05) + float(i) * 0.17, 1.0)
+		life = sin(kf * PI)
+		if life <= 0.05:
+			continue
+		p = c + Vector2(sin(t * 0.9 + float(i) * 1.4) * h * 0.16, lerpf(0.42, -0.08, kf) * h)
+		ElemArt.circle(n, p, h * 0.015 * (1.0 - kf * 0.45), Color(dc, dc.a * gain * life * 0.34))
+
+
+## Folhas girando para cima e brotos/espinhos na borda.
+static func _ki_natureza(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color, t: float, gain: float) -> void:
+	var kf := 0.0
+	var life := 0.0
+	var ang := 0.0
+	var p := Vector2.ZERO
+	var lc := col
+	for i in 8:
+		kf = fposmod(t * (0.42 + float(i % 3) * 0.07) + float(i) * 0.125, 1.0)
+		life = sin(kf * PI)
+		if life <= 0.05:
+			continue
+		ang = t * (1.8 + float(i) * 0.15) + float(i) * 1.2
+		p = c + Vector2(cos(ang) * h * lerpf(0.05, 0.2, life), lerpf(0.32, -0.7, kf) * h)
+		lc = col.lightened(0.16) if i % 2 == 0 else col.darkened(0.18)
+		ElemArt.leaf(n, p, Vector2(cos(ang), -0.65).normalized(), h * 0.048, Color(lc, lc.a * gain * life * 0.9))
+	var side := 1.0
+	var local := Vector2.ZERO
+	var outward := Vector2.RIGHT
+	var len := 0.0
+	var base := Vector2.ZERO
+	var tip := Vector2.ZERO
+	var tc := col.darkened(0.32)
+	for i in 7:
+		side = 1.0 if i % 2 == 0 else -1.0
+		local = _ki_rim(side, 0.16 + float(i) * 0.1, h)
+		outward = Vector2(side, -0.35).normalized()
+		len = h * (0.052 + 0.012 * sin(t * 2.2 + float(i) * 1.3))
+		base = c + local
+		tip = base + outward * len
+		var q := Vector2(-outward.y, outward.x) * len * 0.28
+		ElemArt.poly(n, PackedVector2Array([base - q, tip, base + q]), Color(tc, tc.a * gain * 0.88))
+		if i % 2 == 0:
+			var sprout := col2.lightened(0.22)
+			ElemArt.leaf(n, tip, outward, h * 0.03, Color(sprout, sprout.a * gain * 0.8))
+

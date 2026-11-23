@@ -122,8 +122,8 @@ func _build() -> void:
 	_bag_title = UiKit.label("Bolsa", 14, UiKit.GOLD)
 	_bag_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tabs.add_child(_bag_title)
-	var off := UiKit.button("Tirar tudo", _unequip_all, 12)
-	off.custom_minimum_size = Vector2(86, 28)
+	var off := UiKit.button("Equipar melhores", _equip_best, 12, true)
+	off.custom_minimum_size = Vector2(118, 28)
 	tabs.add_child(off)
 	var pages := PanelContainer.new()
 	pages.add_theme_stylebox_override("panel", UiKit.inner(Color(0.06, 0.05, 0.045), Color(0.3, 0.24, 0.16), 4, 4))
@@ -453,6 +453,44 @@ func _loot_list() -> Array:
 func _unequip_all() -> void:
 	for s in EquipSlot.all():
 		player.equipment.unequip(s)
+
+
+## Valor de um item para o mago: bônus de magia e dos elementos da classe pesam mais.
+func _item_score(it: EquipmentItem) -> float:
+	var els := Spellbook.elements_of(player.classe) + ["luz"]
+	var v := 0.0
+	for k in it.stats:
+		var q := float(it.stats[k])
+		match str(k):
+			"magia": v += q * 3.0
+			"defesa": v += q * 2.0
+			"velocidade": v += q * 1.5
+			"ataque": v += q * 1.0
+			"vida": v += q * 0.4
+			"mana": v += q * 0.3
+			_: v += q * (2.5 if els.has(str(k)) else 0.5)
+	return v + it.level_req * 0.01
+
+
+## Veste o melhor item que você tem (e pode usar no seu nível) em cada espaço.
+func _equip_best() -> void:
+	var trocas := 0
+	for s in EquipSlot.all():
+		var best: EquipmentItem = null
+		var bv := -1.0
+		for it in ItemDB.for_slot(s):
+			if not player.owns(String(it.id)) or player.level < it.level_req:
+				continue
+			var v := _item_score(it)
+			if v > bv:
+				bv = v
+				best = it
+		if best != null and player.equipment.get_item(s) != best:
+			player.try_equip(best)
+			trocas += 1
+	_sel_loot = ""
+	info_label.text = ("Equipados os melhores itens (%d troca(s))." % trocas) if trocas > 0 else "Você já está com os melhores itens que tem."
+	_refresh()
 
 
 func _refresh() -> void:

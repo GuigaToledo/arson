@@ -1474,7 +1474,7 @@ class StatusAura:
 				c2 = (Spellbook.ELEMENTS[str(shield_els[1])].cor as Color).lightened(0.3)
 			# arredondada e larga: cobre todo o sprite (correndo, lançando magia, em qualquer direção)
 			draw_set_transform(Vector2(0, -50), 0.0, Vector2(AURA_LARG, 1.0))
-			SpellArt.ki_aura(self, Vector2.ZERO, AURA_ALT, c1, c2, _t, force)
+			SpellArt.ki_aura(self, Vector2.ZERO, AURA_ALT, c1, c2, _t, force, str(shield_els[0]) if shield_els.size() > 0 else "")
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			# e por cima, a cara de cada elemento (chamas, rocha com lava, bolha, cristais, vento, raios, pedra, vinhas)
 			for e in shield_els:
