@@ -10,6 +10,7 @@ const SERVIDOR := "wss://0.peerjs.com/peerjs"
 const CHAVE := "peerjs"
 const HOST_ID := "arson-godot-taverna-v1-q9w4z"
 const MAX_PLAYERS := 20
+const ICE_STUN := {"iceServers": [{"urls": ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"]}]}
 const ICE := {"iceServers": [
 	{"urls": ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302", "stun:global.stun.twilio.com:3478"]},
 	{"urls": ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp"],
@@ -311,7 +312,13 @@ func _on_server(m) -> void:
 # ------------------------------------------------------------ WebRTC
 func _new_pc(cid: String, peer: String) -> WebRTCPeerConnection:
 	var pc := WebRTCPeerConnection.new()
-	pc.initialize(ICE)
+	# se a lista com TURN não for aceita (alguns aparelhos), tenta só STUN e depois o padrão
+	var err := pc.initialize(ICE)
+	if err != OK:
+		err = pc.initialize(ICE_STUN)
+		if err != OK:
+			err = pc.initialize({})
+	print("[arson-net] conexão %s iniciada (erro %d)" % [cid, err])
 	pc.session_description_created.connect(func(tipo: String, sdp: String):
 		pc.set_local_description(tipo, sdp)
 		var payload := {"sdp": {"type": tipo, "sdp": sdp}, "type": "data", "connectionId": cid, "browser": "godot"}
@@ -328,9 +335,12 @@ func _connect_to_host() -> void:
 	var cid := "dc_" + _rnd(12)
 	var pc := _new_pc(cid, _host_id())
 	var ch := pc.create_data_channel(cid, {"ordered": true})
-	_conns[cid] = {"pc": pc, "ch": ch, "peer": _host_id(), "uid": "", "open": false, "t0": Time.get_ticks_msec()}
+	if ch == null:
+		ch = pc.create_data_channel(cid)
+	_conns[cid] = {"pc": pc, "ch": ch, "peer": _host_id(), "uid": "", "open": false, "t0": Time.get_ticks_msec(), "st": -1}
 	_host_conn = cid
-	pc.create_offer()
+	var eo := pc.create_offer()
+	print("[arson-net] canal %s, oferta (erro %d)" % ["ok" if ch != null else "NULO", eo])
 
 
 ## Anfitrião: alguém pediu para entrar.
@@ -368,6 +378,9 @@ func _poll_conn(cid: String) -> void:
 	pc.poll()
 	var ch: WebRTCDataChannel = c.ch
 	var st := pc.get_connection_state()
+	if int(c.get("st", -1)) != st:
+		c["st"] = st
+		print("[arson-net] %s estado %d gelo %d" % [cid, st, pc.get_gathering_state()])
 	if st == WebRTCPeerConnection.STATE_FAILED or st == WebRTCPeerConnection.STATE_CLOSED:
 		_drop(cid)
 		if cid == _host_conn:
@@ -376,6 +389,8 @@ func _poll_conn(cid: String) -> void:
 	if ch == null:
 		if Time.get_ticks_msec() - int(c.t0) > 15000:
 			_drop(cid)
+			if cid == _host_conn:
+				_retry("Não deu para abrir o canal com o anfitrião.")
 		return
 	if not c.open:
 		if ch.get_ready_state() == WebRTCDataChannel.STATE_OPEN:
