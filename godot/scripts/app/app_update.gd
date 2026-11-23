@@ -58,8 +58,10 @@ func _process(_d: float) -> void:
 
 func _on_versao(result: int, code: int, _h: PackedStringArray, body: PackedByteArray) -> void:
 	_http.request_completed.disconnect(_on_versao)
+	# dentro do jogo não anota passo: o último passo do registro tem que continuar "ok", senão o app
+	# conta como "fechou sozinho" (e a cada minuto o registro enchia de repetições)
 	var bt := get_node_or_null("/root/Boot")
-	if bt:
+	if bt and not em_jogo:
 		bt.step("resposta da atualização %d/%d" % [result, code])
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		if not em_jogo:
