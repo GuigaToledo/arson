@@ -355,6 +355,8 @@ func start_game(slot: int) -> void:
 			print("TESTE melhorias luz1 nivel=", player.spell_lvl("luz:1"), " melhorias=", player.spell_up("luz:1"))
 		if str(arg) == "--teste-levelup":
 			player.skill_gain(player.elem_a(), Rules.skill_need(player.elem_a(), player.elem_level(player.elem_a())))
+		if str(arg) == "--teste-bolsa":
+			ui.toggle()
 		if str(arg).begins_with("--teste-vermenu="):
 			gm.toggle()
 			gm._show(int(str(arg).split("=")[1]))

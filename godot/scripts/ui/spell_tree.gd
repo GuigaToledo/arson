@@ -187,7 +187,7 @@ func _paint() -> void:
 		_link(c, _lpos(t), _lpos(t + 1), cl, U.call("luz:%d" % (t + 1)))
 	# setas até as fusões, dos dois lados da costura
 	var sx := _seam_x()
-	var r2 := _icon * 0.62
+	var r2 := _icon * 0.55
 	for side in 2:
 		var el2: String = pe[side]
 		var col2: Color = Spellbook.ELEMENTS[el2].cor
@@ -315,7 +315,7 @@ func _node(c: Control, font: Font, p: Vector2, id: String, round: bool, info: Di
 	var ok := player.spell_unlocked(id)
 	info["ok"] = ok
 	var i := _nodes.size()
-	var s := _icon * (1.18 if round else 1.0)
+	var s := _icon * (1.04 if round else 1.0)
 	var r := Rect2(p - Vector2(s, s) * 0.5, Vector2(s, s))
 	_nodes.append([r, info])
 	var hov := i == _hover or id == _sel_id

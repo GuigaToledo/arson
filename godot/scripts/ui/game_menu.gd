@@ -176,7 +176,7 @@ func _build() -> void:
 	var over := Control.new()
 	over.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(over)
-	var x := UiKit.button("✕", toggle, 20, true)
+	var x := UiKit.button("X", toggle, 20, true)
 	x.custom_minimum_size = Vector2(46, 42)
 	x.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	x.offset_left = -40
