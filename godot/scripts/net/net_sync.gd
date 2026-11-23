@@ -117,6 +117,7 @@ func _process(delta: float) -> void:
 		_net.setMe(JSON.stringify({
 			"x": snappedf(player.global_position.x, 0.1), "y": snappedf(player.global_position.y, 0.1),
 			"vx": snappedf(player.velocity.x, 1.0), "vy": snappedf(player.velocity.y, 1.0),
+			"sh": player.shield_els if player.shield_hp > 0.0 else [], "shf": snappedf(player.shield_hp / maxf(1.0, player.shield_max), 0.01) if player.shield_hp > 0.0 else 0.0,
 			"f": player.facing, "a": player.anim, "n": player.display_name, "eq": eq,
 			"d": player.dead, "sf": Rules.is_safe(player.global_position), "l": player.level, "c": player.classe, "hp": int(round(player.hp * 100.0 / player.max_hp)), "sm": player.summons_state(),
 		}))
@@ -192,6 +193,14 @@ func _process(delta: float) -> void:
 		elif str(e.get("t", "")) == "ally":
 			# magia de Luz de um jogador para outro: o anfitrião repassa
 			send_to(str(e.get("to", "")), e)
+		elif str(e.get("t", "")) == "sp":
+			# magia lançada: o anfitrião mostra (se não foi ele) e repassa a todos os outros
+			e["from"] = from
+			if from != uid:
+				_show_spell(remotes.get(from), e)
+			for rid in remotes:
+				if str(rid) != from:
+					send_to(str(rid), e)
 		elif str(e.get("t", "")) == "fx":
 			var who2: Node2D = player if from == uid else remotes.get(from)
 			for m in _monsters():
@@ -203,6 +212,9 @@ func _process(delta: float) -> void:
 		if not e is Dictionary:
 			continue
 		match str(e.get("t", "")):
+			"sp":
+				if str(e.get("from", "")) != uid:
+					_show_spell(remotes.get(str(e.get("from", ""))), e)
 			"xp":
 				_dbg.xp += 1
 				player.gain_xp(int(e.get("n", 0)), int(e.get("g", 0)), str(e.get("src", "")))
@@ -212,3 +224,69 @@ func _process(delta: float) -> void:
 			"ally":
 				_dbg["aliado"] = int(_dbg.get("aliado", 0)) + 1
 				player.receive_ally(e)
+
+
+## Desenha a magia que outro jogador lançou (só o visual: o dano é do anfitrião).
+func _show_spell(caster, e: Dictionary) -> void:
+	if caster == null or not is_instance_valid(caster) or world == null:
+		return
+	var sp := Spells.get_spell(str(e.get("id", "")), str(e.get("c", "")))
+	if sp.is_empty():
+		return
+	var parent: Node = world
+	var pos: Vector2 = caster.global_position
+	var els: Array = sp.els
+	var aim := Vector2(float(e.get("ax", pos.x)), float(e.get("ay", pos.y)))
+	if caster.has_method("play_action"):
+		caster.play_action("cast", 0.45)
+	SpellArt.boost = clampi(int(e.get("up", 0)), 0, 4)
+	match str(sp.type):
+		"single":
+			var tgt: Node2D = null
+			var ti := int(e.get("ti", -1))
+			for m in _monsters():
+				if m.idx == ti:
+					tgt = m
+					break
+			var temp := false
+			if tgt == null:
+				tgt = Node2D.new()
+				tgt.global_position = aim
+				parent.add_child(tgt)
+				temp = true
+			var big: bool = sp.get("big", false)
+			var pel: String = els[els.size() - 1] if big else els[0]
+			var alvo := tgt
+			SpellArt.projectile(parent, pos, tgt, pel, big, els, func():
+				if is_instance_valid(alvo):
+					for el in els:
+						SpellArt.impact(parent, alvo.global_position, el, big))
+			if temp:
+				get_tree().create_timer(4.0).timeout.connect(func(): if is_instance_valid(alvo): alvo.queue_free())
+		"cc":
+			for el in els:
+				SpellArt.cc(parent, aim, float(sp.radius), el)
+		"cone", "line":
+			var sd := Vector2(float(e.get("dx", 1.0)), float(e.get("dy", 0.0)))
+			if str(sp.type) == "cone":
+				SpellArt.cone(parent, pos, sd, float(sp.range) * 64.0, float(sp.ang), els[0])
+			else:
+				var gd := Vector2(float(e.get("gx", 1.0)), float(e.get("gy", 0.0)))
+				SpellArt.line(parent, pos, Iso.to_screen(Iso.to_grid(pos) + gd * float(sp.range)), els[0])
+		"area":
+			SpellArt.area(parent, aim, float(sp.radius), els[0], func(): pass, els)
+		"heal":
+			SpellArt.light(parent, "heal", pos)
+			if sp.has("ring"):
+				SpellArt.light(parent, "ring", pos)
+		"chainheal":
+			SpellArt.light(parent, "heal", pos)
+		"hot":
+			SpellArt.light(parent, "bless", pos)
+		"buff":
+			SpellArt.light(parent, "brave", pos)
+		"invis":
+			SpellArt.light(parent, "veil", pos)
+		"immortal":
+			SpellFx.level_up(parent, pos, sp.color)
+	SpellArt.boost = 0

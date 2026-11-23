@@ -808,6 +808,8 @@ func cast_spell(id: String, world_pos = null) -> void:
 	SpellArt.boost = maxi(0, spell_up(id) - 1)
 	var hard := int(s.tier) >= 2
 	var ok := true
+	# visual da magia para os outros jogadores (só o desenho; o dano é calculado no anfitrião)
+	var fxd := {"t": "sp", "id": id, "c": classe, "up": SpellArt.boost, "f": facing}
 	match s.type:
 		"single":
 			var tgt: Node2D = foe if _alive_foe() and Rules.gdist(global_position, foe.global_position) <= float(s.range) + 0.5 else _nearest_to(aim, 3.0, {})
@@ -820,6 +822,9 @@ func cast_spell(id: String, world_pos = null) -> void:
 				if not _alive_foe():
 					foe = tgt
 				aim = tgt.global_position
+				fxd["ax"] = snappedf(aim.x, 0.1)
+				fxd["ay"] = snappedf(aim.y, 0.1)
+				fxd["ti"] = int(tgt.get("idx")) if tgt.get("idx") != null else -1
 				var big: bool = s.get("big", false)
 				# visual do nome: Pedrada = pedra em arco, Espinho = espinhos, Faísca = raio...
 				var pel: String = els[els.size() - 1] if big else els[0]
@@ -835,6 +840,8 @@ func cast_spell(id: String, world_pos = null) -> void:
 			if c2.distance_to(gp) > float(s.range):
 				c2 = gp + (c2 - gp).normalized() * float(s.range)
 			var center := Iso.to_screen(c2)
+			fxd["ax"] = snappedf(center.x, 0.1)
+			fxd["ay"] = snappedf(center.y, 0.1)
 			for e in els:
 				SpellArt.cc(get_parent(), center, float(s.radius), e)
 			for m in _monsters():
@@ -848,6 +855,10 @@ func cast_spell(id: String, world_pos = null) -> void:
 				gd = Iso.to_grid(global_position + Iso.dir_vector(facing)) - Iso.to_grid(global_position)
 			gd = gd.normalized()
 			var screen_dir := (Iso.to_screen(Iso.to_grid(global_position) + gd) - global_position).normalized()
+			fxd["dx"] = snappedf(screen_dir.x, 0.001)
+			fxd["dy"] = snappedf(screen_dir.y, 0.001)
+			fxd["gx"] = snappedf(gd.x, 0.001)
+			fxd["gy"] = snappedf(gd.y, 0.001)
 			if s.type == "cone":
 				SpellArt.cone(get_parent(), global_position, screen_dir, float(s.range) * 64.0, float(s.ang), els[0])
 			else:
@@ -872,6 +883,8 @@ func cast_spell(id: String, world_pos = null) -> void:
 				tg = tg.normalized() * float(s.range)
 			cg += tg
 			var center2 := Iso.to_screen(cg)
+			fxd["ax"] = snappedf(center2.x, 0.1)
+			fxd["ay"] = snappedf(center2.y, 0.1)
 			var rad := float(s.radius)
 			var boom := func():
 				for m2 in _monsters():
@@ -949,6 +962,8 @@ func cast_spell(id: String, world_pos = null) -> void:
 	SpellArt.boost = 0
 	if not ok:
 		return
+	if NetSync.inst and s.type != "summon":
+		NetSync.inst.send(fxd)
 	if up > 0:
 		SpellArt.upgrade_fx(get_parent(), aim if attack else global_position, col, up)
 	if attack and invis:

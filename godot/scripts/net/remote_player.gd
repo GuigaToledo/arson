@@ -27,6 +27,7 @@ var _target := Vector2.ZERO
 ## Velocidade informada e tempo desde o último estado: prevê onde o jogador está agora
 ## (o estado chega com atraso: ele -> anfitrião -> eu).
 var _vel := Vector2.ZERO
+var _aura: Node2D
 var _age := 0.0
 const LATENCIA := 0.12
 var _eq_key := ""
@@ -55,6 +56,19 @@ func _ready() -> void:
 func apply_state(s: Dictionary) -> void:
 	_target = Vector2(float(s.get("x", position.x)), float(s.get("y", position.y)))
 	_vel = Vector2(float(s.get("vx", 0.0)), float(s.get("vy", 0.0)))
+	# escudo mágico do outro jogador: a mesma aura do jogador
+	var sh = s.get("sh", [])
+	if sh is Array and not sh.is_empty():
+		if _aura == null:
+			_aura = Player.StatusAura.new()
+			add_child(_aura)
+		_aura.shield = true
+		_aura.shield_els = sh
+		_aura.force = float(s.get("shf", 1.0))
+		var e0 := str(sh[0])
+		_aura.shield_col = Spellbook.ELEMENTS[e0].cor if Spellbook.ELEMENTS.has(e0) else Color.WHITE
+	elif _aura != null:
+		_aura.shield = false
 	_age = 0.0
 	dead = int(s.get("d", 0)) == 1
 	level = int(s.get("l", 1))

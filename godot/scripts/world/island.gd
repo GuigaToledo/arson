@@ -363,6 +363,16 @@ func start_game(slot: int) -> void:
 				player.mp = player.max_mp
 				player.cast_spell(player.elem_a() + ":3")
 				print("TESTE escudo aura=", player.shield_hp > 0.0))
+		# --teste-magiaremota (com --teste-skins): desenha magias de jogadores remotos (só o visual)
+		if str(arg) == "--teste-magiaremota":
+			get_tree().create_timer(1.5).timeout.connect(func():
+				var n := 0
+				for rp in get_tree().get_nodes_in_group("remote_players"):
+					var p0: Vector2 = rp.global_position
+					for sid in ["fogo:1", "fogo:2", "fogo:4", "lava:4", "fogo:6", "luz:1", "luz:2", "fus:8"]:
+						net._show_spell(rp, {"id": sid, "c": "fogo", "ax": p0.x + 200, "ay": p0.y + 60, "ti": -1, "dx": 1.0, "dy": 0.0, "gx": 1.0, "gy": 0.0})
+						n += 1
+				print("TESTE magia remota desenhadas=", n))
 		if str(arg) == "--teste-bolsa":
 			ui.toggle()
 		if str(arg).begins_with("--teste-vermenu="):
