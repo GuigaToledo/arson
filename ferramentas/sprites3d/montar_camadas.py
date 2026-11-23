@@ -32,6 +32,12 @@ def salvar(arr, nome):
 
 
 saida = {"tamanho": S, "pe_quadro": meta["pe"], "anims": {}, "acento": False}
+# renders feitos em partes (ex.: magia andando depois): junta com o que já existe na pasta
+_ant = os.path.join(DST, "sprites.json")
+if os.path.exists(_ant):
+    _v = json.load(open(_ant))
+    saida["anims"].update(_v.get("anims", {}))
+    saida["acento"] = bool(_v.get("acento", False))
 for anim, n in meta["anims"].items():
     fr = {}
     x0, y0, x1, y1 = S, S, 0, 0

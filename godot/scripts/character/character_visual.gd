@@ -51,6 +51,10 @@ func set_body(it: EquipmentItem) -> void:
 	body_item = it
 	if layers.has(-1):
 		layers[-1].set_item(it)
+	# os itens passam a usar as camadas 3D do corpo renderizado
+	for s2 in layers:
+		if s2 != -1:
+			layers[s2].set_item(layers[s2].item)
 	for s in layers:
 		layers[s].queue_redraw()
 

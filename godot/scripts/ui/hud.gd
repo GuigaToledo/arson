@@ -343,6 +343,8 @@ func _process_hud(_d: float) -> void:
 	bars.xp = float(player.xp - a) / float(maxi(1, b - a))
 	bars.gold = player.gold
 	bars.sub = "%s %s" % [net.status, online]
+	bars.fps = int(Engine.get_frames_per_second())
+	bars.update_avatar(player)
 	CombatText.step(get_process_delta_time())
 	var tk: Dictionary = player.task
 	if tk.is_empty():
@@ -686,6 +688,69 @@ class SkillPanel:
 class StatusBars:
 	extends Control
 	var portrait: Texture2D
+	var fps := 0
+	## Avatar: o personagem renderizado (corpo + itens vestidos) do peito para cima.
+	var _av: Control
+	var _av_body: AnimatedSprite2D
+	var _av_layers: Array = []
+	var _av_key := ""
+
+	func update_avatar(p: Player) -> void:
+		if p == null or p.visual == null or p.visual.body_item == null or p.visual.body_item.sprite_frames == null:
+			return
+		var key := str(p.equipment.to_ids()) + str(p.visual.body_item.get_instance_id())
+		if key != _av_key:
+			_av_key = key
+			_build_avatar(p)
+		for sp in _av_layers:
+			(sp as AnimatedSprite2D).frame = _av_body.frame
+
+	func _avatar_sprite(sf: SpriteFrames, col: Color) -> AnimatedSprite2D:
+		var sp := AnimatedSprite2D.new()
+		sp.sprite_frames = sf
+		sp.animation = "idle_S"
+		sp.modulate = col
+		var th := (sf.get_frame_texture("idle_S", 0) as Texture2D).get_size().y
+		var k := th / 256.0
+		var sc := 0.78 / k
+		sp.scale = Vector2(sc, sc)
+		# enquadra do peito para cima: o ponto (128, 72) do quadro vai para o meio do retrato
+		sp.position = Vector2(30, 30) + Vector2(0, 56.0 * 0.78)
+		_av.add_child(sp)
+		return sp
+
+	func _build_avatar(p: Player) -> void:
+		if _av == null:
+			_av = Control.new()
+			_av.position = Vector2(2, 2)
+			_av.size = Vector2(60, 60)
+			_av.clip_contents = true
+			_av.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(_av)
+		for ch in _av.get_children():
+			ch.queue_free()
+		_av_layers.clear()
+		var sf := p.visual.body_item.sprite_frames
+		if not sf.has_animation("idle_S"):
+			return
+		_av_body = _avatar_sprite(sf, Color.WHITE)
+		_av_body.play("idle_S")
+		portrait = null
+		var ordem := [EquipSlot.Slot.CAPE, EquipSlot.Slot.LEGS, EquipSlot.Slot.FEET, EquipSlot.Slot.CHEST, EquipSlot.Slot.HANDS,
+			EquipSlot.Slot.SHOULDERS, EquipSlot.Slot.ACCESSORIES, EquipSlot.Slot.HEAD, EquipSlot.Slot.MAIN_HAND, EquipSlot.Slot.OFF_HAND]
+		for s in ordem:
+			var it := p.equipment.get_item(s)
+			if it == null:
+				continue
+			var lp := "res://assets/equip/%s/sprites.json" % String(it.placeholder_style)
+			if not FileAccess.file_exists(lp):
+				continue
+			for par in [["", it.placeholder_color, 0.8], ["_ac", it.placeholder_accent, 0.85]]:
+				var li := Actor.sprite_body(lp, par[0])
+				if li == null or not li.sprite_frames.has_animation("idle_S"):
+					continue
+				var cc: Color = par[1]
+				_av_layers.append(_avatar_sprite(li.sprite_frames, Color(cc.r / par[2], cc.g / par[2], cc.b / par[2])))
 	var hp := 1.0
 	var mp := 1.0
 	var title := ""
@@ -714,12 +779,22 @@ class StatusBars:
 
 	func _draw() -> void:
 		draw_rect(Rect2(0, 0, 64, 64), Color(0, 0, 0, 0.6))
+		if _av:
+			# fundo do avatar: luz quente de baixo, como a vitrine da ficha
+			draw_rect(Rect2(2, 2, 60, 60), Color(0.08, 0.06, 0.05))
+			ElemArt.circle(self, Vector2(32, 50), 30, Color(0.55, 0.35, 0.2, 0.25))
 		if portrait:
 			var ts := portrait.get_size()
 			var side := minf(ts.x, ts.y * 0.66)
 			draw_texture_rect_region(portrait, Rect2(2, 2, 60, 60), Rect2((ts.x - side) * 0.5, 0, side, side))
 		draw_rect(Rect2(0, 0, 64, 64), Color(0.7, 0.55, 0.32), false, 2.0)
 		var font := ThemeDB.fallback_font
+		# FPS embaixo do avatar (verde bom, amarelo médio, vermelho ruim)
+		var fc := Color(0.45, 1, 0.45) if fps >= 50 else (Color(1, 0.85, 0.3) if fps >= 30 else Color(1, 0.4, 0.35))
+		var ft := "%d FPS" % fps
+		var fw := font.get_string_size(ft, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		draw_string_outline(font, Vector2(32 - fw * 0.5, 78), ft, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, 3, Color.BLACK)
+		draw_string(font, Vector2(32 - fw * 0.5, 78), ft, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, fc)
 		draw_string_outline(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, Color.BLACK)
 		draw_string(font, Vector2(72, 13), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.4, 0.95, 0.4))
 		_bar(Vector2(72, 19), 190, hp, Color(0.72, 0.08, 0.06), "Vida " + hp_txt)

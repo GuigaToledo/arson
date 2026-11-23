@@ -62,7 +62,7 @@ func apply_state(s: Dictionary) -> void:
 			add_child(_class_aura)
 		_class_aura.setup(c)
 		# corpo renderizado da classe (se existir)
-		var corpo := "res://assets/personagens/mago_%s/sprites.json" % c
+		var corpo := Actor.class_body(c)
 		if FileAccess.file_exists(corpo):
 			visual.set_body(Actor.sprite_body(corpo))
 	visible = not dead
@@ -131,4 +131,8 @@ func _physics_process(delta: float) -> void:
 	else:
 		position += to * minf(1.0, delta * 10.0)
 	var spd := 210.0 if anim == "run" else (120.0 if anim == "walk" else 0.0)
-	visual.tick(delta, facing, anim, spd)
+	# magia lançada andando: a posição ainda está mudando
+	var andando := to.length() > 2.0
+	if anim == "cast" and andando:
+		spd = 120.0
+	visual.tick(delta, facing, moving_anim(anim, andando, to.length() > 12.0), spd)

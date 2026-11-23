@@ -244,7 +244,7 @@ func _refresh_char() -> void:
 		var sk: Array = player.skills[k]
 		var need := Rules.skill_need(k, int(sk[0]))
 		var col: Color = Spellbook.ELEMENTS[k].cor if Spellbook.ELEMENTS.has(k) else Color(0.7, 0.75, 0.8)
-		var tip := "sobe apanhando; diminui o dano recebido" if k == "defesa" else "sobe usando as magias deste elemento"
+		var tip := "sobe apanhando; diminui o dano recebido" if k == "defesa" else "sobe usando qualquer magia; libera as magias dos dois elementos e da Luz"
 		var r := _bar_row(Rules.skill_name(k), int(sk[0]), float(sk[1]) / need, "%d / %d — %s" % [int(sk[1]), need, tip], col)
 		r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		r.custom_minimum_size = Vector2(340, 0)

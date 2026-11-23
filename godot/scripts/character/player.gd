@@ -56,7 +56,7 @@ func _ready() -> void:
 	get_tree().create_timer(2.5).timeout.connect(func():
 		if spells_migrated:
 			spells_migrated = false
-			CombatText.add(global_position + Vector2(0, -160), "Magias reorganizadas: %s nível %d" % [Rules.skill_name(elem_a()), elem_level(elem_a())], Color(1, 0.85, 0.45), true)
+			CombatText.add(global_position + Vector2(0, -160), "Nível mágico único: %d" % int(skills.magia[0]), Color(1, 0.85, 0.45), true)
 			save())
 	super()
 	visual.is_main = true
@@ -195,15 +195,14 @@ func _load() -> void:
 		if bb is Array and bb.size() == 8:
 			bar = bb.map(func(x): return str(x))
 		var sk = c.get_value("jogador", "habilidades", {})
+		var mv := int(c.get_value("jogador", "magias_v", 1))
 		if sk is Dictionary:
-			# saves antigos: a habilidade "magia" vira o elemento principal da classe
-			if sk.has("magia") and not sk.has(elem_a()):
-				sk[elem_a()] = sk.magia
-			for k in skills:
-				if sk.get(k) is Array and sk[k].size() == 2:
-					skills[k] = [maxi(0 if k == elem_b() else 1, int(sk[k][0])), float(sk[k][1])]
-		if int(c.get_value("jogador", "magias_v", 1)) < 2:
-			_migrate_spells()
+			if mv >= 3:
+				for k in skills:
+					if sk.get(k) is Array and sk[k].size() == 2:
+						skills[k] = [maxi(1, int(sk[k][0])), float(sk[k][1])]
+			else:
+				_migrate_magia(sk, mv)
 	level = Rules.level_for(xp)
 	_apply_test_max()
 	_recalc()
@@ -239,7 +238,7 @@ func save() -> void:
 	c.set_value("jogador", "nome", Chars.nome)
 	c.set_value("jogador", "xp", _real.get("xp", xp))
 	c.set_value("jogador", "xp_v", 2)
-	c.set_value("jogador", "magias_v", 2)
+	c.set_value("jogador", "magias_v", 3)
 	c.set_value("jogador", "ouro", gold)
 	c.set_value("jogador", "nivel", Rules.level_for(int(_real.xp)) if not _real.is_empty() else level)
 	c.set_value("jogador", "pocao_vida", hp_pot)
@@ -530,13 +529,8 @@ var summons := {}
 
 ## Os 3 elementos da classe (A, B e Luz) e a Defesa, todos no nível 1.
 func _reset_skills() -> void:
-	skills = {}
-	var els0 := Spellbook.elements_of(classe)
-	skills[els0[0]] = [1, 0.0]
-	# o segundo elemento fica bloqueado (nível 0) até o elemento base chegar ao nível 31
-	skills[els0[1]] = [0, 0.0]
-	skills["luz"] = [1, 0.0]
-	skills["defesa"] = [1, 0.0]
+	# um só nível mágico para tudo (elemento base, segundo elemento a partir do 31, Luz e misturas)
+	skills = {"magia": [1, 0.0], "defesa": [1, 0.0]}
 	bar = Spells.default_bar(classe)
 
 
@@ -544,36 +538,6 @@ func _reset_skills() -> void:
 ## e redistribui na ordem certa (primeiro elemento até o 31, o resto no segundo).
 ## A barra volta para a padrão e as melhorias passam a vir do nível.
 var spells_migrated := false
-
-
-static func _pts_of(k: String, sk: Array) -> float:
-	var t := float(sk[1])
-	for l in range(1, int(sk[0])):
-		t += Rules.skill_need(k, l)
-	return t
-
-
-func _migrate_spells() -> void:
-	var a := elem_a()
-	var b := elem_b()
-	var total := _pts_of(a, skills[a]) + (_pts_of(b, skills[b]) if int(skills[b][0]) > 0 else 0.0)
-	var la := 1
-	while la < 31 and total >= Rules.skill_need(a, la):
-		total -= Rules.skill_need(a, la)
-		la += 1
-	if la < 31:
-		skills[a] = [la, total]
-		skills[b] = [0, 0.0]
-	else:
-		skills[a] = [31, 0.0]
-		var lb := 1
-		while total >= Rules.skill_need(b, lb):
-			total -= Rules.skill_need(b, lb)
-			lb += 1
-		skills[b] = [lb, total]
-	spell_pts = {}
-	bar = Spells.default_bar(classe)
-	spells_migrated = true
 
 
 func elem_a() -> String:
@@ -584,9 +548,49 @@ func elem_b() -> String:
 	return Spellbook.elements_of(classe)[1]
 
 
-## Nível de um elemento (fogo, lava, ..., luz).
+## Nível mágico único: libera as magias do elemento base e da Luz pelo próprio nível; o segundo
+## elemento começa no nível mágico 31 (nível dele = nível mágico - 30).
+func magia() -> int:
+	return int(skills.magia[0]) if skills.has("magia") else 1
+
+
+## Nível efetivo de um elemento (fogo, lava, ..., luz) ou da Defesa.
 func elem_level(el: String) -> int:
+	if el == elem_a() or el == "luz":
+		return magia()
+	if el == elem_b():
+		return maxi(0, magia() - 30)
 	return int(skills[el][0]) if skills.has(el) else 0
+
+
+## Nível mágico que libera uma magia.
+func magic_req(id: String) -> int:
+	var s := Spells.get_spell(id, classe)
+	if s.is_empty():
+		return 999
+	var t := int(s.tier)
+	if id.begins_with("fus:"):
+		return 30 + int(FUS_REQ.get(t, 30))
+	return tier_req(t) + (30 if str(s.els[0]) == elem_b() else 0)
+
+
+## Saves de antes do nível único: o nível mágico fica com o maior progresso que o personagem já tinha
+## (cadeia elemento base -> segundo elemento, ou a Luz).
+func _migrate_magia(sk: Dictionary, mv: int) -> void:
+	var lv := 1
+	var a := elem_a()
+	var b := elem_b()
+	if sk.has("magia") and sk.magia is Array and not sk.has(a):
+		lv = int(sk.magia[0])
+	var la := int(sk[a][0]) if sk.get(a) is Array else 1
+	var lb := int(sk[b][0]) if sk.get(b) is Array else 0
+	var ll := int(sk["luz"][0]) if sk.get("luz") is Array else 1
+	lv = maxi(lv, maxi(30 + lb if lb > 0 else la, ll))
+	skills.magia = [maxi(1, lv), 0.0]
+	if sk.get("defesa") is Array:
+		skills.defesa = [maxi(1, int(sk.defesa[0])), float(sk.defesa[1])]
+	bar = Spells.default_bar(classe) if mv < 2 else bar
+	spells_migrated = true
 
 
 ## Progressão das magias: cada elemento tem o próprio nível de magia (sobe com o uso).
@@ -606,23 +610,20 @@ func spell_unlocked(id: String) -> bool:
 	var s := Spells.get_spell(id, classe)
 	if s.is_empty():
 		return false
-	var t := int(s.tier)
-	if id.begins_with("fus:"):
-		return elem_level(elem_b()) >= int(FUS_REQ.get(t, 30))
-	var el: String = s.els[0]
-	return skills.has(el) and elem_level(el) >= 1 and elem_level(el) >= tier_req(t)
+	return magia() >= magic_req(id)
 
 
 ## Texto de requisito de uma magia bloqueada.
 func spell_req(id: String) -> String:
 	var s := Spells.get_spell(id, classe)
+	if s.is_empty():
+		return ""
 	var nb: String = Spellbook.ELEMENTS[elem_b()].nome
-	var na: String = Spellbook.ELEMENTS[elem_a()].nome
 	if id.begins_with("fus:"):
-		return "%s nível %d (mistura: magia suprema)" % [nb, int(FUS_REQ.get(int(s.tier), 30))]
-	if elem_level(str(s.els[0])) <= 0 and str(s.els[0]) == elem_b():
-		return "%s nível %d (o %s começa no nível 31 de %s)" % [nb, tier_req(int(s.tier)), nb, na]
-	return "%s nível %d" % [Spellbook.ELEMENTS[s.els[0]].nome, tier_req(int(s.tier))]
+		return "nível mágico %d (magia suprema)" % magic_req(id)
+	if str(s.els[0]) == elem_b():
+		return "nível mágico %d (%s desperta no 31)" % [magic_req(id), nb]
+	return "nível mágico %d" % magic_req(id)
 
 
 ## Nível de magia que vale para o dano/cura: o segundo elemento vem depois do primeiro (mais forte);
@@ -695,6 +696,9 @@ func spell_power(s: Dictionary) -> float:
 
 
 func skill_gain(k: String, amt: float) -> void:
+	# qualquer magia (dos dois elementos e da Luz) sobe o mesmo nível mágico
+	if Spellbook.ELEMENTS.has(k):
+		k = "magia"
 	if not skills.has(k) or int(skills[k][0]) <= 0:
 		return
 	var sk: Array = skills[k]
@@ -706,13 +710,14 @@ func skill_gain(k: String, amt: float) -> void:
 		up = true
 	if up:
 		# magia: cor do elemento; Defesa (não é magia): dourado
-		var col: Color = Spellbook.ELEMENTS[k].cor if Spellbook.ELEMENTS.has(k) else Color(1, 0.78, 0.25)
+		var col: Color = Spellbook.ELEMENTS[elem_a()].cor if k == "magia" else Color(1, 0.78, 0.25)
 		CombatText.add(global_position + Vector2(0, -118), "%s %d!" % [Rules.skill_name(k), sk[0]], col.lightened(0.2), true)
 		SpellFx.level_up(get_parent(), global_position, col)
-		_announce_spells(k)
-		# elemento base no 31: ganha o primeiro nível do segundo elemento
-		if k == elem_a() and int(sk[0]) >= 31 and elem_level(elem_b()) <= 0:
-			skills[elem_b()] = [1, 0.0]
+		if k == "magia":
+			for e3 in [elem_a(), elem_b(), "luz"]:
+				_announce_spells(e3)
+		# nível mágico 31: desperta o segundo elemento
+		if k == "magia" and int(sk[0]) == 31:
 			var c2: Color = Spellbook.ELEMENTS[elem_b()].cor
 			CombatText.add(global_position + Vector2(0, -150), "NOVO ELEMENTO: %s!" % Spellbook.ELEMENTS[elem_b()].nome, c2, true)
 			SpellFx.level_up(get_parent(), global_position, c2)

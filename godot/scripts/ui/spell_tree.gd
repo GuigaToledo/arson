@@ -172,9 +172,11 @@ func _paint() -> void:
 		var pr := Rect2(_px[i], 0, _pw, _treeh)
 		c.draw_rect(pr, Color(0, 0, 0, 0.9), false, 3.0)
 		c.draw_rect(pr.grow(-2), Color(0.5, 0.38, 0.2, 0.9), false, 1.0)
-	_plaque(c, font, 0, Spellbook.ELEMENTS[ea].nome, la, player.skills[ea], ea)
-	_plaque(c, font, 1, Spellbook.ELEMENTS[eb].nome, lb, player.skills[eb], eb)
-	_plaque(c, font, 2, "Luz", player.elem_level("luz"), player.skills.luz, "luz")
+	# um só nível mágico: as três placas mostram o mesmo número e a mesma barra
+	var mg := player.magia()
+	_plaque(c, font, 0, Spellbook.ELEMENTS[ea].nome, mg, player.skills.magia, ea)
+	_plaque(c, font, 1, Spellbook.ELEMENTS[eb].nome + ("" if lb > 0 else " (31)"), mg, player.skills.magia, eb)
+	_plaque(c, font, 2, "Luz", mg, player.skills.magia, "luz")
 
 	# setas dentro de cada elemento (acendem quando a magia de destino libera)
 	for side in 2:
@@ -228,7 +230,7 @@ func _paint() -> void:
 		c.draw_rect(pr2, Color(0.03, 0.02, 0.02, 0.88))
 		c.draw_rect(pr2, Color(Spellbook.ELEMENTS[ea].cor, 0.8), false, 1.5)
 		_ctext(c, font, Vector2(pr2.get_center().x, pr2.position.y + 22), "Adormecido", 16, Color(1, 0.85, 0.6))
-		_ctext(c, font, Vector2(pr2.get_center().x, pr2.position.y + 42), "Desperta no nível 31 de %s" % Spellbook.ELEMENTS[ea].nome, 12, Color(0.85, 0.78, 0.68))
+		_ctext(c, font, Vector2(pr2.get_center().x, pr2.position.y + 42), "Desperta no nível mágico 31", 12, Color(0.85, 0.78, 0.68))
 		var f := clampf(float(la) / 31.0, 0.0, 1.0)
 		var br := Rect2(pr2.position.x + 12, pr2.position.y + 50, pr2.size.x - 24, 4)
 		c.draw_rect(br, Color(0, 0, 0, 0.8))
@@ -267,7 +269,7 @@ func _plaque(c: Control, font: Font, i: int, name: String, lv: int, sk: Array, k
 	c.draw_string(font, Vector2(tx, r.position.y + 15), name, HORIZONTAL_ALIGNMENT_LEFT, r.end.x - tx - 4, 15, col.lightened(0.35))
 	var f := 0.0
 	if lv > 0:
-		f = clampf(float(sk[1]) / float(Rules.skill_need(k, int(sk[0]))), 0, 1)
+		f = clampf(float(sk[1]) / float(Rules.skill_need("magia", int(sk[0]))), 0, 1)
 	var bar := Rect2(tx, r.position.y + 21, r.end.x - tx - 8, 4)
 	c.draw_rect(bar, Color(0, 0, 0, 0.8))
 	c.draw_rect(Rect2(bar.position, Vector2(bar.size.x * f, bar.size.y)), col)
@@ -350,9 +352,7 @@ func _node(c: Control, font: Font, p: Vector2, id: String, round: bool, info: Di
 
 
 func _req_lv(id: String) -> String:
-	if id.begins_with("fus:"):
-		return str(int(Player.FUS_REQ.get(int(id.split(":")[1]), 30)))
-	return str(Player.tier_req(int(id.split(":")[1])))
+	return str(player.magic_req(id))
 
 
 ## Barra de magias (8 casas) embaixo da árvore, com os ícones.

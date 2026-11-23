@@ -10,6 +10,12 @@ var body_colors: Dictionary = {}
 var _pose: Dictionary = {}
 var _sprite: AnimatedSprite2D
 var _light: PointLight2D
+## Item vestido num corpo renderizado: camada 3D do estilo do item (parte principal pintada com a
+## cor do item e detalhe com a cor de destaque), tocando o mesmo quadro do corpo.
+var _lay: EquipmentItem
+var _lay_spr: AnimatedSprite2D
+var _lay_ac: EquipmentItem
+var _lay_ac_spr: AnimatedSprite2D
 
 
 ## Personagens ficam na máscara de luz 2: só as luzes grandes (aura do herói, lampiões, fogueira)
@@ -26,6 +32,13 @@ func set_item(it: EquipmentItem) -> void:
 	if _light:
 		_light.queue_free()
 		_light = null
+	for sp in [_lay_spr, _lay_ac_spr]:
+		if sp:
+			sp.queue_free()
+	_lay_spr = null
+	_lay_ac_spr = null
+	_lay = null
+	_lay_ac = null
 	if item and item.sprite_frames and slot != CharacterVisual.CAPE_FRONT:
 		_sprite = AnimatedSprite2D.new()
 		_sprite.sprite_frames = item.sprite_frames
@@ -35,6 +48,13 @@ func set_item(it: EquipmentItem) -> void:
 		add_child(_sprite)
 	if slot == -1 and item and item.sprite_frames:
 		body_colors["sprite_body"] = true
+	if slot >= 0 and slot != CharacterVisual.CAPE_FRONT and item and body_colors.get("sprite_body", false):
+		var lp := "res://assets/equip/%s/sprites.json" % String(item.placeholder_style)
+		if FileAccess.file_exists(lp):
+			_lay = Actor.sprite_body(lp)
+			_lay_ac = Actor.sprite_body(lp, "_ac")
+			_lay_spr = _layer_sprite(_lay, _tint(item.placeholder_color, 0.8))
+			_lay_ac_spr = _layer_sprite(_lay_ac, _tint(item.placeholder_accent, 0.85))
 	if item and item.glow > 0.0 and slot != CharacterVisual.CAPE_FRONT:
 		_light = LightKit.make(item.placeholder_accent, item.glow, 0.35, false, 0.15)
 		add_child(_light)
@@ -42,8 +62,42 @@ func set_item(it: EquipmentItem) -> void:
 	queue_redraw()
 
 
+func _tint(c: Color, ref: float) -> Color:
+	return Color(c.r / ref, c.g / ref, c.b / ref, 1.0)
+
+
+func _layer_sprite(it: EquipmentItem, col: Color) -> AnimatedSprite2D:
+	if it == null:
+		return null
+	var sp := AnimatedSprite2D.new()
+	sp.sprite_frames = it.sprite_frames
+	sp.centered = true
+	sp.offset = it.anchor
+	sp.scale = Vector2.ONE * it.sprite_scale
+	sp.modulate = col
+	add_child(sp)
+	return sp
+
+
+func _play(sp: AnimatedSprite2D, it: EquipmentItem, anim: String, dir: String, frame: int) -> void:
+	if sp == null or it == null:
+		return
+	var r := it.resolve(anim, dir)
+	var nm: String = r.name
+	if nm != "" and sp.sprite_frames.has_animation(nm):
+		sp.visible = true
+		if sp.animation != nm:
+			sp.animation = nm
+		sp.flip_h = r.flip
+		sp.frame = frame % maxi(1, sp.sprite_frames.get_frame_count(nm))
+	else:
+		sp.visible = false
+
+
 func update_pose(dir: String, anim: String, frame: int, pose: Dictionary) -> void:
 	_pose = pose
+	_play(_lay_spr, _lay, anim, dir, frame)
+	_play(_lay_ac_spr, _lay_ac, anim, dir, frame)
 	if _sprite:
 		var r := item.resolve(anim, dir)
 		var anim_name: String = r.name

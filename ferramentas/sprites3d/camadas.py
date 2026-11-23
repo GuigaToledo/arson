@@ -24,8 +24,8 @@ sc = bpy.context.scene
 
 def roupa_de_baixo():
     """Camisa de linho e calção simples (o que aparece sem itens)."""
-    m1 = roupas.tecido("linho", (0.32, 0.27, 0.2), 200.0)
-    m2 = roupas.tecido("linho2", (0.16, 0.13, 0.1), 200.0)
+    m1 = roupas.tecido("linho", (0.085, 0.065, 0.045), 200.0)
+    m2 = roupas.tecido("linho2", (0.05, 0.04, 0.032), 200.0)
     p = [roupas.casca(body, "camisa", {"pelvis", "spine_01", "spine_02", "spine_03", "clavicle_l", "clavicle_r", "upperarm_l", "upperarm_r"},
             0.45, 0.008, m1, corta=lambda co: co.z > 1.56 or abs(co.x) > 0.42),
          roupas.casca(body, "calcao", {"pelvis", "thigh_l", "thigh_r"}, 0.45, 0.008, m2, corta=lambda co: co.z < 0.62 or co.z > 1.08)]
@@ -44,6 +44,8 @@ else:
     antes = set(bpy.data.objects.keys())
     itens3d.construir(arm, body, "x", it)
     pecas = [bpy.data.objects[n] for n in set(bpy.data.objects.keys()) - antes]
+    for o in pecas:
+        o.is_holdout = False  # cascas copiadas do corpo herdam o recorte
     # AOV "acc" = 1 nos materiais de detalhe
     for o in pecas:
         if o.type != "MESH":
@@ -66,6 +68,9 @@ if MOTOR == "CYCLES":
 else:
     sc.eevee.taa_render_samples = AMOSTRAS
 sc.render.film_transparent = True
+# deixa núcleos livres para o computador continuar usável durante o render longo
+sc.render.threads_mode = "FIXED"
+sc.render.threads = 20
 sc.render.resolution_x = SIZE
 sc.render.resolution_y = SIZE
 sc.render.image_settings.file_format = "PNG"
@@ -128,19 +133,33 @@ from bpy_extras.object_utils import world_to_camera_view
 bpy.context.view_layer.update()
 pe = world_to_camera_view(sc, cam, Vector((0, 0, 0)))
 meta = {"tamanho": SIZE, "pe": [round(pe.x * SIZE, 1), round((1 - pe.y) * SIZE, 1)], "anims": {}}
+# animação mista "Pernas+Braços" (ex.: Walk_Loop+Spell_Simple_Shoot): pernas e quadril de uma, tronco e braços da outra
+CIMA = [b.name for b in arm.data.bones if b.name == "spine_01" or "spine_01" in [p.name for p in b.parent_recursive]]
 for item in SPEC.split(","):
     jogo, resto = item.split("=")
     nome, nq = resto.split(":")
     nq = int(nq)
-    fend = R.animacao(nome)
+    partes = nome.split("+")
+    fend2 = R.animacao(partes[1]) if len(partes) > 1 else 0
+    fend = R.animacao(partes[0])
     meta["anims"][jogo] = nq
     for di, d in enumerate(DIRS):
         a = di * math.pi / 4.0
         gx, gy = math.cos(a), math.sin(a) * 2.0
         R.pivot.rotation_euler = (0, 0, math.atan2(-gy, gx) + math.pi / 2.0)
         for k in range(nq):
-            fr = 1 + round(k * (fend - 1) / max(1, (nq if jogo in ("idle", "walk", "run") else nq - 1)))
-            R.quadro(fr)
+            if len(partes) > 1:
+                R.animacao(partes[1])
+                R.quadro(1 + round(k * (fend2 - 1) / max(1, nq - 1)))
+                cima = {b: arm.pose.bones[b].matrix_basis.copy() for b in CIMA}
+                R.animacao(partes[0])
+                R.quadro(1 + round(k * (fend - 1) / max(1, nq)))
+                for b, m in cima.items():
+                    arm.pose.bones[b].matrix_basis = m
+                bpy.context.view_layer.update()
+            else:
+                fr = 1 + round(k * (fend - 1) / max(1, (nq if jogo in ("idle", "walk", "run") else nq - 1)))
+                R.quadro(fr)
             nomeq = "%s_%s_%02d" % (jogo, d, k)
             sc.render.filepath = os.path.join(OUT, nomeq + ".png")
             if fo:

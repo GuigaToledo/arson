@@ -67,6 +67,8 @@ static func roll(power: float, def := 0.0) -> int:
 static func skill_name(k: String) -> String:
 	if k == "defesa":
 		return "Defesa"
+	if k == "magia":
+		return "Nível mágico"
 	return str(Spellbook.ELEMENTS[k].nome) if Spellbook.ELEMENTS.has(k) else k.capitalize()
 
 

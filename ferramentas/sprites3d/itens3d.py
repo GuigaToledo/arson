@@ -164,6 +164,11 @@ def construir(arm, body, item_id, it):
         o = _grosso(casca(body, tag + "_capuz", cabeca, 0.5, 0.045, m_pano, alarga=ponta, corta=corta_rosto))
         dobras(o, 0.008)
         pecas.append(o)
+        # gola do capuz caindo sobre os ombros
+        g = _grosso(casca(body, tag + "_gola", {"neck_01", "spine_03", "clavicle_l", "clavicle_r"}, 0.3, 0.035, m_pano,
+            corta=lambda co: co.z < 1.36 or co.z > 1.6 or abs(co.x) > 0.24))
+        dobras(g, 0.01)
+        pecas.append(g)
     elif e in ("helm",):
         o = _grosso(casca(body, tag + "_elmo", {"Head"}, 0.5, 0.03, m_metal,
             corta=lambda co: (co.y < -0.03 and 1.6 < co.z < 1.73 and abs(co.x) < 0.06) or co.z < 1.6), 0.012)

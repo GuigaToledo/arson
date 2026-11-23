@@ -75,7 +75,17 @@ func move(d: Vector2, running: bool, delta: float) -> void:
 		_action_time -= delta
 		if _action_time <= 0.0:
 			anim = "idle"
-	visual.tick(delta, facing, anim, velocity.length())
+	visual.tick(delta, facing, moving_anim(anim, velocity.length() > 1.0, running), velocity.length())
+
+
+## Magia lançada andando ou correndo: as pernas continuam (animação mista, se o corpo tiver).
+func moving_anim(a: String, moving: bool, running: bool) -> String:
+	if not moving or a != "cast" or visual == null or visual.body_item == null:
+		return a
+	var m := "cast_run" if running else "cast_walk"
+	if visual.body_item.animations.has(m):
+		return m
+	return "run" if running else "walk"
 
 
 func play_action(a: String, duration: float) -> void:
@@ -91,9 +101,20 @@ const SPRITE_DIRS := ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
 const SPRITE_ALIAS := {"spell": "cast", "attack": "cast", "punch": "cast", "kick": "cast", "headbutt": "cast", "grab": "cast", "spin": "cast", "run": "walk"}
 
 
-static func sprite_body(json_path: String) -> EquipmentItem:
-	if _bodies.has(json_path):
-		return _bodies[json_path]
+## Corpo renderizado de uma classe: o corpo base (roupa de baixo, os itens vestidos aparecem por
+## cima em camadas) ou, se ainda não existir, o mago da classe com a roupa fixa.
+static func class_body(classe: String) -> String:
+	var b := "res://assets/personagens/base/sprites.json"
+	if FileAccess.file_exists(b):
+		return b
+	return "res://assets/personagens/mago_%s/sprites.json" % classe
+
+
+## sufixo "_ac": folhas de detalhe das camadas de equipamento (<anim>_ac.png).
+static func sprite_body(json_path: String, sufixo := "") -> EquipmentItem:
+	var chave := json_path + sufixo
+	if _bodies.has(chave):
+		return _bodies[chave]
 	var txt := FileAccess.get_file_as_string(json_path)
 	var d = JSON.parse_string(txt) if txt != "" else null
 	if typeof(d) != TYPE_DICTIONARY:
@@ -117,7 +138,10 @@ static func sprite_body(json_path: String) -> EquipmentItem:
 		var n := int(info.n)
 		var fw := float(info.quadro[0])
 		var fh := float(info.quadro[1])
-		var tex: Texture2D = load(dir + "/" + anim + ".png")
+		var tp: String = dir + "/" + anim + sufixo + ".png"
+		if not ResourceLoader.exists(tp):
+			continue
+		var tex: Texture2D = load(tp)
 		if tex == null:
 			continue
 		if half:
@@ -157,5 +181,7 @@ static func sprite_body(json_path: String) -> EquipmentItem:
 	it.anchor = Vector2(VW * 0.5 - PX, VH * 0.5 - PY) * k_res
 	if d.has("sombra"):
 		it.set_meta("sombra", Vector2(float(d.sombra[0]), float(d.sombra[1])))
-	_bodies[json_path] = it
+	if anims.is_empty():
+		it = null
+	_bodies[chave] = it
 	return it

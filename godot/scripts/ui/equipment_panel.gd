@@ -30,6 +30,9 @@ var _show: Control
 var _portrait: AnimatedSprite2D
 var _pots: Label
 var _bag_ids: Array = []
+## Camadas dos itens vestidos por cima do mago da vitrine.
+var _pl: Array = []
+var _pl_key := ""
 
 
 func bind(p: Player) -> void:
@@ -228,11 +231,44 @@ func _fit_portrait() -> void:
 		_portrait.sprite_frames = it.sprite_frames
 		_portrait.play("idle_S")
 		_portrait.speed_scale = 1.6
+	_portrait_layers()
 	var th := (_portrait.sprite_frames.get_frame_texture("idle_S", 0) as Texture2D).get_size().y
 	var k := (_show.size.y * 1.02) / maxf(1.0, th)
 	_portrait.scale = Vector2(k, k)
 	# o pé fica um pouco acima do fundo da vitrine
 	_portrait.position = Vector2(_show.size.x * 0.5, _show.size.y * 0.5 - th * k * 0.06)
+
+
+## Itens vestidos (camadas 3D) por cima do mago da vitrine, na mesma animação.
+func _portrait_layers() -> void:
+	var key := str(player.equipment.to_ids())
+	if key == _pl_key:
+		return
+	_pl_key = key
+	for sp in _pl:
+		(sp as Node).queue_free()
+	_pl.clear()
+	var ordem := [EquipSlot.Slot.CAPE, EquipSlot.Slot.LEGS, EquipSlot.Slot.FEET, EquipSlot.Slot.CHEST, EquipSlot.Slot.HANDS,
+		EquipSlot.Slot.SHOULDERS, EquipSlot.Slot.ACCESSORIES, EquipSlot.Slot.HEAD, EquipSlot.Slot.MAIN_HAND, EquipSlot.Slot.OFF_HAND]
+	for s in ordem:
+		var it := player.equipment.get_item(s)
+		if it == null:
+			continue
+		var lp := "res://assets/equip/%s/sprites.json" % String(it.placeholder_style)
+		if not FileAccess.file_exists(lp):
+			continue
+		for par in [["", it.placeholder_color, 0.8], ["_ac", it.placeholder_accent, 0.85]]:
+			var li := Actor.sprite_body(lp, par[0])
+			if li == null or not li.sprite_frames.has_animation("idle_S"):
+				continue
+			var sp := AnimatedSprite2D.new()
+			sp.sprite_frames = li.sprite_frames
+			sp.animation = "idle_S"
+			sp.centered = true
+			var cc: Color = par[1]
+			sp.modulate = Color(cc.r / par[2], cc.g / par[2], cc.b / par[2])
+			_portrait.add_child(sp)
+			_pl.append(sp)
 
 
 func _draw_show(c: Control) -> void:
@@ -289,14 +325,18 @@ func _draw_stats() -> void:
 		_row(c, font, y, step, str(r[0]), str(r[1]), (r[3] as Color).lightened(0.25))
 		y += step
 	c.draw_line(Vector2(10, y - 4), Vector2(w - 10, y - 4), Color(0.4, 0.4, 0.36, 0.6), 1.0)
-	var els := Spellbook.elements_of(player.classe) + ["luz"]
-	for el in els:
+	# um só nível mágico; o segundo elemento desperta no 31
+	var els := Spellbook.elements_of(player.classe)
+	var linhas := [[els[0], "Nível mágico", str(player.magia())],
+		[els[1], Spellbook.ELEMENTS[els[1]].nome, "ativo" if player.magia() >= 31 else "desperta no 31"],
+		["luz", "Luz", "curas pelo nível mágico"]]
+	for ln in linhas:
+		var el: String = ln[0]
 		var ce: Color = Spellbook.ELEMENTS[el].cor
 		ElemArt.circle(c, Vector2(22, y + 9), 12, Color(0, 0, 0, 0.6))
 		ElemArt.arc(c, Vector2(22, y + 9), 12, 0, TAU, 24, Color(ce, 0.7), 1.5)
 		SpellTree._motif(c, Vector2(22, y + 9), 5.5, el, ce)
-		var lv := player.elem_level(el)
-		_row(c, font, y, step, Spellbook.ELEMENTS[el].nome, str(lv) if lv > 0 else "adormecido", ce.lightened(0.3))
+		_row(c, font, y, step, str(ln[1]), str(ln[2]), ce.lightened(0.3))
 		y += step
 
 
@@ -486,6 +526,8 @@ func _refresh() -> void:
 
 
 func _process(_d: float) -> void:
+	for sp in _pl:
+		(sp as AnimatedSprite2D).frame = _portrait.frame
 	# o saque, o ouro e a vida mudam enquanto você caça com a bolsa aberta
 	if panel and panel.visible and Engine.get_process_frames() % 20 == 0:
 		_refresh()

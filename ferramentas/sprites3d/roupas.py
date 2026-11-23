@@ -105,6 +105,9 @@ def casca(body, nome, grupos, minimo, empurra, mat, alarga=None, corta=None):
         if s < minimo or (corta and corta(v.co)):
             tira.append(v)
     bmesh.ops.delete(bm, geom=tira, context="VERTS")
+    # costuras da malha (vértices repetidos) abriam rachaduras ao empurrar para fora
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0005)
+    bm.normal_update()
     for v in bm.verts:
         d = empurra + (alarga(v.co) if alarga else 0.0)
         v.co += v.normal * d
