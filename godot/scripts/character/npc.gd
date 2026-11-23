@@ -80,3 +80,8 @@ func _guarda_combate(delta: float) -> bool:
 			play_action("punch", 0.4)
 			_foe.take_damage(int(Rules.roll(60.0, float(_foe.info.get("def", 0))) ), self)
 	return true
+
+
+## Os monstros podem revidar contra o guarda: ele aguenta (não morre), só mostra o golpe.
+func take_damage(n: int, _by = null) -> void:
+	CombatText.add(global_position + Vector2(0, -80), str(n), Color(1, 0.6, 0.3))
