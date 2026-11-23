@@ -11,6 +11,7 @@ var _wait := 0.0
 var _stuck := 0.0
 ## Guarda: ataca monstros que chegarem perto e depois volta à patrulha.
 var guarda := false
+var dead := false
 var _foe: Node2D = null
 var _atk := 0.0
 var _scan := 0.0
@@ -60,7 +61,7 @@ func _guarda_combate(delta: float) -> bool:
 		_scan = 0.3
 		var bd := GUARDA_ALCANCE
 		for m in get_tree().get_nodes_in_group("monsters"):
-			if m.dead or (m is Monster and m.info.get("dummy", false)):
+			if not (m is Monster) or m.dead or m.info.get("dummy", false):
 				continue
 			var d := Rules.gdist(global_position, m.global_position)
 			if d < bd:
