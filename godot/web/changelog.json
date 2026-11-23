@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.18.4",
+  "data": "2026-11-23",
+  "titulo": "Minimapa",
+  "itens": [
+   "Minimapa no canto de cima à direita, no mesmo ângulo isométrico do jogo, com você (seta), outros jogadores (verde), NPCs (branco), monstros (vermelho) e chefes (laranja)",
+   "Botões Menu e Bolsa menores, à esquerda do minimapa"
+  ]
+ },
+ {
   "versao": "0.18.3",
   "data": "2026-11-23",
   "titulo": "Experiência em grupo e invocação agressiva",

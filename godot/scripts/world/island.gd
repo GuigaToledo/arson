@@ -238,6 +238,7 @@ func start_game(slot: int) -> void:
 	var hud := Hud.new()
 	add_child(hud)
 	hud.bind(player, net, ui)
+	hud.set_map(map)
 	hud.game_menu = gm
 	gm.on_chat = hud._open_chat
 	gm.on_equip = hud._toggle_panel

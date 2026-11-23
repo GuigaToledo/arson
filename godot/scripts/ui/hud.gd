@@ -26,6 +26,19 @@ var spellbar: SpellBar
 var skill_panel: SkillPanel
 var task_lbl: Label
 var clock_lbl: Label
+## Minimapa (lado de cima à direita): o script vem de ui/minimap.gd.
+const MINIMAP := 132.0
+var minimap_box: Control
+var minimap: Control
+
+
+func set_map(m) -> void:
+	if minimap_box == null or m == null or not ResourceLoader.exists("res://scripts/ui/minimap.gd"):
+		return
+	minimap = load("res://scripts/ui/minimap.gd").new()
+	minimap.size = Vector2(MINIMAP, MINIMAP)
+	minimap_box.add_child(minimap)
+	minimap.setup(m, player)
 var game_menu: GameMenu
 var _joy_idx := -1
 var _lines: PackedStringArray = PackedStringArray()
@@ -85,21 +98,30 @@ func _build() -> void:
 	bars.portrait = load("res://assets/ui/retrato_mago.jpg")
 	root.add_child(bars)
 
-	var menu := HBoxContainer.new()
+	# minimapa no canto de cima à direita; Menu e Bolsa pequenos, empilhados à esquerda dele
+	minimap_box = Control.new()
+	minimap_box.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	minimap_box.offset_left = -8 - MINIMAP
+	minimap_box.offset_right = -8
+	minimap_box.offset_top = 8
+	minimap_box.offset_bottom = 8 + MINIMAP
+	minimap_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(minimap_box)
+	var menu := VBoxContainer.new()
 	menu.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	menu.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	menu.offset_right = -8
+	menu.offset_right = -8 - MINIMAP - 6
 	menu.offset_top = 8
-	menu.add_theme_constant_override("separation", 6)
+	menu.add_theme_constant_override("separation", 4)
 	root.add_child(menu)
-	var bb := _menu_btn("Bolsa", _toggle_panel)
-	bb.custom_minimum_size = Vector2(86, 44)
-	bb.add_theme_font_size_override("font_size", 16)
-	menu.add_child(bb)
 	var mb := _menu_btn("Menu", func(): if game_menu: game_menu.toggle())
-	mb.custom_minimum_size = Vector2(96, 44)
-	mb.add_theme_font_size_override("font_size", 16)
+	mb.custom_minimum_size = Vector2(62, 30)
+	mb.add_theme_font_size_override("font_size", 12)
 	menu.add_child(mb)
+	var bb := _menu_btn("Bolsa", _toggle_panel)
+	bb.custom_minimum_size = Vector2(62, 30)
+	bb.add_theme_font_size_override("font_size", 12)
+	menu.add_child(bb)
 
 	joystick = Joystick.new()
 	joystick.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
