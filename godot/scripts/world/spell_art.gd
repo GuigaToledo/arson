@@ -1707,8 +1707,8 @@ static func ki_aura(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color
 		far.append(p * 1.08)
 	# três faixas concêntricas: fora larga e suave, dentro mais clara e estreita
 	var c_far := Color(col, 0.0)
-	var c_edge := Color(col.lerp(col2, 0.2), col.a * gain * 0.16)
-	var c_hot := Color(col2.lightened(0.3), col2.a * gain * 0.38)
+	var c_edge := Color(col.lerp(col2, 0.2), col.a * gain * 0.3)
+	var c_hot := Color(col2, col2.a * gain * 0.5)
 	var c_near := Color(col2, col2.a * gain * 0.05)
 	var idx := PackedInt32Array()
 	for i in m - 1:
@@ -1737,7 +1737,7 @@ static func ki_aura(n: CanvasItem, c: Vector2, h: float, col: Color, col2: Color
 		line.append(c + edge[i])
 	line.append(line[0])
 	ElemArt.polyline(n, line, Color(col, col.a * gain * 0.16), maxf(2.0, h * 0.032))
-	var rim := col.lightened(0.5).lerp(Color.WHITE, 0.35)
+	var rim := col.lightened(0.3)
 	ElemArt.polyline(n, line, Color(rim, rim.a * col.a * gain * 0.88), maxf(1.0, h * 0.013))
 	# faíscas sobem e somem. A posição sai só de t, para o desenho não piscar.
 	var spark_x := [0.2, -0.18, 0.15, -0.22, 0.11, -0.16, 0.23, -0.12, 0.17, -0.2, 0.08, -0.14]

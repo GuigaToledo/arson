@@ -762,15 +762,33 @@ func take_damage(n: int, by: Node2D, from_net := false) -> void:
 		_die(by)
 
 
+## Jogadores até esta distância (quadrados) do monstro dividem a experiência.
+const XP_SHARE_RANGE := 15.0
+
+
 func _die(by: Node2D) -> void:
 	dead = true
 	foe = null
 	_respawn = float(info.get("respawn", 30.0)) * randf_range(0.85, 1.25) if boss else randf_range(25.0, 40.0) * (2.0 if elite else 1.0)
 	_die_visual()
 	if by != null and is_instance_valid(by) and by.has_method("gain_xp"):
+		# quem matou (a invocação conta como o dono)
+		var killer: Node2D = by
+		if by.get("owner_p") != null and is_instance_valid(by.owner_p):
+			killer = by.owner_p
+		# experiência dividida entre os jogadores que estão jogando juntos (vivos e perto do monstro)
+		var grupo: Array = [killer]
+		for p in get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("remote_players"):
+			if p == killer or not is_instance_valid(p) or bool(p.get("dead")) or not p.has_method("gain_xp"):
+				continue
+			if Rules.gdist(global_position, p.global_position) <= XP_SHARE_RANGE:
+				grupo.append(p)
 		var g: Array = info.gold
-		var xm := Rules.danger_xp(Rules.danger(level, level_of(by)))
-		by.gain_xp(int(round(float(info.xp) * xm)), randi_range(int(g[0]), int(g[1])), display_name)
+		var ouro := randi_range(int(g[0]), int(g[1]))
+		for p in grupo:
+			var xm := Rules.danger_xp(Rules.danger(level, level_of(p)))
+			var parte := int(round(float(info.xp) * xm / float(grupo.size())))
+			p.gain_xp(maxi(1, parte), ouro if p == killer else 0, display_name)
 
 
 func _die_visual() -> void:

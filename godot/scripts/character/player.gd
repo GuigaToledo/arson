@@ -1466,7 +1466,7 @@ class StatusAura:
 			var c2: Color = shield_col.lightened(0.5)
 			if shield_els.size() >= 1 and Spellbook.ELEMENTS.has(str(shield_els[0])):
 				c1 = Spellbook.ELEMENTS[str(shield_els[0])].cor
-				c2 = c1.lightened(0.55)
+				c2 = c1.lightened(0.25)
 			if shield_els.size() >= 2 and Spellbook.ELEMENTS.has(str(shield_els[1])):
 				c2 = (Spellbook.ELEMENTS[str(shield_els[1])].cor as Color).lightened(0.3)
 			SpellArt.ki_aura(self, Vector2(0, -42), 100.0, c1, c2, _t, force)

@@ -22,6 +22,9 @@ var hp := 100.0
 var max_hp := 100.0
 var dead := false
 var foe: Node2D = null
+## Distância máxima (em quadrados) do dono até o alvo da invocação.
+const LEASH := 15.0
+var _scan_t := 0.0
 var last_attacker: Node2D = null
 var color := Color.WHITE
 var _atk_cd := 0.0
@@ -47,7 +50,8 @@ static func make(owner: Node2D, elements: Array, is_fused: bool, fused_name := "
 		s.color = s.color.lerp(Spellbook.ELEMENTS[elements[1]].cor, 0.5)
 	# corpo feito do próprio elemento (SummonPainter): golem de blocos, chamas, raios, raízes...
 	s.body_colors = {"summon": elements[0], "summon2": elements[1] if is_fused and elements.size() > 1 else "", "eyes": s.color.lightened(0.5), "core_col": s.color}
-	s.walk_speed = 150.0 if lk.get("fast", false) else 115.0
+	# rápida: acompanha o dono correndo e alcança os monstros
+	s.walk_speed = 195.0 if lk.get("fast", false) else 165.0
 	s.run_speed = s.walk_speed * 2.0
 	return s
 
@@ -180,26 +184,33 @@ func _physics_process(delta: float) -> void:
 	if LOOK[els[0]].float:
 		visual.position.y = -10.0 + sin(_t * 2.5) * 4.0
 	var od := Rules.gdist(global_position, owner_p.global_position)
-	if od > 14.0 or bool(owner_p.get("dead")):
+	if od > 20.0 or bool(owner_p.get("dead")):
 		global_position = owner_p.global_position + Vector2(-40, 20)
 		foe = null
-	# escolhe o alvo: agressivo = alvo do dono ou o inimigo mais perto do dono; passivo = só quem atacou
+	# alvo: sempre o mesmo que o dono mirar (troca na hora); sem alvo do dono, o inimigo mais perto
+	# que estiver na tela (agressiva) ou quem a atacou (passiva)
+	var of = owner_p.get("foe")
+	if _ok(of) and of != foe and Rules.gdist(owner_p.global_position, of.global_position) < LEASH:
+		foe = of
 	if not _ok(foe):
 		foe = null
 		if Settings.auto.get("summon_agressivo", true):
-			var of = owner_p.get("foe")
-			if _ok(of) and Rules.gdist(owner_p.global_position, of.global_position) < 9.0:
-				foe = of
-			else:
-				var bd := 6.0
+			_scan_t -= delta
+			if _scan_t <= 0.0:
+				_scan_t = 0.25
+				var bd := 1e9
+				var vr := CharacterVisual.view_rect
 				for m in _monsters():
+					if Rules.is_safe(m.global_position):
+						continue
+					var na_tela := vr.size.x > 0.0 and vr.has_point(m.global_position)
 					var d := Rules.gdist(owner_p.global_position, m.global_position)
-					if d < bd and not Rules.is_safe(m.global_position):
+					if (na_tela or d < 9.0) and d < bd:
 						bd = d
 						foe = m
 		if foe == null and _ok(last_attacker):
 			foe = last_attacker
-	if foe != null and Rules.gdist(owner_p.global_position, foe.global_position) > 11.0:
+	if foe != null and Rules.gdist(owner_p.global_position, foe.global_position) > LEASH:
 		foe = null
 	var d := Vector2.ZERO
 	var running := false
@@ -221,7 +232,7 @@ func _physics_process(delta: float) -> void:
 ## Golpes em sequência, como um monge: soco, chute, cabeçada (empurra), chute giratório (área),
 ## agarrar e morder (prende). Sempre com o efeito do elemento; de tempos em tempos fortalece o dono.
 func _strike() -> void:
-	_atk_cd = 0.9 if LOOK[els[0]].get("fast", false) else 1.15
+	_atk_cd = 0.7 if LOOK[els[0]].get("fast", false) else 0.9
 	_combo += 1
 	var pw := power()
 	var tgt := foe

@@ -287,7 +287,7 @@ func _draw_stats() -> void:
 	var els := Spellbook.elements_of(player.classe)
 	var linhas := [[els[0], "Nível mágico", str(player.magia())],
 		[els[1], Spellbook.ELEMENTS[els[1]].nome, "ativo" if player.magia() >= 31 else "desperta no 31"],
-		["luz", "Luz", "curas pelo nível mágico"]]
+		["luz", "Luz", "ativa"]]
 	for ln in linhas:
 		var el: String = ln[0]
 		var ce: Color = Spellbook.ELEMENTS[el].cor

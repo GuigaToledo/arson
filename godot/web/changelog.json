@@ -1,5 +1,15 @@
 [
  {
+  "versao": "0.18.3",
+  "data": "2026-11-23",
+  "titulo": "Experiência em grupo e invocação agressiva",
+  "itens": [
+   "A experiência de cada monstro é dividida entre os jogadores que estão jogando juntos (vivos e perto do monstro); o ouro fica com quem matou",
+   "A invocação anda mais rápido, golpeia mais rápido, ataca sempre o alvo que você mirar e vai para cima de qualquer monstro que aparecer na tela",
+   "Aura do escudo com as cores do elemento mais fortes"
+  ]
+ },
+ {
   "versao": "0.18.2",
   "data": "2026-11-23",
   "titulo": "Escudo mágico como aura de ki",
