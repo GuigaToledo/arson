@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.18.6",
+  "data": "2026-11-23",
+  "titulo": "Auras por elemento e equipar os melhores itens",
+  "itens": [
+   "Cada escudo tem a aura com a cara do elemento: brasas e chamas (fogo), gotas de magma (lava), bolhas (água), cristais e flocos (gelo), correntes de vento, mini-raios, pedrinhas orbitando (terra) e folhas (natureza)",
+   "Botão \"Equipar melhores\" na ficha: veste o melhor item que você tem e pode usar em cada espaço (no lugar do \"Tirar tudo\")"
+  ]
+ },
+ {
   "versao": "0.18.5",
   "data": "2026-11-23",
   "titulo": "Multijogador: posição dos outros jogadores",
