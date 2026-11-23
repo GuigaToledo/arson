@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.19.0",
+  "data": "2026-11-23",
+  "titulo": "Multijogador no app de celular",
+  "itens": [
+   "O app de celular agora entra no mesmo mundo online dos jogadores do navegador (pode ser anfitrião ou se conectar em quem já está jogando)",
+   "Para usar, instale o app novo uma vez (o próprio app avisa com o botão \"Baixar app\"); depois disso ele se atualiza sozinho"
+  ]
+ },
+ {
   "versao": "0.18.9",
   "data": "2026-11-23",
   "titulo": "App se atualiza sozinho",
