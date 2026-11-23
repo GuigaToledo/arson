@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.19.2",
+  "data": "2026-11-23",
+  "titulo": "App: tela de abertura com registro rolável",
+  "itens": [
+   "Tela de abertura do app: o registro (onde o jogo parou e a conexão) agora fica numa caixa com rolagem abaixo do botão \"Abrir o jogo\", que não sai mais da tela",
+   "Corrigido: a verificação de atualização a cada minuto contava como \"o jogo fechou sozinho\" e abria o app em modo leve; o registro também enchia de linhas repetidas"
+  ]
+ },
+ {
   "versao": "0.19.1",
   "data": "2026-11-23",
   "titulo": "Livro, escudo e cajado nas mãos",
