@@ -44,6 +44,17 @@ var _eye_light: PointLight2D
 var _core_light: PointLight2D
 
 
+## Troca o corpo depois de montado (ex.: jogador da rede, cuja classe chega depois).
+func set_body(it: EquipmentItem) -> void:
+	if it == null or it == body_item:
+		return
+	body_item = it
+	if layers.has(-1):
+		layers[-1].set_item(it)
+	for s in layers:
+		layers[s].queue_redraw()
+
+
 func setup(eq: EquipmentComponent) -> void:
 	equipment = eq
 	for s in [-1] + EquipSlot.all() + [CAPE_FRONT]:

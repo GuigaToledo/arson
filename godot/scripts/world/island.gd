@@ -822,6 +822,9 @@ func _teste_boneco() -> void:
 func _spawn_characters(classe: String) -> void:
 	player = Player.new()
 	player.classe = classe
+	var corpo := "res://assets/personagens/mago_%s/sprites.json" % classe
+	if FileAccess.file_exists(corpo):
+		player.body_path = corpo
 	if day_night:
 		day_night.player = player
 	# skin da classe: peças, olhos e núcleo na cor do elemento

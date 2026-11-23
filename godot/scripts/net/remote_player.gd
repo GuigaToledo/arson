@@ -61,6 +61,10 @@ func apply_state(s: Dictionary) -> void:
 			_class_aura = ClassAura.new()
 			add_child(_class_aura)
 		_class_aura.setup(c)
+		# corpo renderizado da classe (se existir)
+		var corpo := "res://assets/personagens/mago_%s/sprites.json" % c
+		if FileAccess.file_exists(corpo):
+			visual.set_body(Actor.sprite_body(corpo))
 	visible = not dead
 	facing = str(s.get("f", "S"))
 	if not Iso.DIRS.has(facing):
