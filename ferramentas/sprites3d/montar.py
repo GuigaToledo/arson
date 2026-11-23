@@ -21,7 +21,9 @@ def ler(path):
 
 
 # recorte por animação (cada uma tem seu tamanho; a morte é larga, andar é estreito)
-saida = {"anims": {}}
+saida = {"tamanho": S, "pe_quadro": meta["pe"], "anims": {}}
+if "escala" in meta:
+    saida["escala"] = meta["escala"]
 for anim, n in meta["anims"].items():
     fr = {}
     x0, y0, x1, y1 = S, S, 0, 0

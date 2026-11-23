@@ -1,5 +1,16 @@
 [
  {
+  "versao": "0.15.0",
+  "data": "2026-11-23",
+  "titulo": "Dragão Rubro e magos em 2.5D",
+  "itens": [
+   "Novo chefe: Dragão Rubro, nas rochas a leste do Acampamento dos Ciclopes. Cospe bolas de fogo, atordoa com o bater das asas e fica mais forte com o rugido",
+   "Saque novo: Escama de Dragão e Presa de Dragão",
+   "Os quatro magos agora têm visual renderizado em 3D (2.5D, 8 direções), com roupas, cajado e animações de andar, correr, magia, dano e morte",
+   "Corpo renderizado: o dragão cai no chão ao morrer antes de sumir"
+  ]
+ },
+ {
   "versao": "0.14.1",
   "data": "2026-11-22",
   "titulo": "Edição de teste: nível 100",

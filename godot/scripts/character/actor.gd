@@ -88,7 +88,7 @@ func play_action(a: String, duration: float) -> void:
 static var _bodies := {}
 const SPRITE_DIRS := ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
 ## Animações do jogo que usam outra animação renderizada.
-const SPRITE_ALIAS := {"spell": "cast", "attack": "cast", "punch": "cast", "kick": "cast", "headbutt": "cast", "grab": "cast", "spin": "cast"}
+const SPRITE_ALIAS := {"spell": "cast", "attack": "cast", "punch": "cast", "kick": "cast", "headbutt": "cast", "grab": "cast", "spin": "cast", "run": "walk"}
 
 
 static func sprite_body(json_path: String) -> EquipmentItem:
@@ -104,10 +104,11 @@ static func sprite_body(json_path: String) -> EquipmentItem:
 	var k_res := 0.5 if half else 1.0
 	# quadro virtual comum (256x256, pé em 128,200.5): cada animação tem o seu recorte, a margem
 	# da AtlasTexture coloca o recorte no lugar certo, e todas as animações ficam com o pé no mesmo ponto
-	const VW := 256.0
-	const VH := 256.0
-	const PX := 128.0
-	const PY := 200.5
+	# (monstros grandes usam quadro maior: sprites.json traz "tamanho" e "pe_quadro")
+	var VW := float(d.get("tamanho", 256))
+	var VH := VW
+	var PX := float(d.pe_quadro[0]) if d.has("pe_quadro") else 128.0
+	var PY := float(d.pe_quadro[1]) if d.has("pe_quadro") else 200.5
 	var sf := SpriteFrames.new()
 	sf.remove_animation("default")
 	var anims := PackedStringArray()
@@ -154,5 +155,7 @@ static func sprite_body(json_path: String) -> EquipmentItem:
 	it.sprite_scale = float(d.get("escala", 0.47)) / k_res
 	# o sprite é centralizado no quadro virtual: desloca para o pé ficar na origem do personagem
 	it.anchor = Vector2(VW * 0.5 - PX, VH * 0.5 - PY) * k_res
+	if d.has("sombra"):
+		it.set_meta("sombra", Vector2(float(d.sombra[0]), float(d.sombra[1])))
 	_bodies[json_path] = it
 	return it

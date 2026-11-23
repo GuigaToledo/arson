@@ -49,6 +49,8 @@ var _col: CollisionShape2D
 var _scd := {}
 var _busy := 0.0
 var _buff_t := 0.0
+## Tempo restante da animação de morte (só corpos em sprite).
+var _death_t := 0.0
 
 
 ## Elite: versão mais forte de qualquer monstro comum (aura dourada, mais vida, dano e saque).
@@ -116,6 +118,8 @@ func configure(t: String, at: Vector2, is_elite := false, cap := 999) -> Monster
 	level = int(info.get("nivel", 1))
 	display_name = info.name
 	body_colors = info.colors
+	# corpo renderizado em 3D (ferramentas/sprites3d), ex.: o dragão
+	body_path = str(info.get("sprite", ""))
 	start_items = info.items
 	max_hp = info.hp
 	hp = max_hp
@@ -190,6 +194,10 @@ func _physics_process(delta: float) -> void:
 
 
 func _physics_inner(delta: float) -> void:
+	if dead and _death_t > 0.0:
+		# corpo em sprite: toca a queda até o último quadro (depois fica parado nele)
+		_death_t -= delta
+		visual.tick(delta, facing, "death", 0.0)
 	if NetSync.is_puppet():
 		_puppet(delta)
 		return
@@ -769,6 +777,9 @@ func _die_visual() -> void:
 	if _col:
 		_col.set_deferred("disabled", true)
 	var tw := create_tween()
+	if body_path.ends_with(".json"):
+		_death_t = 0.78
+		tw.tween_interval(2.6)
 	tw.tween_property(visual, "modulate", Color(0.2, 0.2, 0.2, 0.0), 0.8)
 	tw.tween_callback(func(): visible = false)
 

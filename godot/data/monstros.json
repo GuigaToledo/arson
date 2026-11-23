@@ -2552,5 +2552,89 @@
   "nivel": 42,
   "hp_base": 1600,
   "atk_base": 36
+ },
+ "dragao_rubro": {
+  "name": "Dragão Rubro",
+  "regiao": "Acampamento dos Ciclopes",
+  "desc": "Dragão antigo de escamas cor de brasa que fez ninho nas rochas ao sul. Cospe fogo e derruba tudo com o bater das asas.",
+  "hp": 25272,
+  "atk": 95,
+  "def": 12.5,
+  "xp": 18295,
+  "gold": [
+   200,
+   420
+  ],
+  "speed": 70,
+  "range": 1.6,
+  "aspd": 2,
+  "aggro": 8,
+  "scale": 1.3,
+  "el": "fogo",
+  "colors": {
+   "skin": "#5a1610",
+   "under": "#9a6a3a",
+   "hair": "#2a0a08",
+   "eyes": "#ffb020",
+   "glow_eyes": true
+  },
+  "body": "dragao",
+  "sprite": "res://assets/monstros/dragao/sprites.json",
+  "items": [],
+  "proj": "#ff7a2a",
+  "habilidades": [
+   {
+    "tipo": "disparo",
+    "nome": "Bola de Fogo Dracônica",
+    "desc": "Cospe uma bola de fogo que explode em área.",
+    "cd": 6,
+    "alcance": 7,
+    "poder": 1.7,
+    "area": 2,
+    "tamanho": 2.6,
+    "vel": 300,
+    "cor": "#ff6a1a"
+   },
+   {
+    "tipo": "onda",
+    "nome": "Bater de Asas",
+    "desc": "Bate as asas com força e atordoa quem estiver perto.",
+    "cd": 10,
+    "raio": 2.6,
+    "poder": 1.3,
+    "cor": "#ffb070",
+    "efeito": {
+     "tipo": "atordoado",
+     "dur": 1.4
+    }
+   },
+   {
+    "tipo": "uivo",
+    "nome": "Rugido Ancestral",
+    "desc": "Fica mais rápido e mais forte.",
+    "cd": 16,
+    "dur": 8,
+    "cor": "#ff4a1a"
+   }
+  ],
+  "saque": [
+   [
+    "escama_dragao",
+    1
+   ],
+   [
+    "presa_dragao",
+    1
+   ],
+   [
+    "nucleo_magma",
+    0.6
+   ]
+  ],
+  "chefe": true,
+  "respawn": 300,
+  "nivel": 46,
+  "hp_base": 1800,
+  "atk_base": 38
  }
 }

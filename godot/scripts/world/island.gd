@@ -100,10 +100,16 @@ func _ready() -> void:
 			start_game(r)
 			return
 	# ?autoteste=classe (só para testes automáticos): pula a tela inicial na vaga 4
-	if OS.has_feature("web"):
-		var at := str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('autoteste') || ''", true))
+	# (no computador, sem janela: --autoteste=classe na linha de comando)
+	var at := ""
+	for ua in OS.get_cmdline_user_args():
+		if str(ua).begins_with("--autoteste="):
+			at = str(ua).split("=")[1]
+	if OS.has_feature("web") or at != "":
+		if OS.has_feature("web"):
+			at = str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('autoteste') || ''", true))
 		if MageClass.valid(at):
-			var nm2 := str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('nome') || 'Teste'", true))
+			var nm2 := str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('nome') || 'Teste'", true)) if OS.has_feature("web") else "Teste"
 			Chars.create(4, at, nm2)
 			Chars.use(4)
 			start_game(4)
@@ -244,6 +250,29 @@ func start_game(slot: int) -> void:
 		if str(arg).begins_with("--teste-fotos="):
 			_fotos(str(arg).split("=")[1], hud)
 	for arg in _test_args():
+		# --teste-chefe=<tipo>[:ataque|:morte]: vai até o chefe (forte o bastante para não morrer)
+		if str(arg).begins_with("--teste-chefe="):
+			var pp := str(arg).split("=")[1].split(":")
+			var boss: Monster = null
+			for c in get_tree().get_nodes_in_group("monsters"):
+				if c.mtype == pp[0]:
+					boss = c
+			if boss:
+				player.level = 80
+				player._recalc()
+				player.camera.position_smoothing_enabled = false
+				player.global_position = boss.global_position + Vector2(190, 70)
+				var acao := pp[1] if pp.size() > 1 else ""
+				get_tree().create_timer(1.2).timeout.connect(func():
+					if acao == "ataque":
+						boss.facing = "SE"
+						boss.play_action("attack", 0.8)
+					elif acao == "morte":
+						boss.hp = 0.0
+						boss._die(player)
+					print("TESTE chefe ", boss.display_name, " nivel=", boss.level, " vida=", int(boss.max_hp), " corpo=", boss.body_path))
+			else:
+				print("TESTE chefe nao achou ", pp[0])
 		if str(arg).begins_with("--teste-vermagia="):
 			for k in player.skills:
 				player.skills[k] = [40, 0.0]

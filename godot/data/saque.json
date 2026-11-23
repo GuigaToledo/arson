@@ -238,5 +238,17 @@
   "preco": 400,
   "cor": "#ffb03a",
   "forma": "olho"
+ },
+ "escama_dragao": {
+  "nome": "Escama de Dragão",
+  "preco": 520,
+  "cor": "#c0301a",
+  "forma": "pele"
+ },
+ "presa_dragao": {
+  "nome": "Presa de Dragão",
+  "preco": 380,
+  "cor": "#e8dcc0",
+  "forma": "dente"
  }
 }

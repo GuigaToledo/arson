@@ -73,7 +73,8 @@ func _draw() -> void:
 func _draw_inner() -> void:
 	if _sprite and slot == -1:
 		# corpo renderizado: sombra no chão (o desenho por código fazia a dele)
-		PlaceholderPainter.ellipse(self, Vector2(2, 0), 16, 6.5, Color(0, 0, 0, 0.45))
+		var sb: Vector2 = item.get_meta("sombra", Vector2(16, 6.5)) if item else Vector2(16, 6.5)
+		PlaceholderPainter.ellipse(self, Vector2(2, 0), sb.x, sb.y, Color(0, 0, 0, 0.45))
 		return
 	if _sprite or _pose.is_empty():
 		return
