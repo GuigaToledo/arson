@@ -1,5 +1,15 @@
 [
  {
+  "versao": "0.18.1",
+  "data": "2026-11-23",
+  "titulo": "Bolsa de 100 espaços e loja completa",
+  "itens": [
+   "Bolsa única com 100 espaços: poções (empilhadas), equipamentos guardados e saque ficam juntos",
+   "A poção saiu da vitrine do personagem e virou item na bolsa",
+   "A loja do Brann vende todos os equipamentos do jogo, numa lista com ícone, nível, atributos e preço ao lado"
+  ]
+ },
+ {
   "versao": "0.18.0",
   "data": "2026-11-23",
   "titulo": "Itens aparecem no personagem e nível mágico único",

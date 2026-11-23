@@ -5,7 +5,7 @@ extends CanvasLayer
 const GOLD := Color(0.92, 0.82, 0.6)
 const DIM := Color(0.72, 0.66, 0.58)
 const POTION_PRICE := 20
-## Itens à venda com Brann: [id, preço].
+## Preço fixo de alguns itens do Brann: [id, preço]. O resto sai de item_price().
 const SHOP := [["varinha_aprendiz", 30], ["livro_feiticos", 40], ["chapeu_aprendiz", 40], ["sandalias", 20], ["manto_estudioso", 60], ["saia_linho", 30], ["colar_protecao", 150], ["turbante_mistico", 300], ["botas_ligeiras", 350], ["amuleto_mana", 400]]
 ## Tarefas por faixa de nível: [até o nível, monstro, quantidade].
 const TASKS := [[5, "esqueleto", 10], [10, "carnical", 12], [18, "bandido", 15], [28, "cultista", 15], [99999, "golem", 8]]
@@ -127,23 +127,7 @@ func _render(say: String) -> void:
 				_col.add_child(_row([_btn("Vida ×1", func(): _buy("hp", 1)), _btn("Vida ×5", func(): _buy("hp", 5)), _btn("Vida ×20", func(): _buy("hp", 20))]))
 				_col.add_child(_row([_btn("Mana ×1", func(): _buy("mp", 1)), _btn("Mana ×5", func(): _buy("mp", 5)), _btn("Mana ×20", func(): _buy("mp", 20))]))
 			"itens":
-				var row := []
-				var any := false
-				for it2 in SHOP:
-					var item := ItemDB.get_item(it2[0])
-					if item == null or player.owns(String(it2[0])):
-						continue
-					any = true
-					var id2: String = it2[0]
-					var pr: int = it2[1]
-					row.append(_btn("%s\n%d ouro · nv %d" % [item.display_name, pr, item.level_req], func(): _buy_item(id2, pr)))
-					if row.size() == 2:
-						_col.add_child(_row(row))
-						row = []
-				if not row.is_empty():
-					_col.add_child(_row(row))
-				if not any:
-					_col.add_child(_lbl("Você já tem tudo o que eu vendo!", 14, DIM))
+				_equip_shop()
 			"vender":
 				_sell_page()
 	else:
@@ -161,6 +145,134 @@ func _render(say: String) -> void:
 		_col.add_child(_lbl("“%s”" % say, 15, Color(1, 0.92, 0.75)))
 	_col.add_child(UiKit.sep())
 	_col.add_child(UiKit.button("Fechar", close, 15, true))
+
+
+## Preço de um equipamento: o da tabela SHOP, ou nível e atributos. Chefe custa o triplo.
+static func item_price(id: String) -> int:
+	for linha in SHOP:
+		if String(linha[0]) == id:
+			return int(linha[1])
+	var it := ItemDB.get_item(id)
+	if it == null:
+		return 0
+	var soma := 0
+	for k in it.stats:
+		soma += int(it.stats[k])
+	var preco := int(round(float(40 + it.level_req * it.level_req * 6 + soma * 10) / 5.0)) * 5
+	if id.begins_with("chefe_"):
+		preco *= 3
+	return preco
+
+
+func _stats_short(d: Dictionary) -> String:
+	var nomes := {"vida": "vida", "mana": "mana", "defesa": "defesa", "magia": "magias", "ataque": "ataque", "velocidade": "velocidade"}
+	var partes := PackedStringArray()
+	for k in d:
+		var chave := str(k)
+		var nm: String = nomes.get(chave, Rules.skill_name(chave).to_lower())
+		partes.append("+%d %s" % [int(d[k]), nm])
+	return ", ".join(partes)
+
+
+func _equip_shop() -> void:
+	var lista := ScrollContainer.new()
+	lista.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	lista.custom_minimum_size = Vector2(0, 260)
+	lista.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_col.add_child(lista)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lista.add_child(box)
+	var itens: Array[EquipmentItem] = []
+	for it in ItemDB.items.values():
+		if it is EquipmentItem:
+			itens.append(it)
+	if itens.is_empty():
+		var vazio := UiKit.label("Não há equipamentos à venda.", 14, DIM)
+		vazio.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		vazio.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(vazio)
+		return
+	itens.sort_custom(func(a, b):
+		if a.slot != b.slot:
+			return a.slot < b.slot
+		if a.level_req != b.level_req:
+			return a.level_req < b.level_req
+		return String(a.display_name) < String(b.display_name)
+	)
+	var ultimo := -1
+	for it in itens:
+		if it.slot != ultimo:
+			if ultimo != -1:
+				var espaco := Control.new()
+				espaco.custom_minimum_size = Vector2(0, 6)
+				espaco.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				box.add_child(espaco)
+			ultimo = it.slot
+			var hdr := UiKit.label(EquipSlot.slot_name(it.slot), 12, Color(1, 0.82, 0.4))
+			hdr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			box.add_child(hdr)
+		box.add_child(_equip_row(it))
+
+
+func _equip_row(item: EquipmentItem) -> HBoxContainer:
+	var id := String(item.id)
+	var preco := item_price(id)
+	var ja_tem := player.owns(id)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.custom_minimum_size.y = 36
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var s := ItemSlot.new()
+	s.custom_minimum_size = Vector2(32, 32)
+	s.set_item(item, item.slot)
+	s.disabled = true
+	s.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(s)
+	var mid := VBoxContainer.new()
+	mid.add_theme_constant_override("separation", 0)
+	mid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mid.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	mid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var nome := UiKit.label(item.display_name, 14, GOLD)
+	nome.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	nome.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	nome.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mid.add_child(nome)
+	var nv := UiKit.label("nv %d" % item.level_req, 12, Color(1, 0.35, 0.3) if player.level < item.level_req else DIM)
+	nv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mid.add_child(nv)
+	var st := _stats_short(item.stats)
+	if st != "":
+		var sl := UiKit.label(st, 12, DIM)
+		sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mid.add_child(sl)
+	row.add_child(mid)
+	var direita := VBoxContainer.new()
+	direita.add_theme_constant_override("separation", 2)
+	direita.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	direita.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ouro := UiKit.label("%d ouro" % preco, 12, Color(1, 0.85, 0.35))
+	ouro.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ouro.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ouro.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	direita.add_child(ouro)
+	var comprar := UiKit.button("Já tem" if ja_tem else "Comprar", _buy_item.bind(id, preco), 13)
+	comprar.disabled = ja_tem
+	comprar.custom_minimum_size = Vector2(84, 36)
+	comprar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if ja_tem:
+		comprar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	direita.add_child(comprar)
+	row.add_child(direita)
+	return row
 
 
 func _sell_page() -> void:

@@ -2,7 +2,8 @@ class_name Loot
 ## Saque das criaturas (data/saque.json): materiais que caem dos monstros e
 ## são vendidos ao Brann. A bolsa de saque tem espaços limitados, cada um empilha até 100.
 
-const SLOTS := 30
+## Espaços da bolsa (saque, equipamentos guardados e poções dividem os mesmos espaços).
+const SLOTS := 100
 const STACK := 100
 static var DATA := _load()
 

@@ -10,6 +10,8 @@ var count := 0
 var slot := -1
 var selected := false
 var hint := ""
+## Poção na bolsa: "hp" ou "mp" (com a quantidade em count).
+var pot := ""
 
 
 func _init() -> void:
@@ -19,13 +21,23 @@ func _init() -> void:
 
 
 func set_item(it: EquipmentItem, s: int) -> void:
+	pot = ""
 	item = it
 	slot = s
 	loot_id = ""
 	queue_redraw()
 
 
+func set_potion(kind: String, n: int) -> void:
+	pot = kind
+	count = n
+	item = null
+	loot_id = ""
+	queue_redraw()
+
+
 func set_loot(id: String, n: int) -> void:
+	pot = ""
 	loot_id = id
 	count = n
 	item = null
@@ -64,8 +76,11 @@ func _draw() -> void:
 			draw_texture_rect(tex, r.grow(-2), false)
 		else:
 			_equip_icon(c, u, item.placeholder_color.lightened(0.15), item.placeholder_accent)
-	elif loot_id != "":
-		_loot_icon(c, u, Loot.cor(loot_id), Loot.forma(loot_id))
+	elif loot_id != "" or pot != "":
+		if pot != "":
+			_loot_icon(c, u, Color(0.85, 0.12, 0.1) if pot == "hp" else Color(0.2, 0.35, 0.95), "frasco")
+		else:
+			_loot_icon(c, u, Loot.cor(loot_id), Loot.forma(loot_id))
 		if count > 1:
 			var f := get_theme_default_font()
 			var t := str(count)

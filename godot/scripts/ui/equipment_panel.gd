@@ -28,7 +28,9 @@ var _pages: Array = []
 var _stats: Control
 var _show: Control
 var _portrait: AnimatedSprite2D
-var _pots: Label
+## Conteúdo da bolsa em ordem: ["pocao", "hp"|"mp", qtd] | ["item", id] | ["saque", id, qtd].
+var _bag: Array = []
+var _bag_title: Label
 var _bag_ids: Array = []
 ## Camadas dos itens vestidos por cima do mago da vitrine.
 var _pl: Array = []
@@ -105,8 +107,6 @@ func _build() -> void:
 		b.pressed.connect(_cycle.bind(slot))
 		_show.add_child(b)
 		buttons[slot] = b
-	_pots = UiKit.label("", 12, Color(1, 0.9, 0.8), true)
-	_show.add_child(_pots)
 	_show.resized.connect(_lay_show)
 
 	_stats = Control.new()
@@ -115,58 +115,35 @@ func _build() -> void:
 	_stats.draw.connect(_draw_stats)
 	body.add_child(_stats)
 
-	# abas da bolsa
+	# bolsa: uma grade só (poções, equipamentos guardados e saque dividem os espaços)
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 4)
 	vb.add_child(tabs)
-	for i in 3:
-		var tb := UiKit.button(["Itens", "Saque", "Poções"][i], _set_tab.bind(i), 13)
-		tb.custom_minimum_size = Vector2(86, 28)
-		tabs.add_child(tb)
-		_tab_btns.append(tb)
-	var sp := Control.new()
-	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tabs.add_child(sp)
+	_bag_title = UiKit.label("Bolsa", 14, UiKit.GOLD)
+	_bag_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tabs.add_child(_bag_title)
 	var off := UiKit.button("Tirar tudo", _unequip_all, 12)
 	off.custom_minimum_size = Vector2(86, 28)
 	tabs.add_child(off)
-
 	var pages := PanelContainer.new()
 	pages.add_theme_stylebox_override("panel", UiKit.inner(Color(0.06, 0.05, 0.045), Color(0.3, 0.24, 0.16), 4, 4))
 	vb.add_child(pages)
 	var stack := Control.new()
 	stack.custom_minimum_size = Vector2(0, 2 * (CELL + 3) + 2)
 	pages.add_child(stack)
-	# itens da bolsa
 	var sc1 := _grid_page(stack)
-	for i in 36:
+	for i in Loot.SLOTS:
 		var s := ItemSlot.new()
 		s.custom_minimum_size = Vector2(CELL, CELL)
-		s.pressed.connect(_pick_bag.bind(i))
+		s.pressed.connect(_pick.bind(i))
 		sc1.get_child(0).add_child(s)
 		bag_slots.append(s)
-	# saque
-	var sc2 := _grid_page(stack)
-	for i in Loot.SLOTS:
-		var s2 := ItemSlot.new()
-		s2.custom_minimum_size = Vector2(CELL, CELL)
-		s2.pressed.connect(_pick_loot.bind(i))
-		sc2.get_child(0).add_child(s2)
-		loot_slots.append(s2)
-	# poções
-	var pv := VBoxContainer.new()
-	pv.set_anchors_preset(Control.PRESET_FULL_RECT)
-	pv.add_child(UiKit.label("", 14, Color(1, 0.9, 0.8)))
-	pv.add_child(UiKit.label("Compre poções com a Lira, na vila. Q usa a de vida, E a de mana.", 12, UiKit.DIM))
-	stack.add_child(pv)
-	_pages = [sc1, sc2, pv]
 
 	info_label = UiKit.label("", 13, Color(1, 0.92, 0.75))
 	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info_label.custom_minimum_size = Vector2(0, 34)
 	vb.add_child(info_label)
 	panel.visible = false
-	_set_tab(0)
 	_place()
 
 
@@ -181,17 +158,6 @@ func _grid_page(stack: Control) -> ScrollContainer:
 	sc.add_child(g)
 	stack.add_child(sc)
 	return sc
-
-
-func _set_tab(i: int) -> void:
-	_tab = i
-	for j in _pages.size():
-		(_pages[j] as Control).visible = j == i
-		var on := j == i
-		(_tab_btns[j] as Button).add_theme_stylebox_override("normal", UiKit.inner(
-			Color(0.3, 0.13, 0.05) if on else Color(0.12, 0.08, 0.05),
-			Color(1, 0.65, 0.3) if on else Color(0.45, 0.34, 0.2), 6, 6))
-	_refresh()
 
 
 func _place() -> void:
@@ -215,7 +181,6 @@ func _lay_show() -> void:
 		(buttons[RIGHT[i]] as Control).position = Vector2(w - 44, 2 + (i + 1) * step)
 	(buttons[EquipSlot.Slot.MAIN_HAND] as Control).position = Vector2(5, 2 + 5 * step)
 	(buttons[EquipSlot.Slot.OFF_HAND] as Control).position = Vector2(w - 44, 2 + 5 * step)
-	_pots.position = Vector2(w - 50, 10)
 	_fit_portrait()
 
 
@@ -280,13 +245,6 @@ func _draw_show(c: Control) -> void:
 	ElemArt.circle(c, Vector2(w * 0.5, h * 0.45), w * 0.3, Color(cls, 0.06))
 	c.draw_rect(Rect2(Vector2.ZERO, c.size), Color(0, 0, 0, 0.9), false, 3.0)
 	c.draw_rect(Rect2(Vector2(2, 2), c.size - Vector2(4, 4)), Color(0.5, 0.42, 0.3, 0.8), false, 1.0)
-	# poção (canto de cima à direita)
-	var pc := Vector2(w - 26, 34)
-	ElemArt.circle(c, pc, 17, Color(0, 0, 0, 0.7))
-	ElemArt.arc(c, pc, 17, 0, TAU, 28, Color(0.6, 0.5, 0.36), 1.5)
-	ElemArt.circle(c, pc + Vector2(0, 3), 9, Color(0.75, 0.08, 0.1))
-	c.draw_rect(Rect2(pc + Vector2(-3, -11), Vector2(6, 6)), Color(0.55, 0.45, 0.35))
-	ElemArt.circle(c, pc + Vector2(-3, 0), 3, Color(1, 0.6, 0.6, 0.7))
 
 
 ## Coluna de atributos: faixa com o nível e emblemas redondos.
@@ -436,9 +394,27 @@ func _bag_list() -> Array:
 	return out
 
 
+## Toque num espaço da bolsa.
+func _pick(i: int) -> void:
+	if i >= _bag.size():
+		_sel_loot = ""
+		info_label.text = "Espaço livre. Saque, itens e poções dividem os %d espaços." % Loot.SLOTS
+		_refresh()
+		return
+	var e: Array = _bag[i]
+	match str(e[0]):
+		"pocao":
+			_sel_loot = ""
+			info_label.text = ("Poção de vida  ·  %d  ·  tecla Q (ou o botão vermelho)" if e[1] == "hp" else "Poção de mana  ·  %d  ·  tecla E (ou o botão azul)") % int(e[2])
+			_refresh()
+		"item":
+			_pick_bag(_bag_ids.find(str(e[1])))
+		"saque":
+			_pick_loot(_loot_list().map(func(x): return x[0]).find(str(e[1])))
+
+
 func _pick_bag(i: int) -> void:
-	if i >= _bag_ids.size():
-		info_label.text = "Espaço livre. Itens novos vêm do Brann e dos chefes."
+	if i < 0 or i >= _bag_ids.size():
 		return
 	var it := ItemDB.get_item(str(_bag_ids[i]))
 	if player.level < it.level_req:
@@ -487,33 +463,43 @@ func _refresh() -> void:
 		buttons[slot].set_item(it, slot)
 		buttons[slot].tooltip_text = (it.display_name + "\n" + _stats_text(it.stats)) if it else EquipSlot.slot_name(slot)
 	_bag_ids = _bag_list()
-	for i in bag_slots.size():
-		var bs := bag_slots[i]
-		if i < _bag_ids.size():
-			var bi := ItemDB.get_item(str(_bag_ids[i]))
-			bs.set_item(bi, bi.slot)
-			bs.modulate = Color.WHITE if player.level >= bi.level_req else Color(0.6, 0.55, 0.55)
-			bs.tooltip_text = "%s (nv %d)" % [bi.display_name, bi.level_req]
-		else:
-			bs.set_item(null, -1)
-			bs.modulate = Color.WHITE
 	var ids := _loot_list()
 	var total := 0
 	for k in player.loot:
 		total += int(player.loot[k]) * Loot.preco(str(k))
-	for i in loot_slots.size():
-		var s := loot_slots[i]
-		if i < ids.size():
-			s.set_loot(ids[i][0], ids[i][1])
-			s.selected = ids[i][0] == _sel_loot
-			s.tooltip_text = Loot.nome(ids[i][0])
-		else:
-			s.set_loot("", 0)
-			s.selected = false
-		s.queue_redraw()
-	(_tab_btns[1] as Button).text = "Saque %d/%d" % [player.loot_slots_used(), Loot.SLOTS]
-	((_pages[2] as Control).get_child(0) as Label).text = "Poções de vida: %d    ·    Poções de mana: %d    ·    o saque vale %d ouro no Brann" % [player.hp_pot, player.mp_pot, total]
-	_pots.text = str(player.hp_pot)
+	_bag = []
+	if player.hp_pot > 0:
+		_bag.append(["pocao", "hp", player.hp_pot])
+	if player.mp_pot > 0:
+		_bag.append(["pocao", "mp", player.mp_pot])
+	for id in _bag_ids:
+		_bag.append(["item", id])
+	for l in ids:
+		_bag.append(["saque", l[0], l[1]])
+	for i in bag_slots.size():
+		var bs := bag_slots[i]
+		bs.modulate = Color.WHITE
+		bs.selected = false
+		if i >= _bag.size():
+			bs.set_item(null, -1)
+			bs.tooltip_text = ""
+			continue
+		var e: Array = _bag[i]
+		match str(e[0]):
+			"pocao":
+				bs.set_potion(str(e[1]), int(e[2]))
+				bs.tooltip_text = "Poção de vida" if e[1] == "hp" else "Poção de mana"
+			"item":
+				var bi := ItemDB.get_item(str(e[1]))
+				bs.set_item(bi, bi.slot)
+				bs.modulate = Color.WHITE if player.level >= bi.level_req else Color(0.6, 0.55, 0.55)
+				bs.tooltip_text = "%s (nv %d)" % [bi.display_name, bi.level_req]
+			"saque":
+				bs.set_loot(str(e[1]), int(e[2]))
+				bs.selected = str(e[1]) == _sel_loot
+				bs.tooltip_text = Loot.nome(str(e[1]))
+		bs.queue_redraw()
+	_bag_title.text = "Bolsa  %d/%d  ·  o saque vale %d ouro no Brann" % [_bag.size(), Loot.SLOTS, total]
 	gold_label.text = "%d ouro" % player.gold
 	if info_label.text == "":
 		info_label.text = "Toque num espaço para trocar de item, ou num item da bolsa para vestir."

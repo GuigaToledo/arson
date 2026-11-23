@@ -135,12 +135,22 @@ func loot_slots_used() -> int:
 func add_loot(id: String, q := 1) -> bool:
 	var have := int(loot.get(id, 0))
 	var need := int(ceil(float(have + q) / Loot.STACK)) - int(ceil(float(have) / Loot.STACK))
-	if loot_slots_used() + need > Loot.SLOTS:
+	if loot_slots_used() + bag_extra() + need > Loot.SLOTS:
 		_msg("Bolsa de saque cheia! Venda no Brann.")
 		return false
 	loot[id] = have + q
 	CombatText.add(global_position + Vector2(0, -136), "+%d %s" % [q, Loot.nome(id)], Loot.cor(id).lightened(0.3))
 	return true
+
+
+## Espaços da bolsa ocupados por equipamentos guardados (não vestidos) e pelas pilhas de poções.
+func bag_extra() -> int:
+	var n := 0
+	var worn := equipment.to_ids().values() if equipment else []
+	for id in bag:
+		if not worn.has(str(id)):
+			n += 1
+	return n + (1 if hp_pot > 0 else 0) + (1 if mp_pot > 0 else 0)
 
 
 func owns(id: String) -> bool:
