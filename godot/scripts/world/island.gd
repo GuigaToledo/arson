@@ -950,6 +950,13 @@ func _spawn_characters(classe: String) -> void:
 	lira.position = Iso.to_screen(_free_tile(Vector2(31.6, 24.0)))
 	lira.add_to_group("npcs")
 	entities.add_child(lira)
+	# Elyra: elfa andarilha na praça (sprites renderizados do modelo 3D em assets/personagens/elfa)
+	var elfa := Npc.new().configure("Elyra, a Elfa Andarilha", {}, [], "S")
+	elfa.body_path = "res://assets/personagens/elfa/sprites.json"
+	elfa.role = "elfa"
+	elfa.position = Iso.to_screen(_free_tile(Vector2(30.0, 28.0)))
+	elfa.add_to_group("npcs")
+	entities.add_child(elfa)
 
 	var walker := Npc.new().configure("Viajante",
 		{"skin": Color(0.5, 0.38, 0.3), "under": Color(0.2, 0.17, 0.14), "hair": Color(0.15, 0.1, 0.07), "eyes": Color(0.2, 0.15, 0.1)},
@@ -1110,6 +1117,14 @@ func _teste_ui(ui: EquipmentPanel, dlg: NpcDialog, gm: GameMenu) -> void:
 				dlg._render("")
 			dlg._sell_all()
 			dlg.close()
+			break
+	for n in get_tree().get_nodes_in_group("npcs"):
+		if n is Npc and n.role == "elfa":
+			dlg.open(n, player)
+			dlg._conversar_elfa()
+			dlg._render(NpcDialog.SERVICO_ELFA)
+			dlg.close()
+			print("TESTE elfa ok anims=", n.visual.body_item.animations if n.visual.body_item else "sem corpo")
 			break
 	ui.toggle()
 	gm.toggle()
