@@ -1,5 +1,15 @@
 [
  {
+  "versao": "0.19.4",
+  "data": "2026-11-27",
+  "titulo": "Covil do Dragão Rubro e rede mais estável",
+  "itens": [
+   "A caverna do norte virou um salão aberto, sem estalagmites no meio do caminho; as rochas ficam só nas paredes",
+   "O túnel ao norte da caverna agora passa de verdade até a arena do Dragão Rubro, que fica logo na saída",
+   "Rede: removidos os servidores de retransmissão que saíram do ar; o anfitrião e o celular não ficam mais esperando um servidor morto para conectar"
+  ]
+ },
+ {
   "versao": "0.19.3",
   "data": "2026-11-23",
   "titulo": "Aba Diagnóstico e correção da rede no celular",
