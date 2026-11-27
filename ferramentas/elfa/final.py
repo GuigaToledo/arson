@@ -28,26 +28,12 @@ noise = rng.normal(0, 1, nv)
 for k in range(6): noise = P @ noise
 nz = noise[cab] / (noise[cab].std() + 1e-9)
 col[cab] *= np.clip(1 + 0.12 * nz, 0.75, 1.25)[:, None]
-col[roupa] = COURO; spec[roupa] = 0.35
-# borda costurada da roupa: anéis perto do limite
-fora = (~roupa).astype(np.float32); dist = np.zeros(nv)
-m = fora.copy()
-for k in range(1, 4):
-    m = np.minimum(1, m + A @ m)
-    dist[(m > 0) & roupa & (dist == 0)] = k
-borda = roupa & (dist > 0) & (dist <= 3)
-col[borda] = BORDA
-xc = -1.0; frente = vn[:, 1] < 0
-# cinto na cintura com fivela
-cinto = roupa & (z > 58.2) & (z < 60.0)
-col[cinto] = CINTO
-fivela = cinto & frente & (np.abs(x - xc) < 1.0)
-col[fivela] = FIVELA; spec[fivela] = 0.9
-# cordões cruzados na frente do corpete
-zz = z - 61.0
-cr = roupa & frente & (z > 61) & (z < 69.5) & (np.abs(x - xc) < 1.3)
-zig = np.abs(np.abs(((zz) % 2.2) - 1.1) * 1.15 - np.abs(x - xc)) < 0.22
-col[cr & zig] = CORDAO
+# biquíni rosa: só a peça esculpida no modelo (bordas achadas na malha, biq2.py); o resto é pele
+bq = np.load('biq.npy').astype(float)
+for k in range(4): bq = P @ bq
+biq = (bq > 0.5) & ~cab & ~sorv
+col[roupa & ~biq] = PELE
+col[biq] = srgb('e8679c'); spec[biq] = 0.45
 # sorvete: bola rosa em cima, casquinha embaixo
 col[sorv] = SORVETE; spec[sorv] = 0.5
 casq = sorv & (z < 82.5)
