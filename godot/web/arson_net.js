@@ -28,15 +28,12 @@
   const HOST_ID = 'arson-godot-taverna-v1-q9w4z' + (SALA ? '-' + SALA : '');
   const MAX_PLAYERS = 20;
   const STUN = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }, { urls: 'stun:global.stun.twilio.com:3478' }];
-  const TURN = [
-    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-  ];
+  // openrelay.metered.ca e freestun.net estão fora do ar. Incluir esse TURN faz o
+  // anfitrião (e o celular) esperar um servidor morto e a oferta não completa.
+  // Sem credencial nova, só STUN. Um nível só: o valor salvo antigo (1 ou 2) não pode
+  // cair em "só retransmissão".
   const ICE = [
     { nome: 'conexão direta', cfg: { iceServers: STUN } },
-    { nome: 'direta + retransmissão', cfg: { iceServers: STUN.concat(TURN) } },
-    { nome: 'só retransmissão', cfg: { iceServers: TURN, iceTransportPolicy: 'relay' } },
   ];
   const CDNS = ['https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js', 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js'];
 
@@ -90,7 +87,7 @@
     S.attempt++;
     diag('Procurando o mundo…');
     let p;
-    try { p = new Peer(HOST_ID, { debug: 0, config: ICE[Math.max(1, S.level)].cfg }); } catch (e) { retry('Erro ao iniciar a rede.'); return; }
+    try { p = new Peer(HOST_ID, { debug: 0, config: ICE[Math.min(S.level, ICE.length - 1)].cfg }); } catch (e) { retry('Erro ao iniciar a rede.'); return; }
     S.peer = p;
     let decided = false;
     const to = setTimeout(() => { if (gen === S.gen && !decided) { decided = true; retry('O servidor de salas não respondeu.'); } }, 12000);

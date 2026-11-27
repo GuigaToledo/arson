@@ -716,12 +716,11 @@ func _build_regions() -> void:
 					for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 						if map.walkable_grid(Vector2(x + d.x + 0.5, y + d.y + 0.5)):
 							edge = true
-					if (edge and r1 < 0.6) or r1 < 0.05:
+					if edge or r1 < 0.15:
 						piece("rochedo" if r2 < 0.5 else "rochedo2", Vector2(x + 0.5, y + 0.5), Vector2(x + 0.1, y + 0.1), Vector2(0.8, 0.8), flip, false, 0.9 + r2 * 0.3)
 				"k":
-					if r1 < 0.035:
-						piece("estalagmite", og, og - Vector2(0.15, 0.15), Vector2(0.3, 0.3), flip, false, sc)
-					elif r1 > 0.985:
+					# chão livre: sem estalagmites (a caverna é um salão aberto)
+					if r1 > 0.985:
 						piece("ossos", og, og, Vector2(0.05, 0.05), flip, false)
 				"j":
 					if r1 < 0.15:
