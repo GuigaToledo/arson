@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.19.8",
+  "data": "2026-11-27",
+  "titulo": "Elyra passeia pela vila",
+  "itens": [
+   "A Elyra ficou do tamanho dos outros personagens",
+   "Agora ela anda pela praça e pelas ruas do centro, parando um pouco em cada canto (com animação de caminhada)"
+  ]
+ },
+ {
   "versao": "0.19.7",
   "data": "2026-11-27",
   "titulo": "Elyra de couro",
