@@ -170,5 +170,21 @@ TP = np.concatenate([U[F], ET, SKT])
 TN = np.concatenate([vn[F], np.repeat(EN[:, None], 3, 1), SKN])
 TC = np.concatenate([col[F], np.repeat(EC[:, None], 3, 1), SKC])
 TS = np.concatenate([spec[F][..., None].repeat(3, 2), np.repeat(ES[:, None, None], 3, 1).repeat(3, 2), np.full((len(SKT), 3, 3), 0.35)])
-np.savez('cena.npz', TP=TP, TN=TN, TC=TC, TS=TS)
+from scipy.sparse.csgraph import connected_components
+_ok = (z < 42.5) & ~arm
+_e = np.concatenate([F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]]); _m = _ok[_e[:, 0]] & _ok[_e[:, 1]]
+_g = sp.coo_matrix((np.ones(_m.sum()), (_e[_m, 0], _e[_m, 1])), shape=(nv, nv))
+_n, _lab = connected_components(_g, directed=False)
+_lab[~_ok] = -1
+_sz = np.bincount(_lab[_lab >= 0]); _top = np.argsort(-_sz)[:2]
+lado_v = np.zeros(nv)
+for c_ in _top:
+    lado_v[_lab == c_] = np.sign(x[_lab == c_].mean())
+print('pernas', _sz[_top], [np.sign(x[_lab == c_].mean()) for c_ in _top])
+# vértices da virilha (z>=42.5) seguem o lado pela posição
+lado_v[(lado_v == 0) & ~arm] = np.where(x[(lado_v == 0) & ~arm] > -0.4, 1, -1)
+# extras (fita e adaga) ficam na perna +x
+LADO = np.concatenate([lado_v[F], np.ones((len(ET), 3)), np.zeros((len(SKT), 3))])
+ARMC = np.concatenate([arm[F], np.zeros((len(ET), 3), bool), np.zeros((len(SKT), 3), bool)])
+np.savez('cena.npz', TP=TP, TN=TN, TC=TC, TS=TS, ARMC=ARMC, LADO=LADO)
 print('tris', len(TP), 'extra', len(ET))

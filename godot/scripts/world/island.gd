@@ -951,10 +951,16 @@ func _spawn_characters(classe: String) -> void:
 	lira.add_to_group("npcs")
 	entities.add_child(lira)
 	# Elyra: elfa andarilha na praça (sprites renderizados do modelo 3D em assets/personagens/elfa)
-	var elfa := Npc.new().configure("Elyra, a Elfa Andarilha", {}, [], "S")
+	# passeia pela praça e pelas ruas do centro (fica parada um pouco em cada ponto)
+	var rota := []
+	for q in [Vector2(23.5, 27.5), Vector2(32.5, 27.5), Vector2(28.0, 27.5), Vector2(28.0, 32.5),
+			Vector2(32.5, 32.5), Vector2(23.0, 32.5), Vector2(28.0, 32.5), Vector2(28.0, 27.5)]:
+		rota.append(Iso.to_screen(q))
+	var elfa := Npc.new().configure("Elyra, a Elfa Andarilha", {}, [], "S", rota)
 	elfa.body_path = "res://assets/personagens/elfa/sprites.json"
 	elfa.role = "elfa"
-	elfa.position = Iso.to_screen(_free_tile(Vector2(30.0, 28.0)))
+	elfa.walk_speed = 55.0
+	elfa.position = rota[0]
 	elfa.add_to_group("npcs")
 	entities.add_child(elfa)
 

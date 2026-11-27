@@ -32,6 +32,10 @@ func configure(nm: String, colors: Dictionary, items: Array, face: String, pts: 
 func _physics_process(delta: float) -> void:
 	if guarda and _guarda_combate(delta):
 		return
+	# para de andar enquanto conversa com o jogador
+	if NpcDialog.talking and NpcDialog.inst and NpcDialog.inst.npc == self:
+		move(Vector2.ZERO, false, delta)
+		return
 	if waypoints.is_empty() or _wait > 0.0:
 		_wait -= delta
 		move(Vector2.ZERO, false, delta)

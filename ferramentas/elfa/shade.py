@@ -2,7 +2,7 @@ import numpy as np, json, os, sys, math
 from numba import njit
 from PIL import Image
 
-c = np.load('cena.npz'); TP, TN, TC, TS = c['TP'], c['TN'], c['TC'], c['TS']
+c = np.load('cena.npz'); TP, TN, TC, TS, ARMC, LADO = c['TP'], c['TN'], c['TC'], c['TS'], c['ARMC'], c['LADO']
 TN = TN / (np.linalg.norm(TN, axis=2, keepdims=True) + 1e-12)
 
 
@@ -106,8 +106,31 @@ LUZES = [(blender_sun(50, 0, -55), np.array([1.0, 0.86, 0.68]) * 1.9),
          (blender_sun(70, 0, 40), np.array([0.7, 0.6, 0.55]) * 0.35)]
 
 
-def render_dir(model_yaw, breath, size=1024, pxu=6.9, foot=(0.5, 0.7832), el_deg=30):
-    tp = TP.copy()
+def pernas(tp, tn, fase, amp=math.radians(24)):
+    """Caminhada sem esqueleto: cada perna gira em volta do quadril (eixo lateral), com peso que
+    vai de 0 na virilha a 1 na coxa; braços ficam parados. O corpo sobe e desce um pouco."""
+    tp = tp.copy(); tn = tn.copy()
+    zz = tp[..., 2]
+    w = np.clip((46.0 - zz) / 8.0, 0, 1); w = w * w * (3 - 2 * w)
+    w = np.where(ARMC, 0.0, w)
+    lado = LADO
+    ang = amp * math.sin(fase) * lado * w
+    py, pz = -3.0, 45.0
+    dy = tp[..., 1] - py; dz = tp[..., 2] - pz
+    ca, sa = np.cos(ang), np.sin(ang)
+    tp[..., 1] = py + dy * ca + dz * sa
+    tp[..., 2] = pz - dy * sa + dz * ca
+    ny, nz = tn[..., 1].copy(), tn[..., 2].copy()
+    tn[..., 1] = ny * ca + nz * sa; tn[..., 2] = -ny * sa + nz * ca
+    # pé mais baixo encosta no chão; sobe e desce no passo
+    tp[..., 2] += -tp[..., 2].min() + 0.6 * abs(math.cos(fase))
+    return tp, tn
+
+
+def render_dir(model_yaw, breath, size=1024, pxu=7.39, foot=(0.5, 0.7832), el_deg=30, fase=None):
+    tp = TP.copy(); TNl = TN
+    if fase is not None:
+        tp, TNl = pernas(tp, TN, fase)
     up = tp[..., 2] > 50
     tp[..., 2] = np.where(up, 50 + (tp[..., 2] - 50) * breath, tp[..., 2])
     feet = TP.reshape(-1, 3); fc = feet[feet[:, 2] < 2].mean(0); fc[2] = 0
@@ -116,7 +139,7 @@ def render_dir(model_yaw, breath, size=1024, pxu=6.9, foot=(0.5, 0.7832), el_deg
     Rz = np.array([[math.cos(yaw), -math.sin(yaw), 0], [math.sin(yaw), math.cos(yaw), 0], [0, 0, 1]])
     Rx = np.array([[1, 0, 0], [0, math.cos(el), -math.sin(el)], [0, math.sin(el), math.cos(el)]])
     R = Rx @ Rz
-    v = tp @ R.T; n = TN @ R.T
+    v = tp @ R.T; n = TNl @ R.T
     P = np.empty_like(v)
     P[..., 0] = v[..., 0] * pxu + size * foot[0]
     P[..., 1] = -v[..., 2] * pxu + size * foot[1]
@@ -149,29 +172,29 @@ def render_dir(model_yaw, breath, size=1024, pxu=6.9, foot=(0.5, 0.7832), el_deg
 
 if __name__ == '__main__':
     DIRS = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
-    NQ = 4
-    frames = {}
-    for di, dname in enumerate(DIRS):
-        a = di * math.pi / 4.0
-        gx, gy = math.cos(a), math.sin(a) * 2.0
-        yaw = math.atan2(-gy, gx) + math.pi / 2.0
-        for q in range(NQ):
-            br = 1 + 0.008 * math.sin(2 * math.pi * q / NQ)
-            frames[(di, q)] = render_dir(yaw, br)
-        print(dname, flush=True)
-    # recorte comum
-    al = np.stack([f[..., 3] for f in frames.values()]).max(0)
-    ys = np.where(al.max(1) > 0)[0]; xs = np.where(al.max(0) > 0)[0]
-    y0, y1, x0, x1 = ys.min() - 2, ys.max() + 3, xs.min() - 2, xs.max() + 3
-    fw, fh = x1 - x0, y1 - y0
-    sheet = np.zeros((fh * len(DIRS), fw * NQ, 4), np.uint8)
-    for (di, q), f in frames.items():
-        sheet[di * fh:(di + 1) * fh, q * fw:(q + 1) * fw] = f[y0:y1, x0:x1]
     out = sys.argv[1] if len(sys.argv) > 1 else 'saida'
     os.makedirs(out, exist_ok=True)
-    Image.fromarray(sheet).save(os.path.join(out, 'idle.png'), optimize=True)
-    pe = [round(128.0 - x0, 1), round(200.5 - y0, 1)]
-    meta = {"tamanho": 256, "pe_quadro": [128.0, 200.5],
-            "anims": {"idle": {"n": NQ, "quadro": [int(fw), int(fh)], "pe": pe, "ac": False}}, "acento": False}
+    meta = {"tamanho": 256, "pe_quadro": [128.0, 200.5], "anims": {}, "acento": False}
+    for anim, NQ in (("idle", 4), ("walk", 8)):
+        frames = {}
+        for di, dname in enumerate(DIRS):
+            a = di * math.pi / 4.0
+            gx, gy = math.cos(a), math.sin(a) * 2.0
+            yaw = math.atan2(-gy, gx) + math.pi / 2.0
+            for q in range(NQ):
+                if anim == "idle":
+                    frames[(di, q)] = render_dir(yaw, 1 + 0.008 * math.sin(2 * math.pi * q / NQ))
+                else:
+                    frames[(di, q)] = render_dir(yaw, 1.0, fase=2 * math.pi * q / NQ)
+        al = np.stack([f[..., 3] for f in frames.values()]).max(0)
+        ys = np.where(al.max(1) > 0)[0]; xs = np.where(al.max(0) > 0)[0]
+        y0, y1, x0, x1 = ys.min() - 2, ys.max() + 3, xs.min() - 2, xs.max() + 3
+        fw, fh = int(x1 - x0), int(y1 - y0)
+        sheet = np.zeros((fh * len(DIRS), fw * NQ, 4), np.uint8)
+        for (di, q), f in frames.items():
+            sheet[di * fh:(di + 1) * fh, q * fw:(q + 1) * fw] = f[y0:y1, x0:x1]
+        Image.fromarray(sheet).save(os.path.join(out, anim + '.png'), optimize=True)
+        meta["anims"][anim] = {"n": NQ, "quadro": [fw, fh], "pe": [float(128.0 - x0), float(200.5 - y0)], "ac": False}
+        print(anim, flush=True)
     json.dump(meta, open(os.path.join(out, 'sprites.json'), 'w'))
     print(meta)

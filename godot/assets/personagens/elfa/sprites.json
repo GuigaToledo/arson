@@ -1,1 +1,1 @@
-{"tamanho": 256, "pe_quadro": [128.0, 200.5], "anims": {"idle": {"n": 4, "quadro": [56, 162], "pe": [28.0, 155.5], "ac": false}}, "acento": false}
+{"tamanho": 256, "pe_quadro": [128.0, 200.5], "anims": {"idle": {"n": 4, "quadro": [60, 174], "pe": [30.0, 166.5], "ac": false}, "walk": {"n": 8, "quadro": [94, 185], "pe": [47.0, 166.5], "ac": false}}, "acento": false}
