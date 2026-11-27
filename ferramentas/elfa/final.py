@@ -33,7 +33,16 @@ bq = np.load('biq.npy').astype(float)
 for k in range(4): bq = P @ bq
 biq = (bq > 0.5) & ~cab & ~sorv
 col[roupa & ~biq] = PELE
-col[biq] = srgb('e8679c'); spec[biq] = 0.45
+top = biq & (z > 64.0); baixo = biq & (z <= 64.0)
+col[top] = COURO; spec[top] = 0.4
+col[baixo] = srgb('2e1a10'); col[baixo & (z > 57.6)] = PELE
+# borda costurada do top
+foraT = (~top).astype(np.float32); mT = foraT.copy(); bordaT = np.zeros(nv, bool)
+for k in range(2):
+    mT = np.minimum(1, mT + A @ mT)
+bordaT = top & (mT > 0)
+col[bordaT] = BORDA
+
 # sorvete: bola rosa em cima, casquinha embaixo
 col[sorv] = SORVETE; spec[sorv] = 0.5
 casq = sorv & (z < 82.5)
@@ -107,13 +116,59 @@ for k in range(8):
         add_quad(e0a, e1a, r1, r0, LAM, 1.0)
         add_quad(r0, r1, e1b, e0b, LAM, 1.0)
 
+# ---------- mini-saia de couro ----------
+arm = np.load('arm.npy') if os.path.exists('arm.npy') else np.zeros(nv, bool)
+Z_TOP, Z_BOT = 58.6, 47.2
+corpo = (z > Z_BOT - 2) & (z < Z_TOP + 0.5) & ~arm & (L != 2) & (L != 3)
+cpts = U[corpo]
+ctr = cpts[:, :2].mean(0)
+NA, NZ = 120, 10
+th = np.linspace(-np.pi, np.pi, NA, endpoint=False)
+angp = np.arctan2(cpts[:, 1] - ctr[1], cpts[:, 0] - ctr[0]); rp = np.linalg.norm(cpts[:, :2] - ctr, axis=1)
+Rb = np.zeros((NZ, NA))
+zs = np.linspace(Z_TOP, Z_BOT, NZ)
+for i, zz_ in enumerate(zs):
+    selz = np.abs(cpts[:, 2] - zz_) < 1.6 if i == 0 else (cpts[:, 2] < Z_TOP) & (cpts[:, 2] > zz_ - 1.0)
+    for j, a0 in enumerate(th):
+        dd_ = np.abs(((angp - a0 + np.pi) % (2 * np.pi)) - np.pi)
+        w = selz & (dd_ < 2 * np.pi / NA * 1.5)
+        Rb[i, j] = rp[w].max() if w.any() else np.nan
+# preenche buracos e suaviza em volta
+for i in range(NZ):
+    r = Rb[i]; m_ = np.isnan(r)
+    if m_.any(): r[m_] = np.interp(np.where(m_)[0], np.where(~m_)[0], r[~m_], period=NA)
+    for k in range(3): r = (np.roll(r, 1) + r + np.roll(r, -1)) / 3
+    Rb[i] = r
+Rb = np.maximum.accumulate(Rb, axis=0)            # a saia só abre para baixo
+fl = np.linspace(0, 1, NZ)[:, None]
+R = Rb + 0.35 + 0.9 * fl + 0.18 * fl * np.sin(th[None, :] * 14)
+SV = np.stack([ctr[0] + R * np.cos(th)[None, :], ctr[1] + R * np.sin(th)[None, :], np.repeat(zs[:, None], NA, 1)], 2)
+# normais por diferenças
+du = np.roll(SV, -1, 1) - np.roll(SV, 1, 1)
+dv = np.vstack([SV[1:2] - SV[0:1], SV[2:] - SV[:-2], SV[-1:] - SV[-2:-1]])
+SN = np.cross(dv, du); SN /= np.linalg.norm(SN, axis=2, keepdims=True) + 1e-12
+out_ = np.stack([np.cos(th), np.sin(th), np.zeros_like(th)], 1)[None]
+SN *= np.sign((SN * out_).sum(2, keepdims=True))
+SAIA = srgb('3f2416')
+SC = np.tile(SAIA, (NZ, NA, 1))
+SC[-1] = BORDA; SC[0:2] = srgb('22140c')            # barra costurada e cinto
+fiv = (np.abs(((th - (-np.pi / 2) + np.pi) % (2 * np.pi)) - np.pi) < 0.12)
+SC[0:2, fiv] = FIVELA if 'FIVELA' in dir() else srgb('c8a050')
+sk_t, sk_n, sk_c = [], [], []
+for i in range(NZ - 1):
+    for j in range(NA):
+        j2 = (j + 1) % NA
+        q = [(i, j), (i + 1, j), (i + 1, j2), (i, j2)]
+        for tri in ((q[0], q[1], q[2]), (q[0], q[2], q[3])):
+            sk_t.append([SV[a_] for a_ in tri]); sk_n.append([SN[a_] for a_ in tri]); sk_c.append([SC[a_] for a_ in tri])
+SKT, SKN, SKC = np.array(sk_t), np.array(sk_n), np.array(sk_c)
 ET = np.array(extra_t); EC = np.array(extra_c); ES = np.array(extra_s)
 EN = np.cross(ET[:, 1] - ET[:, 0], ET[:, 2] - ET[:, 0]); EN /= np.linalg.norm(EN, axis=1, keepdims=True) + 1e-12
 
 # ---------- malha completa: posições, normais, cores, brilho por canto ----------
-TP = np.concatenate([U[F], ET])
-TN = np.concatenate([vn[F], np.repeat(EN[:, None], 3, 1)])
-TC = np.concatenate([col[F], np.repeat(EC[:, None], 3, 1)])
-TS = np.concatenate([spec[F][..., None].repeat(3, 2), np.repeat(ES[:, None, None], 3, 1).repeat(3, 2)])
+TP = np.concatenate([U[F], ET, SKT])
+TN = np.concatenate([vn[F], np.repeat(EN[:, None], 3, 1), SKN])
+TC = np.concatenate([col[F], np.repeat(EC[:, None], 3, 1), SKC])
+TS = np.concatenate([spec[F][..., None].repeat(3, 2), np.repeat(ES[:, None, None], 3, 1).repeat(3, 2), np.full((len(SKT), 3, 3), 0.35)])
 np.savez('cena.npz', TP=TP, TN=TN, TC=TC, TS=TS)
 print('tris', len(TP), 'extra', len(ET))
