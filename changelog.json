@@ -1,5 +1,14 @@
 [
  {
+  "versao": "0.19.5",
+  "data": "2026-11-27",
+  "titulo": "Elyra, a Elfa Andarilha",
+  "itens": [
+   "Nova moradora na praça da vila: Elyra, uma elfa de roupa curta de couro, com uma adaga presa na coxa por uma fita vermelha (e um sorvete na mão)",
+   "Toque nela para conversar: ela conta histórias da vila e avisa que logo vai ter serviço para você"
+  ]
+ },
+ {
   "versao": "0.19.4",
   "data": "2026-11-27",
   "titulo": "Covil do Dragão Rubro e rede mais estável",
