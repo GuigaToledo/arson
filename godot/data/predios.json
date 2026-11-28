@@ -1,0 +1,130 @@
+[
+ {
+  "id": "guilda",
+  "tipo": "guilda",
+  "x": 8,
+  "y": 92,
+  "w": 12,
+  "h": 8
+ },
+ {
+  "id": "templo",
+  "tipo": "templo",
+  "x": 30,
+  "y": 93,
+  "w": 11,
+  "h": 7
+ },
+ {
+  "id": "casa_elyra",
+  "tipo": "casa_b",
+  "x": 41,
+  "y": 94,
+  "w": 8,
+  "h": 6
+ },
+ {
+  "id": "loja",
+  "tipo": "loja",
+  "x": 8,
+  "y": 104,
+  "w": 9,
+  "h": 7
+ },
+ {
+  "id": "ferraria",
+  "tipo": "ferraria",
+  "x": 17,
+  "y": 104,
+  "w": 9,
+  "h": 7
+ },
+ {
+  "id": "casa_lira",
+  "tipo": "casa_a",
+  "x": 31,
+  "y": 104,
+  "w": 7,
+  "h": 6
+ },
+ {
+  "id": "casa_zaira",
+  "tipo": "casa_b",
+  "x": 38,
+  "y": 104,
+  "w": 8,
+  "h": 6
+ },
+ {
+  "id": "casa_nadira",
+  "tipo": "casa_a",
+  "x": 8,
+  "y": 115,
+  "w": 7,
+  "h": 6
+ },
+ {
+  "id": "casa_samira",
+  "tipo": "casa_b",
+  "x": 15,
+  "y": 115,
+  "w": 8,
+  "h": 6
+ },
+ {
+  "id": "casa_tarek",
+  "tipo": "casa_a",
+  "x": 32,
+  "y": 115,
+  "w": 7,
+  "h": 6
+ },
+ {
+  "id": "casa_9",
+  "tipo": "casa_b",
+  "x": 39,
+  "y": 115,
+  "w": 8,
+  "h": 6
+ },
+ {
+  "id": "casa_10",
+  "tipo": "casa_a",
+  "x": 8,
+  "y": 125,
+  "w": 7,
+  "h": 6
+ },
+ {
+  "id": "casa_11",
+  "tipo": "casa_b",
+  "x": 15,
+  "y": 125,
+  "w": 8,
+  "h": 6
+ },
+ {
+  "id": "casa_12",
+  "tipo": "casa_a",
+  "x": 32,
+  "y": 125,
+  "w": 7,
+  "h": 6
+ },
+ {
+  "id": "casa_13",
+  "tipo": "casa_b",
+  "x": 39,
+  "y": 125,
+  "w": 8,
+  "h": 6
+ },
+ {
+  "id": "salao",
+  "tipo": "salao",
+  "x": 20,
+  "y": 68,
+  "w": 16,
+  "h": 11
+ }
+]

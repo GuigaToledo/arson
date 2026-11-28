@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://78vsu75x13e8"
-path="res://.godot/imported/guilda.png-d226ce82c0aef4c20006082f90ddc284.ctex"
+uid="uid://ci1kgmbr343xg"
+path="res://.godot/imported/guilda_frente.png-ee144d45b4eb01eb365d973f1fd22b8d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/objetos/guilda.png"
-dest_files=["res://.godot/imported/guilda.png-d226ce82c0aef4c20006082f90ddc284.ctex"]
+source_file="res://assets/objetos/guilda_frente.png"
+dest_files=["res://.godot/imported/guilda_frente.png-ee144d45b4eb01eb365d973f1fd22b8d.ctex"]
 
 [params]
 

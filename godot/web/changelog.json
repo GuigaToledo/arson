@@ -1,5 +1,17 @@
 [
  {
+  "versao": "0.19.12",
+  "data": "2026-11-28",
+  "titulo": "Prédios da cidade por dentro",
+  "itens": [
+   "A cidade ficou maior (150 linhas de mapa): muralha nova, torres alinhadas com a muralha e quatro portões",
+   "Guilda, templo, loja, ferraria, salão do castelo e 10 casas agora têm interior: ao entrar, o telhado e a parede da frente somem",
+   "A porta abre quando você chega perto",
+   "Cada prédio é decorado conforme a função (balcão e prateleiras, forja e bigorna, altar e bancos, trono, camas e lareira) e os móveis não têm colisão",
+   "Moradores dentro das casas e dos prédios: Elyra na guilda, Brann na loja, Borin na ferraria, Lira no templo e o Regente no salão do trono"
+  ]
+ },
+ {
   "versao": "0.19.11",
   "data": "2026-11-28",
   "titulo": "Cidade murada com castelo",

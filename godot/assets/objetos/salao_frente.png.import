@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://wii3d15o2vdv"
-path="res://.godot/imported/loja.png-da5ffc835af6fc37917b0524066a727d.ctex"
+uid="uid://dq0ng3lr308ki"
+path="res://.godot/imported/salao_frente.png-98c09e45c477c8fb17367b09bac6bc2d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/objetos/loja.png"
-dest_files=["res://.godot/imported/loja.png-da5ffc835af6fc37917b0524066a727d.ctex"]
+source_file="res://assets/objetos/salao_frente.png"
+dest_files=["res://.godot/imported/salao_frente.png-98c09e45c477c8fb17367b09bac6bc2d.ctex"]
 
 [params]
 

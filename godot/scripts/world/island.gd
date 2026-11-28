@@ -8,13 +8,15 @@ const MAP_PATH := "res://data/maps/ilha.txt"
 const CHUNK := 8
 const MARGIN := 10
 ## Cidade murada ao sul da vila (ferramentas/gerar_cidade.py): área de dentro das muralhas, em tiles.
-const CIDADE := Rect2i(6, 60, 45, 49)
+const CIDADE := Rect2i(6, 60, 45, 77)
 const TEX := "res://assets/textures/"
 
 var map: WorldMap
 var _ground_mat: ShaderMaterial
 var _decals: Node2D
 var entities: Node2D
+var fundos: Node2D
+var predios := {}
 var player: Player
 
 
@@ -42,7 +44,7 @@ func _ready() -> void:
 		var ty := int(floor(gp.y))
 		if tx >= CIDADE.position.x and tx <= CIDADE.end.x and ty >= CIDADE.position.y and ty <= CIDADE.end.y:
 			return true  # dentro das muralhas
-		return "#THMQCGLF".contains(map.at(tx, ty))
+		return "#THMQI".contains(map.at(tx, ty))
 	var cm := CanvasModulate.new()
 	cm.color = Color(0.34, 0.31, 0.32)
 	add_child(cm)
@@ -62,6 +64,9 @@ func _ready() -> void:
 	add_child(day_night)
 	Boot.step("chão")
 	_build_ground()
+	fundos = Node2D.new()
+	fundos.name = "Interiores"
+	add_child(fundos)
 	entities = Node2D.new()
 	entities.name = "Entidades"
 	entities.y_sort_enabled = true
@@ -644,32 +649,22 @@ func _build_buildings() -> void:
 			piece(str(e[0]), op, op - Vector2(0.16, 0.16), Vector2(0.32, 0.32), false, false, 0.94)
 
 
-## Prédio da cidade (guilda, loja, ferraria, salão do castelo), com luz na porta.
-func _predio(nm: String, r: Rect2, luz := true) -> Prop:
-	var og := r.position + Vector2(0.15, 0.15)
-	var p := piece(nm, og, r.position + Vector2(0.1, 0.1), r.size - Vector2(0.2, 0.2))
-	if luz:
-		var door := LightKit.make(Color(1.0, 0.6, 0.25), 0.8, 1.3, false, 0.1)
-		door.position = Iso.to_screen(Vector2(r.get_center().x, r.end.y)) - p.position + Vector2(0, -30)
-		p.add_child(door)
-	return p
-
-
-## Cidade murada ao sul da vila: muralha, torres, castelo, guilda, lojas e enfeites.
+## Prédios entráveis da cidade (data/predios.json, gerado por ferramentas/gerar_cidade.py).
 func _build_cidade() -> void:
-	for r: Rect2 in map.blocks("G"):
-		_predio("guilda", r).name = "Guilda"
-	for r: Rect2 in map.blocks("L"):
-		_predio("loja", r)
-	for r: Rect2 in map.blocks("F"):
-		_predio("ferraria", r)
-	for r: Rect2 in map.blocks("C"):
-		_predio("castelo", r).name = "Castelo"
+	var lst = JSON.parse_string(FileAccess.get_file_as_string("res://data/predios.json"))
+	for d in (lst if lst is Array else []):
+		var b := Building.new()
+		b.id = str(d["id"])
+		b.tipo = str(d["tipo"])
+		b.rect = Rect2(float(d["x"]), float(d["y"]), float(d["w"]), float(d["h"]))
+		add_child(b)
+		b.build(self, fundos, entities)
+		predios[b.id] = b
 	_build_muralhas()
-	# lampiões nas avenidas e na praça
-	for c in [Vector2(25.4, 63.0), Vector2(30.6, 63.0), Vector2(16.0, 63.5), Vector2(39.6, 63.5), Vector2(16.0, 88.5), Vector2(39.6, 88.5),
-			Vector2(25.4, 91.5), Vector2(30.6, 91.5), Vector2(25.4, 103.0), Vector2(30.6, 103.0),
-			Vector2(13.0, 81.4), Vector2(43.0, 81.4), Vector2(13.0, 86.6), Vector2(43.0, 86.6)]:
+	# lampiões nas avenidas, na praça e no pátio do castelo
+	for c in [Vector2(25.4, 63.0), Vector2(30.6, 63.0), Vector2(14.0, 67.0), Vector2(42.0, 67.0), Vector2(14.0, 86.0), Vector2(42.0, 86.0),
+			Vector2(25.4, 91.0), Vector2(30.6, 91.0), Vector2(25.4, 98.0), Vector2(30.6, 98.0), Vector2(25.4, 107.0), Vector2(30.6, 107.0),
+			Vector2(25.4, 118.0), Vector2(30.6, 118.0), Vector2(25.4, 129.0), Vector2(30.6, 129.0), Vector2(9.0, 90.0), Vector2(47.0, 90.0)]:
 		if not map.walkable_grid(c):
 			continue
 		var post := piece("lampiao", c, c - Vector2(0.07, 0.07), Vector2(0.14, 0.14), false, false)
@@ -677,19 +672,17 @@ func _build_cidade() -> void:
 		l.range_item_cull_mask = 3
 		l.position = post.tex_foot + Vector2(23, -96)
 		post.add_child(l)
-	# poço, feira e bancos na praça
-	piece("poco", Vector2(21.5, 87.0), Vector2(21.0, 86.5), Vector2(1.03, 1.03))
-	piece("tenda", Vector2(32.2, 86.2), Vector2(32.2, 86.2), Vector2(1.5, 1.1))
-	piece("tenda", Vector2(35.6, 86.2), Vector2(35.6, 86.2), Vector2(1.1, 1.5), true)
-	for e in [["npc_cesto_banana", 33.6, 87.6], ["npc_cesto_batata", 34.2, 87.9], ["npc_caixote", 37.0, 87.4], ["npc_anfora", 31.4, 87.7],
-			["npc_cesto", 22.8, 88.2], ["npc_balde", 20.6, 88.0], ["npc_anfora", 40.4, 82.0]]:
+	# poço, feira e bancos na praça (entre o castelo e a guilda)
+	piece("poco", Vector2(41.5, 91.0), Vector2(41.0, 90.5), Vector2(1.03, 1.03))
+	piece("tenda", Vector2(33.2, 90.4), Vector2(33.2, 90.4), Vector2(1.5, 1.1))
+	piece("tenda", Vector2(36.6, 90.4), Vector2(36.6, 90.4), Vector2(1.1, 1.5), true)
+	for e in [["npc_cesto_banana", 34.6, 91.8], ["npc_cesto_batata", 35.2, 92.0], ["npc_caixote", 38.0, 91.4], ["npc_anfora", 32.4, 91.8],
+			["npc_cesto", 21.8, 91.2], ["npc_balde", 20.8, 90.4], ["npc_anfora", 45.4, 90.0]]:
 		var op := Vector2(float(e[1]), float(e[2]))
 		if map.walkable_grid(op):
 			piece(str(e[0]), op, op - Vector2(0.16, 0.16), Vector2(0.32, 0.32), false, false, 0.94)
-	piece("banco", Vector2(17.5, 70.5), Vector2(17.45, 70.5), Vector2(1.16, 0.27))
-	piece("banco", Vector2(38.6, 70.5), Vector2(38.55, 70.5), Vector2(1.16, 0.27))
-	piece("banco", Vector2(17.5, 78.5), Vector2(17.45, 78.5), Vector2(1.16, 0.27))
-	piece("banco", Vector2(38.6, 78.5), Vector2(38.55, 78.5), Vector2(1.16, 0.27))
+	for bp in [Vector2(15.5, 72.0), Vector2(40.5, 72.0), Vector2(15.5, 82.0), Vector2(40.5, 82.0)]:
+		piece("banco", bp, bp - Vector2(0.05, 0.0), Vector2(1.16, 0.27))
 
 
 ## Muralhas (M) em segmentos de 2 tiles e torres (Q, blocos de 3x3), lidos do mapa.
@@ -722,7 +715,7 @@ func _build_muralhas() -> void:
 					j += 2
 	# torres por último (aparecem na frente das muralhas que encostam nelas)
 	for r: Rect2 in map.blocks("Q"):
-		var castelo := r.position.x >= 18 and r.position.x <= 38 and r.position.y >= 63 and r.position.y <= 78
+		var castelo := r.position.x >= 11 and r.position.x <= 45 and r.position.y >= 63 and r.position.y <= 89
 		var t := piece("torre_castelo" if castelo else "torre_cidade", r.position, r.position, r.size, false, false)
 		t.name = "Torre"
 
@@ -1051,7 +1044,7 @@ func _spawn_characters(classe: String) -> void:
 	brann.body_path = _corpo_npc("mercador")
 	brann.start_items = []
 	brann.role = "mercador"
-	brann.position = Iso.to_screen(_free_tile(Vector2(9.2, 92.8)))  # no balcão da loja, na cidade
+	brann.position = Iso.to_screen(_spot("loja"))  # atrás do balcão da loja
 	brann.add_to_group("npcs")
 	entities.add_child(brann)
 	var lira := Npc.new().configure("Lira, a Sacerdotisa",
@@ -1060,7 +1053,7 @@ func _spawn_characters(classe: String) -> void:
 	lira.body_path = _corpo_npc("sacerdotisa")
 	lira.start_items = []
 	lira.role = "sacerdotisa"
-	lira.position = Iso.to_screen(_free_tile(Vector2(44.9, 70.4)))  # na porta do templo da cidade
+	lira.position = Iso.to_screen(_spot("templo"))  # diante do altar do templo
 	lira.add_to_group("npcs")
 	entities.add_child(lira)
 	# Elyra, recepcionista da Guilda dos Aventureiros: fica no balcão, na porta da guilda
@@ -1069,13 +1062,19 @@ func _spawn_characters(classe: String) -> void:
 	elfa.body_path = "res://assets/personagens/elfa/sprites.json"
 	elfa.role = "elfa"
 	elfa.walk_speed = 55.0
-	elfa.position = Iso.to_screen(_free_tile(Vector2(11.5, 71.2)))
+	elfa.position = Iso.to_screen(_spot("guilda"))  # atrás do balcão da guilda
 	elfa.add_to_group("npcs")
 	entities.add_child(elfa)
-	# guardas da cidade: um em cada portão e um patrulhando a avenida
-	_guarda_cidade("Guarda do Portão Norte", [Vector2(24.6, 62.4)], "S")
-	_guarda_cidade("Guarda do Portão Sul", [Vector2(31.6, 106.4)], "N")
-	_guarda_cidade("Guarda da Avenida", [Vector2(27.5, 64.0), Vector2(27.5, 90.0), Vector2(27.5, 104.0), Vector2(27.5, 90.0)], "S")
+	# guardas da cidade: portões, avenida e salão do trono
+	_guarda_cidade("Guarda do Portão Norte", [Vector2(24.6, 62.6)], "S")
+	_guarda_cidade("Guarda do Portão Sul", [Vector2(31.4, 133.4)], "N")
+	_guarda_cidade("Guarda do Portão Oeste", [Vector2(8.6, 98.4)], "E")
+	_guarda_cidade("Guarda do Portão Leste", [Vector2(47.4, 105.4)], "W")
+	_guarda_cidade("Guarda da Avenida", [Vector2(27.5, 93.0), Vector2(27.5, 118.0), Vector2(27.5, 130.0), Vector2(27.5, 118.0)], "S")
+	var trono := _spot("salao")
+	_guarda_cidade("Guarda Real", [trono + Vector2(-3.0, 0.5)], "S")
+	_guarda_cidade("Guarda Real", [trono + Vector2(3.0, 0.5)], "S")
+	_morador("Lorde Aldric, o Regente", "fregues", [trono + Vector2(0.0, 0.6)], true)
 
 	var walker := Npc.new().configure("Viajante",
 		{"skin": Color(0.5, 0.38, 0.3), "under": Color(0.2, 0.17, 0.14), "hair": Color(0.15, 0.1, 0.07), "eyes": Color(0.2, 0.15, 0.1)},
@@ -1084,12 +1083,20 @@ func _spawn_characters(classe: String) -> void:
 	walker.start_items = []
 	walker.position = pts[0]
 	entities.add_child(walker)
-	# moradores da cidade (modelos 3D renderizados em assets/npcs), cada um perto da própria casa
-	_morador("Zaira, a Aguadeira", "aguadeira", [Vector2(12.5, 79.2), Vector2(9.5, 79.2), Vector2(14.0, 79.4), Vector2(13.0, 72.6)])
-	_morador("Nadira, a Vendedora", "vendedora", [Vector2(46.5, 79.2), Vector2(44.0, 79.4), Vector2(48.5, 79.2)])
-	_morador("Samira, a Oleira", "anfora", [Vector2(44.5, 92.6), Vector2(46.5, 92.6), Vector2(42.5, 92.4)])
-	_morador("Tarek, o Carregador", "carregador", [Vector2(48.0, 92.6), Vector2(45.0, 93.6), Vector2(41.5, 90.6)])
-	_morador("Borin, o Ferreiro", "ferreiro", [Vector2(13.4, 92.9)])
+	# moradores da cidade (modelos 3D renderizados em assets/npcs), cada um dentro da própria casa
+	for m in [["casa_zaira", "Zaira, a Aguadeira", "aguadeira"], ["casa_nadira", "Nadira, a Vendedora", "vendedora"],
+			["casa_samira", "Samira, a Oleira", "anfora"], ["casa_tarek", "Tarek, o Carregador", "carregador"],
+			["ferraria", "Borin, o Ferreiro", "ferreiro"], ["casa_lira", "Aveline, a Noviça", "sacerdotisa"],
+			["casa_elyra", "Corvin, o Escriba", "fregues"], ["casa_9", "Dona Hilda, a Cozinheira", "taverneira"],
+			["casa_10", "Rufus, o Lenhador", "fregues"], ["casa_11", "Mara, a Costureira", "vendedora"],
+			["casa_12", "Tobias, o Mensageiro", "viajante"], ["casa_13", "Ilsa, a Lavadeira", "aguadeira"]]:
+		_morador(m[1], m[2], [_spot(m[0])], true)
+
+
+## Ponto (em tiles) do morador de um prédio da cidade.
+func _spot(id: String) -> Vector2:
+	var b: Building = predios.get(id)
+	return b.npc_spot() if b else map.spawn
 
 
 ## Guarda da cidade: parado no portão ou patrulhando entre pontos.
@@ -1115,10 +1122,10 @@ func _corpo_npc(modelo: String) -> String:
 
 
 ## Morador da vila: parado (um ponto só) ou passeando entre os pontos.
-func _morador(nome: String, modelo: String, pontos: Array) -> void:
+func _morador(nome: String, modelo: String, pontos: Array, exato := false) -> void:
 	var rota := []
 	for p in pontos:
-		rota.append(Iso.to_screen(_free_tile(p)))
+		rota.append(Iso.to_screen(p if exato else _free_tile(p)))
 	var n := Npc.new().configure(nome, {}, [], "S", rota if rota.size() > 1 else [])
 	n.body_path = _corpo_npc(modelo)
 	n.walk_speed = 50.0
@@ -1130,7 +1137,7 @@ func _morador(nome: String, modelo: String, pontos: Array) -> void:
 ## Inspeção visual (Visual Factory): leva o jogador a cenas fixas, de dia e de noite,
 ## e salva um PNG de cada uma (com e sem a interface) na pasta pedida.
 const FOTO_CENAS := [["vila", Vector2(27, 26)], ["vila_casas", Vector2(22, 22)], ["floresta_ilha", Vector2(12, 36)],
-	["cidade", Vector2(28, 90)], ["castelo", Vector2(28, 80)], ["campos", Vector2(82, 30)], ["cemiterio", Vector2(86, 12)], ["caverna", Vector2(116, 22)],
+	["cidade", Vector2(28, 100)], ["castelo", Vector2(28, 80)], ["guilda_dentro", Vector2(14, 96)], ["templo_dentro", Vector2(35, 97)], ["campos", Vector2(82, 30)], ["cemiterio", Vector2(86, 12)], ["caverna", Vector2(116, 22)],
 	["selva", Vector2(96, 84)], ["acampamento_orc", Vector2(124, 77)], ["ciclopes_lava", Vector2(104, 100)]]
 
 

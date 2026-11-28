@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bw7jc5y6t1a2a"
-path="res://.godot/imported/castelo.png-c9856746acc2f22ceef88d07effdfa28.ctex"
+uid="uid://c7qx1eo467ibl"
+path="res://.godot/imported/mov_balcao_y.png-58f52a88df07d2610d7669c66df28df7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/objetos/castelo.png"
-dest_files=["res://.godot/imported/castelo.png-c9856746acc2f22ceef88d07effdfa28.ctex"]
+source_file="res://assets/objetos/mov_balcao_y.png"
+dest_files=["res://.godot/imported/mov_balcao_y.png-58f52a88df07d2610d7669c66df28df7.ctex"]
 
 [params]
 

@@ -6,8 +6,8 @@ extends RefCounted
 ## g cemitério  j selva  k chão de caverna  R parede de caverna  b/o/y acampamentos
 ## Cidade murada: M muralha  Q torre  C salão do castelo  G guilda  L loja  F ferraria
 
-const BLOCKED := "~HRMQCGLF"
-const SOLID := "HRMQCGLF"  # bloqueiam a linha de visão
+const BLOCKED := "~HRMQ"
+const SOLID := "HRMQ"  # bloqueiam a linha de visão
 
 var rows: PackedStringArray = PackedStringArray()
 var w := 0
@@ -82,7 +82,7 @@ func weight_textures() -> Array:
 				".", "@": a.r = 1
 				":", "b", "o", "y": a.g = 1
 				",": a.b = 1
-				"#", "=", "H", "T", "M", "Q", "C", "G", "L", "F": a.a = 1
+				"#", "=", "H", "T", "M", "Q", "I": a.a = 1
 				"f", "j": b.r = 1
 				"r", "k", "R": b.g = 1
 				"g": b.a = 1
