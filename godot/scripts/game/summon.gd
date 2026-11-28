@@ -5,7 +5,7 @@ extends Actor
 ## fica vivo até morrer e pode ser curado. Agressivo (ataca sozinho) ou passivo (só revida).
 
 const LOOK := {
-	"fogo": {"nome": "Elemental de Fogo", "skin": Color(0.9, 0.35, 0.08), "under": Color(1, 0.6, 0.15), "hair": Color(1, 0.85, 0.3), "float": true, "scale": 1.05},
+	"fogo": {"nome": "Elemental de Fogo", "skin": Color(0.9, 0.35, 0.08), "under": Color(1, 0.6, 0.15), "hair": Color(1, 0.85, 0.3), "float": false, "scale": 1.05, "sprite": "res://assets/summons/fogo/sprites.json"},
 	"lava": {"nome": "Golem de Lava", "skin": Color(0.18, 0.08, 0.06), "under": Color(0.95, 0.3, 0.05), "hair": Color(0.25, 0.1, 0.06), "float": false, "scale": 1.45},
 	"agua": {"nome": "Elemental de Água", "skin": Color(0.2, 0.45, 0.85), "under": Color(0.35, 0.7, 1), "hair": Color(0.6, 0.9, 1), "float": false, "scale": 1.05},
 	"gelo": {"nome": "Golem de Gelo", "skin": Color(0.6, 0.8, 0.95), "under": Color(0.85, 0.95, 1), "hair": Color(0.5, 0.75, 0.95), "float": false, "scale": 1.45},
@@ -55,6 +55,10 @@ static func make(owner: Node2D, elements: Array, is_fused: bool, fused_name := "
 		s.color = s.color.lerp(Spellbook.ELEMENTS[elements[1]].cor, 0.5)
 	# corpo feito do próprio elemento (SummonPainter): golem de blocos, chamas, raios, raízes...
 	s.body_colors = {"summon": elements[0], "summon2": elements[1] if is_fused and elements.size() > 1 else "", "eyes": s.color.lightened(0.5), "core_col": s.color}
+	# corpo renderizado do modelo 3D (ferramentas/sprites3d/estatuas.py), quando o elemento tiver
+	if lk.has("sprite"):
+		s.body_path = str(lk.sprite)
+		s.body_colors = {}
 	# rápida: acompanha o dono correndo e alcança os monstros
 	s.walk_speed = 195.0 if lk.get("fast", false) else 165.0
 	s.run_speed = s.walk_speed * 2.0
@@ -78,6 +82,10 @@ func _ready() -> void:
 		if Spellbook.CLASS_ELEMENTS[c].has(els[0]):
 			cl = c
 	_aura.setup(cl)
+	if lk.has("sprite"):
+		var luz := LightKit.make(color, 0.8, 0.7, false, 0.25)
+		luz.position = Vector2(0, -40)
+		add_child(luz)
 	if not puppet:
 		_recalc()
 		hp = max_hp

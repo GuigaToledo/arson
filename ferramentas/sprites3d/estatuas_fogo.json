@@ -1,0 +1,7 @@
+{
+ "pasta_blend": "E:/Claude Jobs/arson-npcs/blend",
+ "modelos": {
+  "fogo": {"blend": "fire_elemental", "tipo": "fogo", "corta_base": 0.1, "altura": 1.95, "braco_x": 0.3, "passo": 0.36, "balanco": 0.28,
+           "anims": {"idle": 8, "walk": 8, "cast": 8}}
+ }
+}
