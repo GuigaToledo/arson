@@ -121,6 +121,8 @@ for my in (78, 118):
     torre(WX0 - 1, my - 1); torre(WX1 - 1, my - 1)
 for y in range(49, 55):
     put(27, y, '='); put(28, y, '=')
+for y in range(137, 148):          # cais ao sul, saída do portão sul
+    put(27, y, '='); put(28, y, '=')
 
 open(PATH, 'w').write('\n'.join(''.join(r) for r in rows) + '\n')
 json.dump([dict(id=p[0], tipo=p[1], x=p[2], y=p[3], w=p[4], h=p[5]) for p in PREDIOS],

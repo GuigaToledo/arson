@@ -661,6 +661,7 @@ func _build_cidade() -> void:
 		b.build(self, fundos, entities)
 		predios[b.id] = b
 	_build_muralhas()
+	_build_portoes()
 	# lampiões nas avenidas, na praça e no pátio do castelo
 	for c in [Vector2(25.4, 63.0), Vector2(30.6, 63.0), Vector2(14.0, 67.0), Vector2(42.0, 67.0), Vector2(14.0, 86.0), Vector2(42.0, 86.0),
 			Vector2(25.4, 91.0), Vector2(30.6, 91.0), Vector2(25.4, 98.0), Vector2(30.6, 98.0), Vector2(25.4, 107.0), Vector2(30.6, 107.0),
@@ -683,6 +684,16 @@ func _build_cidade() -> void:
 			piece(str(e[0]), op, op - Vector2(0.16, 0.16), Vector2(0.32, 0.32), false, false, 0.94)
 	for bp in [Vector2(15.5, 72.0), Vector2(40.5, 72.0), Vector2(15.5, 82.0), Vector2(40.5, 82.0)]:
 		piece("banco", bp, bp - Vector2(0.05, 0.0), Vector2(1.16, 0.27))
+
+
+## Portões nos quatro lados da muralha da cidade (vão de 4 tiles, abrem para dentro).
+func _build_portoes() -> void:
+	for d in [[Rect2(26, 60, 4, 1), Vector2(0, 1)], [Rect2(26, 136, 4, 1), Vector2(0, -1)],
+			[Rect2(6, 100, 1, 4), Vector2(1, 0)], [Rect2(50, 100, 1, 4), Vector2(-1, 0)]]:
+		var gt := Gate.new()
+		gt.rect = d[0]
+		gt.inward = d[1]
+		gt.build(self, entities)
 
 
 ## Muralhas (M) em segmentos de 2 tiles e torres (Q, blocos de 3x3), lidos do mapa.
