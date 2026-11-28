@@ -59,3 +59,12 @@ static func delete(n: int) -> void:
 static func use(n: int) -> void:
 	slot = n
 	nome = str(info(n).get("nome", ""))
+
+
+## Equipamento vestido salvo do personagem da vaga ({espaço: id}); vazio se ainda não salvou.
+static func equip_ids(n: int) -> Dictionary:
+	var c := ConfigFile.new()
+	if c.load(path(n)) != OK:
+		return {}
+	var eq = c.get_value("jogador", "equip", {})
+	return eq if eq is Dictionary else {}

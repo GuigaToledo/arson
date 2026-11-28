@@ -149,6 +149,12 @@ func _ready() -> void:
 	Boot.step("tela inicial montada")
 	_mark_ok()
 	ts.chosen.connect(start_game)
+	# inspeção visual: --pagina-titulo=vagas|atualizacoes abre direto essa página
+	for ua in OS.get_cmdline_user_args():
+		if str(ua) == "--pagina-titulo=vagas":
+			ts._show_slots()
+		elif str(ua) == "--pagina-titulo=atualizacoes":
+			ts._show_updates()
 	if "--teste-titulo" in OS.get_cmdline_user_args():
 		await get_tree().create_timer(0.5).timeout
 		Chars.delete(3)

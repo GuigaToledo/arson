@@ -24,7 +24,7 @@ func setup() -> void:
 	bg.color = Color(0.02, 0.015, 0.012, 0.72)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
-	_show_slots()
+	_show_menu()
 
 
 func _clear() -> CenterContainer:
@@ -78,13 +78,103 @@ func _button(text: String, cb: Callable, main := true, size := 16) -> Button:
 	return b
 
 
+# ------------------------------------------------------------ menu inicial
+func _log() -> Array:
+	var d = JSON.parse_string(FileAccess.get_file_as_string("res://web/changelog.json"))
+	return d if d is Array else []
+
+
+func _versao() -> String:
+	var l := _log()
+	return str(l[0].get("versao", "")) if not l.is_empty() else ""
+
+
+func _show_menu() -> void:
+	_confirm_del = -1
+	var center := _clear()
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 14)
+	center.add_child(col)
+	col.add_child(_lbl("ARSON", 64, Color(1, 0.62, 0.22)))
+	col.add_child(_lbl("RPG online de magos", 16, DIM))
+	var sp := Control.new()
+	sp.custom_minimum_size = Vector2(0, 14)
+	col.add_child(sp)
+	for b in [["Jogar", _show_slots, true], ["Atualizar o jogo", _atualizar, false], ["Atualizações", _show_updates, false]]:
+		var bt := _button(b[0], b[1], b[2], 22)
+		bt.custom_minimum_size = Vector2(340, 56)
+		col.add_child(bt)
+	_status = _lbl("", 14, GOLD)
+	_status.custom_minimum_size = Vector2(340, 0)
+	col.add_child(_status)
+	var v := _versao()
+	if v != "":
+		col.add_child(_lbl("versão " + v, 13, DIM))
+
+
+var _status: Label
+
+
+## Procura a versão nova: no navegador recarrega a página sem usar o cache; no app Android confere o
+## pacote do jogo (o aviso de atualização aparece por cima); no computador não há o que atualizar.
+func _atualizar() -> void:
+	if OS.has_feature("web"):
+		_status.text = "Atualizando…"
+		JavaScriptBridge.eval("(function(){var u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.toString());})()")
+	elif OS.has_feature("android"):
+		_status.text = "Procurando atualização…"
+		var up := AppUpdate.new()
+		add_child(up)
+		up.done.connect(func():
+			if is_instance_valid(_status):
+				_status.text = "Seu jogo já está na versão mais recente."
+			up.queue_free())
+	else:
+		_status.text = "As atualizações automáticas funcionam no navegador e no app do celular."
+
+
+## Página com tudo o que já foi feito, da versão mais recente para a mais antiga.
+func _show_updates() -> void:
+	var center := _clear()
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	col.custom_minimum_size = Vector2(760, 0)
+	center.add_child(col)
+	col.add_child(_lbl("Atualizações", 34, Color(1, 0.62, 0.22)))
+	var sc := ScrollContainer.new()
+	sc.custom_minimum_size = Vector2(760, 440)
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	col.add_child(sc)
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 10)
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(list)
+	for ver in _log():
+		var card := PanelContainer.new()
+		card.custom_minimum_size = Vector2(740, 0)
+		card.add_theme_stylebox_override("panel", _style(Color(0.08, 0.06, 0.045, 0.95), Color(0.35, 0.26, 0.16)))
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 4)
+		card.add_child(v)
+		var t := str(ver.get("titulo", ""))
+		v.add_child(_lbl("Versão %s%s" % [ver.get("versao", ""), (" — " + t) if t != "" else ""], 18, Color(1, 0.85, 0.55), false))
+		v.add_child(_lbl(str(ver.get("data", "")), 12, DIM, false))
+		for it in ver.get("itens", []):
+			v.add_child(_lbl("• " + str(it), 14, Color(0.9, 0.85, 0.76), false))
+		list.add_child(card)
+	var vb2 := _button("Voltar", _show_menu, false, 16)
+	vb2.custom_minimum_size = Vector2(200, 40)
+	vb2.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(vb2)
+
+
 # ------------------------------------------------------------ vagas
 func _show_slots() -> void:
 	var center := _clear()
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 12)
 	center.add_child(col)
-	col.add_child(_lbl("ARSON", 46, Color(1, 0.62, 0.22)))
+	col.add_child(_lbl("ARSON", 38, Color(1, 0.62, 0.22)))
 	col.add_child(_lbl("Escolha o seu personagem — até 4 por navegador", 15, DIM))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -92,12 +182,16 @@ func _show_slots() -> void:
 	col.add_child(row)
 	for n in range(1, Chars.MAX + 1):
 		row.add_child(_slot_card(n))
+	var vb := _button("Voltar", _show_menu, false, 15)
+	vb.custom_minimum_size = Vector2(200, 36)
+	vb.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(vb)
 
 
 func _slot_card(n: int) -> Control:
 	var inf := Chars.info(n)
 	var p := PanelContainer.new()
-	p.custom_minimum_size = Vector2(214, 270)
+	p.custom_minimum_size = Vector2(214, 400)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 6)
 	p.add_child(v)
@@ -114,12 +208,12 @@ func _slot_card(n: int) -> Control:
 		return p
 	var d := MageClass.info(inf.classe)
 	p.add_theme_stylebox_override("panel", _style(Color(0.09, 0.065, 0.05, 0.95), d.cor.darkened(0.3)))
-	var emb := Emblem.new()
-	emb.c1 = d.cor
-	emb.c2 = d.cor2
-	emb.custom_minimum_size = Vector2(0, 80)
-	emb.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(emb)
+	var av := Avatar.new()
+	av.classe = inf.classe
+	av.equip = Chars.equip_ids(n)
+	av.custom_minimum_size = Vector2(194, 190)
+	av.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(av)
 	v.add_child(_lbl(inf.nome, 19, Color(1, 0.92, 0.78)))
 	v.add_child(_lbl(d.nome, 14, d.cor.lightened(0.15)))
 	v.add_child(_lbl("Nível %d" % inf.nivel, 14, GOLD))
@@ -238,6 +332,54 @@ func _create() -> void:
 		nm = "Mago %d" % randi_range(100, 999)
 	Chars.create(_slot_new, selected, nm)
 	_play(_slot_new)
+
+
+## Personagem de corpo inteiro com o equipamento atual (num SubViewport próprio, parado).
+class Avatar:
+	extends SubViewportContainer
+	var classe := "fogo"
+	var equip: Dictionary = {}
+	var _vis: CharacterVisual
+	var _eq: EquipmentComponent
+	var _t := 0.0
+	var _acc := 0.0
+
+	func _ready() -> void:
+		stretch = true
+		var sv := SubViewport.new()
+		sv.transparent_bg = true
+		sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		add_child(sv)
+		var root := Node2D.new()
+		sv.add_child(root)
+		_eq = EquipmentComponent.new()
+		root.add_child(_eq)
+		var ci := MageClass.info(classe)
+		if equip.is_empty():
+			for id in ci.itens:
+				_eq.equip(ItemDB.get_item(id))
+		else:
+			_eq.load_ids(equip)
+		_vis = CharacterVisual.new()
+		_vis.body_colors = {"eyes": ci.olhos, "core_col": ci.nucleo}
+		var bp := Actor.class_body(classe)
+		if bp.ends_with(".json"):
+			_vis.body_item = Actor.sprite_body(bp)
+		_vis.is_main = true
+		root.add_child(_vis)
+		_vis.setup(_eq)
+		_vis.scale = Vector2(1.6, 1.6)
+		_vis.tick(0.0, "S", "idle", 0.0)
+
+	func _process(d: float) -> void:
+		if _vis == null:
+			return
+		_t += d
+		_vis.position = Vector2(size.x * 0.5, size.y - 18.0)
+		_acc += d
+		if _acc > 1.0 / 20.0:
+			_vis.tick(_acc, "S", "idle", 0.0)
+			_acc = 0.0
 
 
 ## Emblema da classe: dois elementos girando em volta de um ponto de luz.
