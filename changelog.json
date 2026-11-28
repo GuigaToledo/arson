@@ -1,5 +1,16 @@
 [
  {
+  "versao": "0.19.9",
+  "data": "2026-11-28",
+  "titulo": "Novos moradores e Elemental de Fogo",
+  "itens": [
+   "Guardas, Brann, Lira, o Viajante e a taverna ganharam novos corpos em 3D renderizados em 2.5D",
+   "Novos moradores na vila: aguadeira, vendedora, oleira, carregador e ferreiro",
+   "Cestos, ânforas, baldes, caixotes e bananas enfeitam a cidade",
+   "O Elemental de Fogo ganhou corpo novo em chamas animadas, com andar e golpe"
+  ]
+ },
+ {
   "versao": "0.19.8",
   "data": "2026-11-27",
   "titulo": "Elyra passeia pela vila",

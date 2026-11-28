@@ -146,37 +146,5 @@
  "pedregulho": [
   113.0,
   180.0
- ],
- "npc_anfora": [
-  19.0,
-  73.5
- ],
- "npc_balde": [
-  25.0,
-  52.5
- ],
- "npc_balde2": [
-  19.0,
-  56.5
- ],
- "npc_bananas": [
-  19.0,
-  37.5
- ],
- "npc_caixote": [
-  52.0,
-  55.5
- ],
- "npc_cesto": [
-  34.0,
-  43.5
- ],
- "npc_cesto_banana": [
-  30.0,
-  50.5
- ],
- "npc_cesto_batata": [
-  34.0,
-  43.5
  ]
 }
