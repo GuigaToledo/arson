@@ -1143,10 +1143,29 @@ func _fotos(dir: String, hud: Node) -> void:
 	for k in Settings.auto:
 		if typeof(Settings.auto[k]) == TYPE_BOOL:
 			Settings.auto[k] = false
-	for hora in [["dia", 0.3], ["noite", 0.86]]:
+	# filtros só para inspeção local: --foto-cenas=cidade,castelo  --foto-zoom=0.4  --foto-pos=x,y  --foto-hora=dia
+	var so: PackedStringArray = []
+	var zoomf := 0.0
+	var cenas: Array = FOTO_CENAS.duplicate()
+	var horas: Array = [["dia", 0.3], ["noite", 0.86]]
+	for a in OS.get_cmdline_user_args():
+		var sa := str(a)
+		if sa.begins_with("--foto-cenas="):
+			so = sa.split("=")[1].split(",")
+			cenas = cenas.filter(func(c): return so.has(c[0]))
+		elif sa.begins_with("--foto-zoom="):
+			zoomf = float(sa.split("=")[1])
+		elif sa.begins_with("--foto-pos="):
+			var xy := sa.split("=")[1].split(",")
+			cenas = [["pos", Vector2(float(xy[0]), float(xy[1]))]]
+		elif sa == "--foto-hora=dia":
+			horas = [["dia", 0.3]]
+	for hora in horas:
 		DayNight.force = float(hora[1])
-		for c in FOTO_CENAS:
+		for c in cenas:
 			player.global_position = Iso.to_screen(c[1])
+			if zoomf > 0.0:
+				player.camera.zoom = Vector2.ONE * zoomf
 			player.joy = Vector2.ZERO
 			for f in 45:
 				player.immortal_t = 999.0
