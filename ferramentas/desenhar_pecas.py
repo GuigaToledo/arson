@@ -627,4 +627,5 @@ def main():
     json.dump(ANCHORS, open(os.path.join(OUT, 'ancoras.json'), 'w'), indent=1)
 
 
-main()
+if __name__ == '__main__':
+    main()

@@ -7,6 +7,8 @@ extends Node2D
 const MAP_PATH := "res://data/maps/ilha.txt"
 const CHUNK := 8
 const MARGIN := 10
+## Cidade murada ao sul da vila (ferramentas/gerar_cidade.py): área de dentro das muralhas, em tiles.
+const CIDADE := Rect2i(6, 60, 45, 49)
 const TEX := "res://assets/textures/"
 
 var map: WorldMap
@@ -36,7 +38,11 @@ func _ready() -> void:
 	# zona segura: calçamento e construções da vila
 	Rules.safe_check = func(pos: Vector2) -> bool:
 		var gp := Iso.to_grid(pos)
-		return "#TH".contains(map.at(int(floor(gp.x)), int(floor(gp.y))))
+		var tx := int(floor(gp.x))
+		var ty := int(floor(gp.y))
+		if tx >= CIDADE.position.x and tx <= CIDADE.end.x and ty >= CIDADE.position.y and ty <= CIDADE.end.y:
+			return true  # dentro das muralhas
+		return "#THMQCGLF".contains(map.at(tx, ty))
 	var cm := CanvasModulate.new()
 	cm.color = Color(0.34, 0.31, 0.32)
 	add_child(cm)
@@ -64,6 +70,8 @@ func _ready() -> void:
 	_build_buildings()
 	Boot.step("detalhes")
 	_build_details()
+	Boot.step("cidade murada")
+	_build_cidade()
 	Boot.step("luzes")
 	_build_lights()
 	Boot.step("regiões e monstros")
@@ -577,15 +585,20 @@ func _build_details() -> void:
 		x2 += 2.2
 
 
+## Casas da cidade com luz na porta (as que têm morador).
+const CASAS_LUZ := [Vector2(8, 75), Vector2(12, 75), Vector2(43, 75), Vector2(47, 75), Vector2(43, 89), Vector2(47, 89)]
+
+
 func _build_buildings() -> void:
 	# casas (desenhadas por código), alternando modelo e lado
 	var k := 0
 	for r: Rect2 in map.blocks("H"):
 		var og := r.position + Vector2(0.15, 0.15)
 		var p := piece("casa" if k % 2 == 0 else "casa2", og, r.position + Vector2(0.1, 0.1), r.size - Vector2(0.2, 0.2), k % 3 == 1)
-		var door := LightKit.make(Color(1.0, 0.6, 0.25), 0.7, 1.1, false, 0.1)
-		door.position = Iso.to_screen(r.end) - p.position + Vector2(0, -30)
-		p.add_child(door)
+		if r.position.y < 58 or CASAS_LUZ.has(r.position):
+			var door := LightKit.make(Color(1.0, 0.6, 0.25), 0.7, 1.1, false, 0.1)
+			door.position = Iso.to_screen(r.end) - p.position + Vector2(0, -30)
+			p.add_child(door)
 		k += 1
 	# templo de pedra com torre do sino
 	for r: Rect2 in map.blocks("T"):
@@ -629,6 +642,89 @@ func _build_buildings() -> void:
 		var op := Vector2(float(e[1]), float(e[2]))
 		if map.walkable_grid(op):
 			piece(str(e[0]), op, op - Vector2(0.16, 0.16), Vector2(0.32, 0.32), false, false, 0.94)
+
+
+## Prédio da cidade (guilda, loja, ferraria, salão do castelo), com luz na porta.
+func _predio(nm: String, r: Rect2, luz := true) -> Prop:
+	var og := r.position + Vector2(0.15, 0.15)
+	var p := piece(nm, og, r.position + Vector2(0.1, 0.1), r.size - Vector2(0.2, 0.2))
+	if luz:
+		var door := LightKit.make(Color(1.0, 0.6, 0.25), 0.8, 1.3, false, 0.1)
+		door.position = Iso.to_screen(Vector2(r.get_center().x, r.end.y)) - p.position + Vector2(0, -30)
+		p.add_child(door)
+	return p
+
+
+## Cidade murada ao sul da vila: muralha, torres, castelo, guilda, lojas e enfeites.
+func _build_cidade() -> void:
+	for r: Rect2 in map.blocks("G"):
+		_predio("guilda", r).name = "Guilda"
+	for r: Rect2 in map.blocks("L"):
+		_predio("loja", r)
+	for r: Rect2 in map.blocks("F"):
+		_predio("ferraria", r)
+	for r: Rect2 in map.blocks("C"):
+		_predio("castelo", r).name = "Castelo"
+	_build_muralhas()
+	# lampiões nas avenidas e na praça
+	for c in [Vector2(25.4, 63.0), Vector2(30.6, 63.0), Vector2(16.0, 63.5), Vector2(39.6, 63.5), Vector2(16.0, 88.5), Vector2(39.6, 88.5),
+			Vector2(25.4, 91.5), Vector2(30.6, 91.5), Vector2(25.4, 103.0), Vector2(30.6, 103.0),
+			Vector2(13.0, 81.4), Vector2(43.0, 81.4), Vector2(13.0, 86.6), Vector2(43.0, 86.6)]:
+		if not map.walkable_grid(c):
+			continue
+		var post := piece("lampiao", c, c - Vector2(0.07, 0.07), Vector2(0.14, 0.14), false, false)
+		var l := LightKit.make(Color(1.0, 0.65, 0.3), 1.0, 1.7, false, 0.12)
+		l.range_item_cull_mask = 3
+		l.position = post.tex_foot + Vector2(23, -96)
+		post.add_child(l)
+	# poço, feira e bancos na praça
+	piece("poco", Vector2(21.5, 87.0), Vector2(21.0, 86.5), Vector2(1.03, 1.03))
+	piece("tenda", Vector2(32.2, 86.2), Vector2(32.2, 86.2), Vector2(1.5, 1.1))
+	piece("tenda", Vector2(35.6, 86.2), Vector2(35.6, 86.2), Vector2(1.1, 1.5), true)
+	for e in [["npc_cesto_banana", 33.6, 87.6], ["npc_cesto_batata", 34.2, 87.9], ["npc_caixote", 37.0, 87.4], ["npc_anfora", 31.4, 87.7],
+			["npc_cesto", 22.8, 88.2], ["npc_balde", 20.6, 88.0], ["npc_anfora", 40.4, 82.0]]:
+		var op := Vector2(float(e[1]), float(e[2]))
+		if map.walkable_grid(op):
+			piece(str(e[0]), op, op - Vector2(0.16, 0.16), Vector2(0.32, 0.32), false, false, 0.94)
+	piece("banco", Vector2(17.5, 70.5), Vector2(17.45, 70.5), Vector2(1.16, 0.27))
+	piece("banco", Vector2(38.6, 70.5), Vector2(38.55, 70.5), Vector2(1.16, 0.27))
+	piece("banco", Vector2(17.5, 78.5), Vector2(17.45, 78.5), Vector2(1.16, 0.27))
+	piece("banco", Vector2(38.6, 78.5), Vector2(38.55, 78.5), Vector2(1.16, 0.27))
+
+
+## Muralhas (M) em segmentos de 2 tiles e torres (Q, blocos de 3x3), lidos do mapa.
+func _build_muralhas() -> void:
+	var feitos := {}
+	for y in map.h:
+		for x in map.w:
+			if map.at(x, y) != "M" or feitos.has(Vector2i(x, y)):
+				continue
+			var horiz := "MQ".contains(map.at(x - 1, y)) or "MQ".contains(map.at(x + 1, y))
+			if horiz and map.at(x - 1, y) != "M":
+				var n := 0
+				while map.at(x + n, y) == "M":
+					feitos[Vector2i(x + n, y)] = true
+					n += 1
+				var i := 0
+				while i < n:
+					var px := mini(x + i, x + n - 2) if n >= 2 else x
+					piece("muralha_x", Vector2(px, y), Vector2(px, y), Vector2(2, 1), false, false)
+					i += 2
+			elif not horiz:
+				var n2 := 0
+				while map.at(x, y + n2) == "M" and not "MQ".contains(map.at(x - 1, y + n2)) and not "MQ".contains(map.at(x + 1, y + n2)):
+					feitos[Vector2i(x, y + n2)] = true
+					n2 += 1
+				var j := 0
+				while j < n2:
+					var py := mini(y + j, y + n2 - 2) if n2 >= 2 else y
+					piece("muralha_y", Vector2(x, py), Vector2(x, py), Vector2(1, 2), false, false)
+					j += 2
+	# torres por último (aparecem na frente das muralhas que encostam nelas)
+	for r: Rect2 in map.blocks("Q"):
+		var castelo := r.position.x >= 18 and r.position.x <= 38 and r.position.y >= 63 and r.position.y <= 78
+		var t := piece("torre_castelo" if castelo else "torre_cidade", r.position, r.position, r.size, false, false)
+		t.name = "Torre"
 
 
 func _build_lights() -> void:
@@ -688,7 +784,7 @@ var regioes: Array = []
 
 
 func _region_for(ch: String, x: int, y: int) -> Dictionary:
-	if x < 58 and y < 58:
+	if x < 58:
 		return {}
 	for r in regioes:
 		if str(r.get("chars", "")).contains(ch):
@@ -702,7 +798,7 @@ func _build_regions() -> void:
 	regioes = parsed if parsed is Array else []
 	for y in map.h:
 		for x in map.w:
-			if x < 58 and y < 58:
+			if x < 58:
 				continue
 			var ch := map.at(x, y)
 			var r1 := map.tile_rand(x, y, 21)
@@ -796,8 +892,8 @@ func _spawn_monsters() -> void:
 				var tab: Array = reg.get("tabela", {}).get(ch, [])
 				if r < dens and not tab.is_empty():
 					t = str(tab[int(r2 * tab.size()) % tab.size()])
-			elif x >= 58 or y >= 58:
-				pass
+			elif x >= 58 or y >= 54:
+				pass  # fora da ilha da vila (e a cidade murada, ao sul, não tem monstros)
 			elif ch == "f" and r < 0.035:
 				t = ["bandido", "goblin", "goblin_xama", "troll_jovem", "esqueleto"][int(r2 * 5.0)]
 			elif ch == "." and r < 0.016:
@@ -955,7 +1051,7 @@ func _spawn_characters(classe: String) -> void:
 	brann.body_path = _corpo_npc("mercador")
 	brann.start_items = []
 	brann.role = "mercador"
-	brann.position = Iso.to_screen(_free_tile(Vector2(23.0, 25.0)))
+	brann.position = Iso.to_screen(_free_tile(Vector2(9.2, 92.8)))  # no balcão da loja, na cidade
 	brann.add_to_group("npcs")
 	entities.add_child(brann)
 	var lira := Npc.new().configure("Lira, a Sacerdotisa",
@@ -964,22 +1060,22 @@ func _spawn_characters(classe: String) -> void:
 	lira.body_path = _corpo_npc("sacerdotisa")
 	lira.start_items = []
 	lira.role = "sacerdotisa"
-	lira.position = Iso.to_screen(_free_tile(Vector2(31.6, 24.0)))
+	lira.position = Iso.to_screen(_free_tile(Vector2(44.9, 70.4)))  # na porta do templo da cidade
 	lira.add_to_group("npcs")
 	entities.add_child(lira)
-	# Elyra: elfa andarilha na praça (sprites renderizados do modelo 3D em assets/personagens/elfa)
-	# passeia pela praça e pelas ruas do centro (fica parada um pouco em cada ponto)
-	var rota := []
-	for q in [Vector2(23.5, 27.5), Vector2(32.5, 27.5), Vector2(28.0, 27.5), Vector2(28.0, 32.5),
-			Vector2(32.5, 32.5), Vector2(23.0, 32.5), Vector2(28.0, 32.5), Vector2(28.0, 27.5)]:
-		rota.append(Iso.to_screen(q))
-	var elfa := Npc.new().configure("Elyra, a Elfa Andarilha", {}, [], "S", rota)
+	# Elyra, recepcionista da Guilda dos Aventureiros: fica no balcão, na porta da guilda
+	# (sprites renderizados do modelo 3D em assets/personagens/elfa)
+	var elfa := Npc.new().configure("Elyra, a Recepcionista", {}, [], "S")
 	elfa.body_path = "res://assets/personagens/elfa/sprites.json"
 	elfa.role = "elfa"
 	elfa.walk_speed = 55.0
-	elfa.position = rota[0]
+	elfa.position = Iso.to_screen(_free_tile(Vector2(11.5, 71.2)))
 	elfa.add_to_group("npcs")
 	entities.add_child(elfa)
+	# guardas da cidade: um em cada portão e um patrulhando a avenida
+	_guarda_cidade("Guarda do Portão Norte", [Vector2(24.6, 62.4)], "S")
+	_guarda_cidade("Guarda do Portão Sul", [Vector2(31.6, 106.4)], "N")
+	_guarda_cidade("Guarda da Avenida", [Vector2(27.5, 64.0), Vector2(27.5, 90.0), Vector2(27.5, 104.0), Vector2(27.5, 90.0)], "S")
 
 	var walker := Npc.new().configure("Viajante",
 		{"skin": Color(0.5, 0.38, 0.3), "under": Color(0.2, 0.17, 0.14), "hair": Color(0.15, 0.1, 0.07), "eyes": Color(0.2, 0.15, 0.1)},
@@ -988,12 +1084,30 @@ func _spawn_characters(classe: String) -> void:
 	walker.start_items = []
 	walker.position = pts[0]
 	entities.add_child(walker)
-	# moradores (modelos 3D renderizados em assets/npcs)
-	_morador("Zaira, a Aguadeira", "aguadeira", [Vector2(33.0, 26.0), Vector2(30.5, 29.5), Vector2(33.0, 31.0), Vector2(36.0, 28.0)])
-	_morador("Nadira, a Vendedora", "vendedora", [Vector2(24.5, 30.6), Vector2(26.0, 29.0), Vector2(23.0, 29.0)])
-	_morador("Samira, a Oleira", "anfora", [Vector2(30.5, 24.5), Vector2(25.5, 24.5), Vector2(25.5, 29.0), Vector2(30.5, 29.0)])
-	_morador("Tarek, o Carregador", "carregador", [Vector2(25.5, 37.0), Vector2(25.0, 33.6), Vector2(30.5, 33.6), Vector2(30.5, 39.0)])
-	_morador("Borin, o Ferreiro", "ferreiro", [Vector2(32.4, 35.4)])
+	# moradores da cidade (modelos 3D renderizados em assets/npcs), cada um perto da própria casa
+	_morador("Zaira, a Aguadeira", "aguadeira", [Vector2(12.5, 79.2), Vector2(9.5, 79.2), Vector2(14.0, 79.4), Vector2(13.0, 72.6)])
+	_morador("Nadira, a Vendedora", "vendedora", [Vector2(46.5, 79.2), Vector2(44.0, 79.4), Vector2(48.5, 79.2)])
+	_morador("Samira, a Oleira", "anfora", [Vector2(44.5, 92.6), Vector2(46.5, 92.6), Vector2(42.5, 92.4)])
+	_morador("Tarek, o Carregador", "carregador", [Vector2(48.0, 92.6), Vector2(45.0, 93.6), Vector2(41.5, 90.6)])
+	_morador("Borin, o Ferreiro", "ferreiro", [Vector2(13.4, 92.9)])
+
+
+## Guarda da cidade: parado no portão ou patrulhando entre pontos.
+func _guarda_cidade(nome: String, pontos: Array, dir: String) -> void:
+	var gd := Npc.new().configure(nome,
+		{"skin": Color(0.55, 0.42, 0.33), "under": Color(0.2, 0.18, 0.16), "hair": Color(0.1, 0.08, 0.06), "eyes": Color(0.2, 0.15, 0.1)},
+		["elmo_ferro", "peitoral_couro", "ombreiras_ferro", "calca_tecido", "botas_couro"], dir)
+	gd.body_path = _corpo_npc("guarda")
+	gd.start_items = []
+	gd.guarda = true
+	gd.run_speed = 150.0
+	var ronda := []
+	for p in pontos:
+		ronda.append(Iso.to_screen(_free_tile(p)))
+	if ronda.size() > 1:
+		gd.waypoints = ronda
+	gd.position = ronda[0]
+	entities.add_child(gd)
 
 
 func _corpo_npc(modelo: String) -> String:
@@ -1016,7 +1130,7 @@ func _morador(nome: String, modelo: String, pontos: Array) -> void:
 ## Inspeção visual (Visual Factory): leva o jogador a cenas fixas, de dia e de noite,
 ## e salva um PNG de cada uma (com e sem a interface) na pasta pedida.
 const FOTO_CENAS := [["vila", Vector2(27, 26)], ["vila_casas", Vector2(22, 22)], ["floresta_ilha", Vector2(12, 36)],
-	["campos", Vector2(82, 30)], ["cemiterio", Vector2(86, 12)], ["caverna", Vector2(116, 22)],
+	["cidade", Vector2(28, 90)], ["castelo", Vector2(28, 80)], ["campos", Vector2(82, 30)], ["cemiterio", Vector2(86, 12)], ["caverna", Vector2(116, 22)],
 	["selva", Vector2(96, 84)], ["acampamento_orc", Vector2(124, 77)], ["ciclopes_lava", Vector2(104, 100)]]
 
 

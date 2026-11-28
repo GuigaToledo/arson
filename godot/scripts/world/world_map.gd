@@ -4,8 +4,10 @@ extends RefCounted
 ## ~ água  , areia  . grama  : terra  # calçamento  f floresta  r rocha
 ## = ponte/píer  H construção  T templo  @ início do jogador
 ## g cemitério  j selva  k chão de caverna  R parede de caverna  b/o/y acampamentos
+## Cidade murada: M muralha  Q torre  C salão do castelo  G guilda  L loja  F ferraria
 
-const BLOCKED := "~HR"
+const BLOCKED := "~HRMQCGLF"
+const SOLID := "HRMQCGLF"  # bloqueiam a linha de visão
 
 var rows: PackedStringArray = PackedStringArray()
 var w := 0
@@ -58,7 +60,7 @@ func line_clear(a: Vector2, b: Vector2) -> bool:
 		var t := Vector2i(floor(q.x), floor(q.y))
 		if t == ta or t == tb:
 			continue
-		if "HR".contains(at(t.x, t.y)):
+		if SOLID.contains(at(t.x, t.y)):
 			return false
 	return true
 
@@ -80,7 +82,7 @@ func weight_textures() -> Array:
 				".", "@": a.r = 1
 				":", "b", "o", "y": a.g = 1
 				",": a.b = 1
-				"#", "=", "H", "T": a.a = 1
+				"#", "=", "H", "T", "M", "Q", "C", "G", "L", "F": a.a = 1
 				"f", "j": b.r = 1
 				"r", "k", "R": b.g = 1
 				"g": b.a = 1

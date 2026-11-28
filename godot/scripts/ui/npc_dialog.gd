@@ -52,15 +52,16 @@ var _tab := "pocoes"
 var _scroll: ScrollContainer
 
 
-## Falas da Elyra (elfa andarilha da praça). As tarefas dela vêm numa próxima etapa.
+## Falas da Elyra, recepcionista da Guilda dos Aventureiros (na cidade murada).
 const FALAS_ELFA := [
-	"Vim das florestas do leste. Aqui na vila é tudo mais barulhento, mas o mel da taverna compensa.",
+	"Vim das florestas do leste. A cidade é barulhenta, mas o balcão da guilda tem a melhor vista da praça.",
 	"Essa adaga na perna? Presente da minha mãe. Nunca saio sem ela, nem pra tomar sorvete.",
 	"Dizem que tem um dragão vermelho lá no norte, depois da caverna. Eu é que não vou lá sozinha.",
-	"Os guardas falam muito, mas lutam bem. Já vi o da ponte derrubar um lobo com um soco.",
+	"Os guardas dos portões falam muito, mas lutam bem. Já vi um derrubar um lobo com um soco.",
 	"Elfos vivem muito tempo. Mesmo assim, eu acho que a vida é curta demais pra recusar um gelado.",
 ]
-const SERVICO_ELFA := "Agora não... mas fica de olho. Logo vou precisar de alguém corajoso pra me ajudar com umas coisas lá fora."
+const SOBRE_GUILDA := "A Guilda dos Aventureiros reúne quem caça fora das muralhas: aqui você se registra, pega pedidos do quadro e recebe pelo que trouxe. O quadro ainda está sendo montado."
+const SERVICO_ELFA := "O quadro de missões da guilda abre em breve. Por enquanto, a Lira, no templo, aceita caçadas. Fica de olho: logo vou ter trabalho de verdade pra quem for corajoso."
 var _fala_elfa := -1
 
 
@@ -148,8 +149,8 @@ func _render(say: String) -> void:
 			"vender":
 				_sell_page()
 	elif npc.role == "elfa":
-		_col.add_child(_lbl("Oi, %s! Senta aí, a praça é de todo mundo. Eu sou a Elyra." % nm, 15))
-		_col.add_child(_row([_btn("Conversar", _conversar_elfa), _btn("Tem algum serviço?", func(): _render(SERVICO_ELFA))]))
+		_col.add_child(_lbl("Bem-vindo à Guilda dos Aventureiros, %s! Eu sou a Elyra, cuido do balcão." % nm, 15))
+		_col.add_child(_row([_btn("Conversar", _conversar_elfa), _btn("Sobre a guilda", func(): _render(SOBRE_GUILDA)), _btn("Missões", func(): _render(SERVICO_ELFA))]))
 	else:
 		var t := ""
 		var tk: Dictionary = player.task

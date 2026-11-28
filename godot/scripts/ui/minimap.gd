@@ -102,7 +102,7 @@ func _cor(ch: String) -> Color:
 			return C_CAVERNA
 		"g":
 			return C_CEMITERIO
-		"H":
+		"H", "G", "L", "F", "C", "Q", "M":
 			return C_CASA
 		"T":
 			return C_TEMPLO
