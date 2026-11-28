@@ -1,0 +1,261 @@
+{
+ "pasta_blend": "E:/Claude Jobs/arson-npcs/blend",
+ "modelos": {
+  "guarda": {
+   "blend": "M_06",
+   "altura": 1.84,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "8a1f1c",
+    "manga": "8a1f1c",
+    "cinto": "c9a23a",
+    "calca": "23304f",
+    "bota": "3a2416",
+    "cabelo": "7a1512",
+    "barba": "2a1c12"
+   },
+   "cabelo_h": 0.925,
+   "nuca_y": 9,
+   "anims": {
+    "idle": 8,
+    "walk": 8,
+    "cast": 8
+   },
+   "passo": 0.38
+  },
+  "mercador": {
+   "blend": "M_09",
+   "altura": 1.12,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "2f5a3c",
+    "manga": "c08a62",
+    "cinto": "b98c2e",
+    "calca": "6d4a2c",
+    "bota": "3a2416",
+    "cabelo": "8f1f1a",
+    "barba": "3b2a1c",
+    "colete": "6b1f3a"
+   },
+   "sentado": true,
+   "braco_x": 0.42,
+   "cabeca_h": 0.74,
+   "cabelo_h": 0.9,
+   "nuca_y": 9,
+   "pescoco_h": 0.7,
+   "cinto_h": [
+    0.3,
+    0.38
+   ],
+   "bota_h": 0.12,
+   "mao_h": 0.45,
+   "anims": {
+    "idle": 8
+   }
+  },
+  "sacerdotisa": {
+   "blend": "F_05",
+   "altura": 1.7,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "e8e0cc",
+    "manga": "e8e0cc",
+    "cinto": "c9a23a",
+    "calca": "d9d0ba",
+    "bota": "8a6a3a",
+    "cabelo": "d9b45a"
+   },
+   "passo": 0.09,
+   "balanco": 0.15
+  },
+  "viajante": {
+   "blend": "M_08",
+   "altura": 1.8,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "4d6b34",
+    "manga": "4d6b34",
+    "cinto": "7a4a22",
+    "calca": "6a5436",
+    "bota": "3c2a1a",
+    "cabelo": "4a2f1a",
+    "barba": "4a2f1a"
+   },
+   "passo": 0.32
+  },
+  "taverneira": {
+   "blend": "F_06",
+   "altura": 1.7,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "8a3b24",
+    "manga": "d8c8a4",
+    "cinto": "3a2416",
+    "calca": "4a3226",
+    "bota": "2a1a10",
+    "cabelo": "6a2a14"
+   },
+   "passo": 0.1
+  },
+  "fregues": {
+   "blend": "M_11",
+   "altura": 1.15,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "3a4a6a",
+    "manga": "c08a62",
+    "cinto": "7a4a22",
+    "calca": "5a4630",
+    "bota": "3a2416",
+    "cabelo": "2a1c12",
+    "barba": "2a1c12",
+    "colete": "3a4a6a"
+   },
+   "sentado": true,
+   "braco_x": 0.42,
+   "cabeca_h": 0.74,
+   "cabelo_h": 0.9,
+   "pescoco_h": 0.7,
+   "cinto_h": [
+    0.3,
+    0.38
+   ],
+   "bota_h": 0.12,
+   "mao_h": 0.45,
+   "anims": {
+    "idle": 8
+   }
+  },
+  "aguadeira": {
+   "blend": "F_03",
+   "altura": 1.68,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "2d6a78",
+    "manga": "2d6a78",
+    "cinto": "b98c2e",
+    "calca": "35505c",
+    "bota": "6a4a2a",
+    "cabelo": "c9b48a",
+    "madeira": "6b4423"
+   },
+   "passo": 0.08,
+   "balanco": 0,
+   "nuca_y": -0.02,
+   "caixas": [
+    [
+     -0.32,
+     0.32,
+     -1,
+     -0.1,
+     0.06,
+     0.45,
+     "madeira"
+    ]
+   ]
+  },
+  "vendedora": {
+   "blend": "F_02",
+   "altura": 1.68,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "a8442e",
+    "manga": "c08a62",
+    "cinto": "d0a83c",
+    "calca": "7a2f55",
+    "bota": "6a4a2a",
+    "cabelo": "2a160c",
+    "palha": "b08a42"
+   },
+   "passo": 0.07,
+   "balanco": 0,
+   "caixas": [
+    [
+     -1,
+     -0.2,
+     -1,
+     1,
+     0.16,
+     0.5,
+     "palha"
+    ]
+   ]
+  },
+  "anfora": {
+   "blend": "F_08",
+   "altura": 1.66,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "6a7a3a",
+    "manga": "6a7a3a",
+    "cinto": "a8442e",
+    "calca": "8a6a3a",
+    "bota": "5a3a22",
+    "cabelo": "b8a478",
+    "barro": "a85a32"
+   },
+   "passo": 0.09,
+   "balanco": 0.05,
+   "corpo": 0.8,
+   "caixas": [
+    [
+     -1,
+     1,
+     -1,
+     1,
+     1.02,
+     2,
+     "barro"
+    ]
+   ]
+  },
+  "carregador": {
+   "blend": "M_04",
+   "altura": 1.82,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "c08a62",
+    "manga": "c08a62",
+    "cinto": "8a2a1c",
+    "calca": "cdbb96",
+    "bota": "6a4a2a",
+    "cabelo": "c08a62",
+    "barba": "5a3a22",
+    "madeira": "7a5128"
+   },
+   "passo": 0.34,
+   "balanco": 0,
+   "cabelo_h": 9,
+   "nuca_y": 9,
+   "caixas": [
+    [
+     -0.45,
+     0.45,
+     -1,
+     -0.14,
+     0.46,
+     0.66,
+     "madeira"
+    ]
+   ]
+  },
+  "ferreiro": {
+   "blend": "M_05_hammer_square",
+   "altura": 1.84,
+   "cores": {
+    "pele": "c08a62",
+    "tronco": "c08a62",
+    "manga": "c08a62",
+    "cinto": "3a2416",
+    "calca": "4a3a2c",
+    "bota": "2a1a10",
+    "cabelo": "8a8478",
+    "barba": "8a8478"
+   },
+   "balanco": 0.1,
+   "anims": {
+    "idle": 8
+   }
+  }
+ }
+}

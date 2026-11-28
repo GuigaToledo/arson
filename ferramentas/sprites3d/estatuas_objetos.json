@@ -1,0 +1,123 @@
+{
+ "pasta_blend": "E:/Claude Jobs/arson-npcs/blend",
+ "modelos": {
+  "npc_anfora": {
+   "blend": "prop_amphora",
+   "altura": 0.75,
+   "tipo": "objeto",
+   "cores": {
+    "unica": "a85a32"
+   },
+   "caixas": [],
+   "anims": {
+    "idle": 1
+   }
+  },
+  "npc_cesto": {
+   "blend": "prop_basket_01_empty",
+   "altura": 0.45,
+   "tipo": "objeto",
+   "cores": {
+    "unica": "b08a42"
+   },
+   "caixas": [],
+   "anims": {
+    "idle": 1
+   }
+  },
+  "npc_cesto_batata": {
+   "blend": "prop_basket_01_potatoes",
+   "altura": 0.45,
+   "tipo": "objeto",
+   "cores": {
+    "unica": "b08a42",
+    "dentro": "9a7440"
+   },
+   "caixas": [
+    [
+     -0.75,
+     0.75,
+     -0.6,
+     0.6,
+     0.62,
+     0.9,
+     "dentro"
+    ]
+   ],
+   "anims": {
+    "idle": 1
+   }
+  },
+  "npc_cesto_banana": {
+   "blend": "prop_basket_02_bananas",
+   "altura": 0.52,
+   "tipo": "objeto",
+   "cores": {
+    "unica": "a07a38",
+    "dentro": "d8b421"
+   },
+   "caixas": [
+    [
+     -0.7,
+     0.7,
+     -0.7,
+     0.7,
+     0.55,
+     0.85,
+     "dentro"
+    ]
+   ],
+   "anims": {
+    "idle": 1
+   }
+  },
+  "npc_balde": {
+   "blend": "prop_bucket_01",
+   "altura": 0.55,
+   "tipo": "objeto",
+   "cores": {
+    "unica": "6b4423"
+   },
+   "caixas": [],
+   "anims": {
+    "idle": 1
+   }
+  },
+  "npc_balde2": {
+   "blend": "prop_bucket_02",
+   "altura": 0.62,
+   "tipo": "objeto",
+   "cores": {
+    "unica": "7a5128"
+   },
+   "caixas": [],
+   "anims": {
+    "idle": 1
+   }
+  },
+  "npc_caixote": {
+   "blend": "prop_crate",
+   "altura": 0.42,
+   "tipo": "objeto",
+   "cores": {
+    "unica": "80592e"
+   },
+   "caixas": [],
+   "anims": {
+    "idle": 1
+   }
+  },
+  "npc_bananas": {
+   "blend": "prop_banana_bundle",
+   "altura": 0.35,
+   "tipo": "objeto",
+   "cores": {
+    "unica": "d8b421"
+   },
+   "caixas": [],
+   "anims": {
+    "idle": 1
+   }
+  }
+ }
+}

@@ -58,6 +58,10 @@ def mat_pintado(me, rest, c, H):
     cor = np.zeros((N, 3))
     p = c["cores"]
 
+    if "unica" in p:  # objetos: uma cor de base, detalhes pelas caixas
+        for k in ("calca", "bota", "cinto", "tronco", "manga", "pele", "cabelo"):
+            p.setdefault(k, p["unica"])
+
     def pinta(m, nome):
         cor[m] = cor_lin(p[nome])
     cinto = c.get("cinto_h", [0.54, 0.61])

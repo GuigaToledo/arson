@@ -620,6 +620,15 @@ func _build_buildings() -> void:
 	piece("carroca", Vector2(31.2, 39.6), Vector2(31.2, 39.6), Vector2(0.72, 1.45), true)
 	piece("tenda", Vector2(24.4, 31.6), Vector2(24.4, 31.6), Vector2(1.5, 1.1))
 	piece("tenda", Vector2(29.4, 31.6), Vector2(29.4, 31.6), Vector2(1.1, 1.5), true)
+	# enfeites da vila (modelos 3D): feira junto às tendas, mercador, poços de água e carroças
+	for e in [["npc_cesto_banana", 26.3, 31.5], ["npc_cesto_batata", 26.7, 31.9], ["npc_bananas", 26.2, 32.0], ["npc_cesto", 23.9, 31.9],
+			["npc_caixote", 31.0, 31.7], ["npc_cesto_batata", 31.1, 33.2], ["npc_anfora", 28.9, 31.4],
+			["npc_anfora", 22.3, 25.6], ["npc_anfora", 22.7, 26.0], ["npc_caixote", 22.3, 24.3], ["npc_cesto_banana", 24.2, 24.4], ["npc_cesto_batata", 23.6, 24.0],
+			["npc_balde", 33.5, 25.1], ["npc_balde2", 33.9, 25.6], ["npc_anfora", 31.0, 23.3], ["npc_balde", 22.4, 33.4],
+			["npc_caixote", 23.4, 36.6], ["npc_cesto", 25.9, 38.3], ["npc_balde2", 32.9, 36.2], ["npc_caixote", 33.1, 35.2]]:
+		var op := Vector2(float(e[1]), float(e[2]))
+		if map.walkable_grid(op):
+			piece(str(e[0]), op, op - Vector2(0.16, 0.16), Vector2(0.32, 0.32), false, false, 0.94)
 
 
 func _build_lights() -> void:
@@ -914,6 +923,8 @@ func _spawn_characters(classe: String) -> void:
 	var guard := Npc.new().configure("Guarda do Templo",
 		{"skin": Color(0.55, 0.42, 0.33), "under": Color(0.2, 0.18, 0.16), "hair": Color(0.1, 0.08, 0.06), "eyes": Color(0.2, 0.15, 0.1)},
 		["elmo_ferro", "peitoral_couro", "ombreiras_ferro", "calca_tecido", "botas_couro"], "S")
+	guard.body_path = _corpo_npc("guarda")
+	guard.start_items = []
 	guard.guarda = true
 	guard.run_speed = 150.0
 	var ronda := []
@@ -926,6 +937,8 @@ func _spawn_characters(classe: String) -> void:
 	var guard2 := Npc.new().configure("Guarda da Ponte",
 		{"skin": Color(0.5, 0.38, 0.3), "under": Color(0.2, 0.18, 0.16), "hair": Color(0.2, 0.12, 0.06), "eyes": Color(0.2, 0.15, 0.1)},
 		["elmo_ferro", "peitoral_couro", "ombreiras_ferro", "calca_tecido", "botas_couro"], "E")
+	guard2.body_path = _corpo_npc("guarda")
+	guard2.start_items = []
 	guard2.guarda = true
 	guard2.run_speed = 150.0
 	guard2.position = Iso.to_screen(_free_tile(Vector2(36.0, 27.5)))
@@ -939,6 +952,8 @@ func _spawn_characters(classe: String) -> void:
 	var brann := Npc.new().configure("Brann, o Mercador",
 		{"skin": Color(0.6, 0.45, 0.35), "under": Color(0.25, 0.2, 0.15), "hair": Color(0.3, 0.2, 0.1), "eyes": Color(0.2, 0.15, 0.1)},
 		["avental_taverna", "calca_tecido", "botas_couro"], "S")
+	brann.body_path = _corpo_npc("mercador")
+	brann.start_items = []
 	brann.role = "mercador"
 	brann.position = Iso.to_screen(_free_tile(Vector2(23.0, 25.0)))
 	brann.add_to_group("npcs")
@@ -946,6 +961,8 @@ func _spawn_characters(classe: String) -> void:
 	var lira := Npc.new().configure("Lira, a Sacerdotisa",
 		{"skin": Color(0.78, 0.62, 0.5), "under": Color(0.8, 0.76, 0.66), "hair": Color(0.85, 0.75, 0.45), "eyes": Color(0.3, 0.5, 0.8)},
 		["capuz_sacerdotisa", "manto_sacerdotisa", "botas_couro"], "S")
+	lira.body_path = _corpo_npc("sacerdotisa")
+	lira.start_items = []
 	lira.role = "sacerdotisa"
 	lira.position = Iso.to_screen(_free_tile(Vector2(31.6, 24.0)))
 	lira.add_to_group("npcs")
@@ -967,8 +984,32 @@ func _spawn_characters(classe: String) -> void:
 	var walker := Npc.new().configure("Viajante",
 		{"skin": Color(0.5, 0.38, 0.3), "under": Color(0.2, 0.17, 0.14), "hair": Color(0.15, 0.1, 0.07), "eyes": Color(0.2, 0.15, 0.1)},
 		["gibao_verde", "calca_tecido", "botas_couro", "capa_viagem"], "S", pts)
+	walker.body_path = _corpo_npc("viajante")
+	walker.start_items = []
 	walker.position = pts[0]
 	entities.add_child(walker)
+	# moradores (modelos 3D renderizados em assets/npcs)
+	_morador("Zaira, a Aguadeira", "aguadeira", [Vector2(33.0, 26.0), Vector2(30.5, 29.5), Vector2(33.0, 31.0), Vector2(36.0, 28.0)])
+	_morador("Nadira, a Vendedora", "vendedora", [Vector2(24.5, 30.6), Vector2(26.0, 29.0), Vector2(23.0, 29.0)])
+	_morador("Samira, a Oleira", "anfora", [Vector2(30.5, 24.5), Vector2(25.5, 24.5), Vector2(25.5, 29.0), Vector2(30.5, 29.0)])
+	_morador("Tarek, o Carregador", "carregador", [Vector2(25.5, 37.0), Vector2(25.0, 33.6), Vector2(30.5, 33.6), Vector2(30.5, 39.0)])
+	_morador("Borin, o Ferreiro", "ferreiro", [Vector2(32.4, 35.4)])
+
+
+func _corpo_npc(modelo: String) -> String:
+	return "res://assets/npcs/%s/sprites.json" % modelo
+
+
+## Morador da vila: parado (um ponto só) ou passeando entre os pontos.
+func _morador(nome: String, modelo: String, pontos: Array) -> void:
+	var rota := []
+	for p in pontos:
+		rota.append(Iso.to_screen(_free_tile(p)))
+	var n := Npc.new().configure(nome, {}, [], "S", rota if rota.size() > 1 else [])
+	n.body_path = _corpo_npc(modelo)
+	n.walk_speed = 50.0
+	n.position = rota[0]
+	entities.add_child(n)
 
 
 ## Casa de chão livre mais perto de um ponto da grade (procura em volta).

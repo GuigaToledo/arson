@@ -162,19 +162,17 @@ func _spawn_characters() -> void:
 
 	var barkeep := Npc.new().configure("Taverneira",
 		{"skin": Color(0.62, 0.48, 0.38), "under": Color(0.35, 0.28, 0.22), "hair": Color(0.45, 0.3, 0.15), "eyes": Color(0.2, 0.15, 0.1)},
-		["avental_taverna", "calca_tecido", "botas_couro"], "SE")
+		[], "SE")
+	barkeep.body_path = "res://assets/npcs/taverneira/sprites.json"
 	barkeep.name = "Taverneira"
 	barkeep.position = s(0.75, 4.0)
 	entities.add_child(barkeep)
 
-	var pts := []
-	for g in [Vector2(5.5, 6.0), Vector2(6.5, 8.8), Vector2(10.6, 8.6), Vector2(10.8, 4.6), Vector2(10.2, 2.1), Vector2(7.0, 2.1)]:
-		pts.append(Iso.to_screen(g))
-	var patron := Npc.new().configure("Viajante",
-		{"skin": Color(0.5, 0.38, 0.3), "under": Color(0.2, 0.17, 0.14), "hair": Color(0.15, 0.1, 0.07), "eyes": Color(0.2, 0.15, 0.1)},
-		["gibao_verde", "calca_tecido", "botas_couro", "capa_viagem"], "S", pts)
+	# freguês sentado (modelo 3D)
+	var patron := Npc.new().configure("Viajante", {}, [], "SW")
+	patron.body_path = "res://assets/npcs/fregues/sprites.json"
 	patron.name = "Viajante"
-	patron.position = pts[0]
+	patron.position = s(10.6, 8.6)
 	entities.add_child(patron)
 
 
