@@ -16,7 +16,7 @@ DIRS = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
 SIZE = 256
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-import rig, itens3d, roupas
+import rig, itens3d, roupas, maos
 R = rig.carregar()
 arm, body = R.arm, R.body
 sc = bpy.context.scene
@@ -67,6 +67,14 @@ if MOTOR == "CYCLES":
     sc.cycles.use_denoising = True
 else:
     sc.eevee.taa_render_samples = AMOSTRAS
+if MOTOR == "CYCLES":
+    prefs = bpy.context.preferences.addons["cycles"].preferences
+    prefs.compute_device_type = "OPTIX"
+    prefs.get_devices()
+    for dv in prefs.devices:
+        dv.use = dv.type == "OPTIX"
+    sc.cycles.device = "GPU"
+    sc.render.use_persistent_data = True
 sc.render.film_transparent = True
 # deixa núcleos livres para o computador continuar usável durante o render longo
 sc.render.threads_mode = "FIXED"
@@ -147,8 +155,7 @@ bpy.context.view_layer.update()
 pe = world_to_camera_view(sc, cam, Vector((0, 0, 0)))
 meta = {"tamanho": SIZE, "pe": [round(pe.x * SIZE, 1), round((1 - pe.y) * SIZE, 1)], "anims": {}}
 # animação mista "Pernas+Braços" (ex.: Walk_Loop+Spell_Simple_Shoot): pernas e quadril de uma, tronco e braços da outra
-HASTES = [o for o in bpy.data.objects if o.name.endswith("_haste")]
-BASE_LOC = {o.name: o.location.copy() for o in HASTES}
+MAOS = maos.Maos(R, pecas, ESTILO)
 CIMA = [b.name for b in arm.data.bones if b.name == "spine_01" or "spine_01" in [p.name for p in b.parent_recursive]]
 for item in SPEC.split(","):
     jogo, resto = item.split("=")
@@ -175,20 +182,8 @@ for item in SPEC.split(","):
             else:
                 fr = 1 + round(k * (fend - 1) / max(1, (nq if jogo in ("idle", "walk", "run") else nq - 1)))
                 R.quadro(fr)
-            # cajado/cetro/varinha: na magia, aponta para a frente (a magia sai da ponta)
-            for hs in HASTES:
-                if jogo.startswith("cast"):
-                    u = k / max(1, nq - 1)
-                    g = math.sin(math.pi * min(1.0, u * 1.25))
-                    tilt = math.radians(62) * g
-                    sobe = 0.32 * g
-                else:
-                    tilt = 0.0
-                    sobe = 0.0
-                hs.rotation_euler = (tilt, 0.0, R.pivot.rotation_euler.z)
-                hs.location = BASE_LOC[hs.name] + Vector((0, 0, sobe))
-            if HASTES:
-                bpy.context.view_layer.update()
+            # braços, cajado, livro e escudo na pose do quadro
+            MAOS.aplicar(jogo, k, nq)
             nomeq = "%s_%s_%02d" % (jogo, d, k)
             sc.render.filepath = os.path.join(OUT, nomeq + ".png")
             if fo:

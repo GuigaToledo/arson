@@ -88,10 +88,14 @@ func moving_anim(a: String, moving: bool, running: bool) -> String:
 	return "run" if running else "walk"
 
 
-## Ponta do cajado apontado na hora da magia (o projétil sai dali): um pouco à frente, na direção
-## em que o personagem olha. O projétil já se desenha ~40 px acima da posição.
+## Ponta do cajado apontado na hora da magia (o projétil sai dali): o braço direito estende o
+## cajado para a frente. O projétil já se desenha ~40 px acima da posição.
 func staff_tip() -> Vector2:
-	return global_position + Iso.dir_vector(facing).normalized() * 30.0 + Vector2(0, -22)
+	var d := Iso.dir_vector(facing)
+	var chao := Vector2(d.x, d.y * 2.0).normalized()
+	var lado := Vector2(-chao.y, chao.x)
+	var p := chao * 54.0 + lado * 12.0
+	return global_position + Vector2(p.x, p.y * 0.5) + Vector2(0, -26)
 
 
 func play_action(a: String, duration: float) -> void:

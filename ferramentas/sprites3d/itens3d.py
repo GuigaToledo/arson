@@ -73,6 +73,31 @@ def _malha(nome, bm, mat):
     return o
 
 
+def _tubo(nome, pontos, mat):
+    """Galho curvo afinando: pontos = [((x, y, z), raio), ...]."""
+    cu = bpy.data.curves.new(nome, "CURVE")
+    cu.dimensions = "3D"
+    cu.bevel_depth = 1.0
+    cu.bevel_resolution = 3
+    cu.use_fill_caps = True
+    sp = cu.splines.new("POLY")
+    sp.points.add(len(pontos) - 1)
+    for p, (co, r) in zip(sp.points, pontos):
+        p.co = (co[0], co[1], co[2], 1.0)
+        p.radius = r
+    tmp = bpy.data.objects.new(nome + "_c", cu)
+    bpy.context.scene.collection.objects.link(tmp)
+    me = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    bpy.data.objects.remove(tmp)
+    me.materials.clear()
+    me.materials.append(mat)
+    o = bpy.data.objects.new(nome, me)
+    bpy.context.scene.collection.objects.link(o)
+    for f in me.polygons:
+        f.use_smooth = True
+    return o
+
+
 def _torno(nome, perfil, mat, seg=32):
     """Sólido de revolução em volta de Z: perfil = [(raio, z), ...]."""
     bm = bmesh.new()
@@ -293,18 +318,31 @@ def construir(arm, body, item_id, it):
         s.name = tag + "_haste"
         s.data.materials.append(m_mad)
         top = comp * 0.5
-        gr = {"staff": 0.06, "rod": 0.055, "wand": 0.022}[e]
-        g = _esfera(tag + "_cristal", gr, (0, 0, top + gr * 0.9), m_gema, (0.8, 0.8, 1.5) if e != "rod" else (1, 1, 1))
+        gr = {"staff": 0.075, "rod": 0.055, "wand": 0.022}[e]
+        alt = top + gr * (1.45 if e == "staff" else 0.9)
+        g = _esfera(tag + "_cristal", gr, (0, 0, alt), m_gema, (1, 1, 1.15) if e != "wand" else (0.8, 0.8, 1.5))
         g.parent = s
-        for k in range(3 if e != "wand" else 0):
-            bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=0.008, depth=gr * 2.6)
-            gg = bpy.context.active_object
-            an = k * 2 * math.pi / 3
-            gg.location = (math.cos(an) * gr * 0.85, math.sin(an) * gr * 0.85, top + gr * 0.6)
-            gg.rotation_euler = (math.sin(an) * 0.5, -math.cos(an) * 0.5, 0)
-            gg.data.materials.append(m_ouro)
-            gg.parent = s
-            pecas.append(gg)
+        if e == "staff":
+            # garras curvas abraçando o orbe, como uma coroa de galhos
+            for k, (an, alto) in enumerate([(0.0, 1.0), (math.pi, 1.0), (math.pi * 0.5, 0.7), (math.pi * 1.5, 0.7)]):
+                cx, cy = math.cos(an), math.sin(an)
+                pts = [(0.012, -0.03, 0.026), (0.095, 0.045, 0.023), (0.132, 0.13, 0.019), (0.112, 0.215 * alto, 0.014), (0.05, 0.285 * alto, 0.003)]
+                gg = _tubo(tag + "_garra%d" % k, [((cx * r, cy * r, top + z), esp) for r, z, esp in pts], m_ouro if k > 1 else m_mad)
+                gg.parent = s
+                pecas.append(gg)
+                esp = _tubo(tag + "_espinho%d" % k, [((cx * 0.118, cy * 0.118, top + 0.12), 0.011), ((cx * 0.185, cy * 0.185, top + 0.17 * alto), 0.001)], m_mad)
+                esp.parent = s
+                pecas.append(esp)
+        elif e == "rod":
+            for k in range(3):
+                bpy.ops.mesh.primitive_cylinder_add(vertices=6, radius=0.008, depth=gr * 2.6)
+                gg = bpy.context.active_object
+                an = k * 2 * math.pi / 3
+                gg.location = (math.cos(an) * gr * 0.85, math.sin(an) * gr * 0.85, top + gr * 0.6)
+                gg.rotation_euler = (math.sin(an) * 0.5, -math.cos(an) * 0.5, 0)
+                gg.data.materials.append(m_ouro)
+                gg.parent = s
+                pecas.append(gg)
         an2 = _torno(tag + "_anel", [(raio * 1.5, top - 0.03), (raio * 1.6, top), (raio * 1.2, top + 0.02)], m_ouro, 16)
         an2.parent = s
         pecas += [s, g, an2]
@@ -320,25 +358,44 @@ def construir(arm, body, item_id, it):
         # na mão direita: o cajado fica em pé com a mão um pouco abaixo do meio
         _segue_mao(s, arm, "hand_r", {"staff": (0, -0.03, -0.22), "rod": (0, -0.03, 0.18), "wand": (0, -0.04, 0.1)}[e])
     elif e == "book":
-        # grimório ABERTO flutuando à frente e ao lado do mago (preso ao tronco, não balança com o braço),
-        # inclinado com as páginas viradas para ele
-        bx, by, bz = 0.4, -0.34, 1.2
-        m_pap = couro("papel_" + tag, (0.62, 0.55, 0.4))
+        # grimório ABERTO em V: lombada embaixo ao longo da frente, capas subindo para os lados,
+        # folhas soltas e um selo brilhando. Tudo preso a um vazio; maos.py o põe sobre a palma.
+        m_pap = couro("papel_" + tag, (0.72, 0.66, 0.52))
+        raiz = bpy.data.objects.new(tag + "_livro", None)
+        bpy.context.scene.collection.objects.link(raiz)
+        raiz.location = (0.4, -0.34, 1.3)
         lv = []
+        ab = math.radians(27)
         for k, sx in enumerate((-1, 1)):
-            cp = _cubo(tag + "_capa%d" % k, (0.25, 0.36, 0.018), (bx + sx * 0.122, by, bz), m_couro, 0.004)
-            cp.rotation_euler = (math.radians(-35), sx * math.radians(-12), 0)
-            fl = _cubo(tag + "_folhas%d" % k, (0.225, 0.335, 0.03), (bx + sx * 0.115, by - 0.004, bz + 0.01), m_pap, 0.003)
-            fl.rotation_euler = (math.radians(-35), sx * math.radians(-12), 0)
+            gira = (0, -sx * ab, 0)
+
+            def no_lado(x, y, z):
+                return (sx * (x * math.cos(ab)) - sx * z * math.sin(ab), y, x * math.sin(ab) + z * math.cos(ab))
+            cp = _cubo(tag + "_capa%d" % k, (0.215, 0.31, 0.022), no_lado(0.108, 0, 0), m_couro, 0.004)
+            fl = _cubo(tag + "_folhas%d" % k, (0.19, 0.28, 0.034), no_lado(0.1, 0, 0.027), m_pap, 0.006)
+            cp.rotation_euler = fl.rotation_euler = gira
             lv += [cp, fl]
-        lomb = _cubo(tag + "_lombada", (0.03, 0.36, 0.04), (bx, by + 0.004, bz - 0.006), m_ouro, 0.004)
-        lomb.rotation_euler = (math.radians(-35), 0, 0)
-        runa = _esfera(tag + "_runa", 0.05, (bx, by - 0.07, bz + 0.12), m_gema, (1.2, 1.2, 0.35))
-        lv += [lomb, runa]
+            for j, y in enumerate((-0.148, 0.148)):
+                q = _cubo(tag + "_canto%d%d" % (k, j), (0.045, 0.028, 0.034), no_lado(0.198, y, 0), m_ouro, 0.003)
+                q.rotation_euler = gira
+                lv.append(q)
+            borda = _cubo(tag + "_filete%d" % k, (0.012, 0.31, 0.03), no_lado(0.215, 0, 0), m_ouro, 0.002)
+            borda.rotation_euler = gira
+            selo = _toro(tag + "_selo%d" % k, 0.048, 0.007, no_lado(0.11, 0, -0.016), m_gema, rot=gira)
+            runa = _toro(tag + "_runa%d" % k, 0.04, 0.005, no_lado(0.1, 0.0, 0.047), m_gema, rot=gira)
+            folha = _cubo(tag + "_solta%d" % k, (0.13, 0.24, 0.004), (sx * 0.045, 0, 0.115), m_pap, 0.001)
+            folha.rotation_euler = (0, -sx * math.radians(64), 0)
+            lv += [borda, selo, runa, folha]
+        lomb = _cubo(tag + "_lombada", (0.04, 0.32, 0.045), (0, 0, -0.004), m_ouro, 0.006)
+        nucleo = _esfera(tag + "_nucleo", 0.026, (0, 0, 0.2), m_gema)
+        lv += [lomb, nucleo]
+        for k, (x, y, z) in enumerate([(-0.1, -0.06, 0.2), (0.08, 0.08, 0.23), (0.02, -0.11, 0.27), (-0.05, 0.1, 0.29)]):
+            q = _cubo(tag + "_glifo%d" % k, (0.022, 0.008, 0.03), (x, y, z), m_gema, 0.001)
+            lv.append(q)
         for p in lv:
-            bpy.context.view_layer.update()
-            _no_osso(p, arm, "spine_02", p.location)
+            p.parent = raiz
             pecas.append(p)
+        pecas.append(raiz)
     elif e == "mimic":
         # escudo mímico preso ao antebraço esquerdo: na pose de descanso (braço em T) fica por cima do
         # antebraço, deitado; com o braço caído, fica em pé do lado de fora, segurado pela mão

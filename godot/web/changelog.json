@@ -1,5 +1,16 @@
 [
  {
+  "versao": "0.19.10",
+  "data": "2026-11-28",
+  "titulo": "Cajado na mão e grimório novo",
+  "itens": [
+   "O cajado fica sempre na mão do mago e acompanha o braço; na magia, o braço estende apontando para o alvo",
+   "Cajado com orbe e garras curvas",
+   "O grimório agora flutua aberto sobre a palma da mão esquerda",
+   "O escudo fica em pé no antebraço"
+  ]
+ },
+ {
   "versao": "0.19.9",
   "data": "2026-11-28",
   "titulo": "Novos moradores e Elemental de Fogo",

@@ -155,10 +155,17 @@ func _depth(slot: int, f: Vector2) -> float:
 		return 0.6
 	# mão direita = lado r; esquerda = lado -r. O item fica na frente do corpo quando o lado dele
 	# está virado para a câmera, e atrás quando o personagem está de costas (o item fica do outro lado).
+	# Nas camadas 3D o corpo já recorta o que está atrás dele, então "atrás" é logo acima do corpo
+	# (a roupa e a capa continuam cobrindo o item).
+	var tras := body_item != null
 	if slot == S.MAIN_HAND:
-		return 1.0 if r.y * 0.8 + f.y * 0.6 >= -0.1 else -2.0
+		if r.y * 0.8 + f.y * 0.6 >= -0.1:
+			return 1.0
+		return 0.05 if tras else -2.0
 	if slot == S.OFF_HAND:
-		return 1.1 if -r.y * 0.8 + f.y * 0.6 >= -0.1 else -2.1
+		if -r.y * 0.8 + f.y * 0.6 >= -0.1:
+			return 1.1
+		return 0.07 if tras else -2.1
 	return BASE_DEPTH.get(slot, 0.0)
 
 
