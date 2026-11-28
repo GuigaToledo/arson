@@ -1,5 +1,16 @@
 [
  {
+  "versao": "0.19.13",
+  "data": "2026-11-28",
+  "titulo": "Portões da cidade que abrem",
+  "itens": [
+   "Os quatro portões da cidade agora têm folhas de madeira com ferro e viga de pedra: fechados bloqueiam a passagem e abrem para dentro quando você chega perto",
+   "Torres alinhadas com a muralha em todos os cantos e ao lado de cada portão",
+   "Cais ao sul do portão sul, para a saída não terminar no nada",
+   "Colisão das paredes, portas e portões ajustada ao tamanho real de cada parede"
+  ]
+ },
+ {
   "versao": "0.19.12",
   "data": "2026-11-28",
   "titulo": "Prédios da cidade por dentro",
