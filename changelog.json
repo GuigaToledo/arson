@@ -1,5 +1,16 @@
 [
  {
+  "versao": "0.19.14",
+  "data": "2026-11-28",
+  "titulo": "Menu inicial e escolha de personagem",
+  "itens": [
+   "A tela inicial agora é um menu: Jogar, Atualizar o jogo e Atualizações",
+   "Atualizações: página com tudo o que já foi feito, da versão mais recente para a mais antiga",
+   "Atualizar o jogo: recarrega a versão nova no navegador ou confere o pacote no app do celular",
+   "Ao tocar em Jogar, a escolha de personagem mostra o avatar de corpo inteiro de cada vaga com o equipamento que ele está vestindo agora"
+  ]
+ },
+ {
   "versao": "0.19.13",
   "data": "2026-11-28",
   "titulo": "Portões da cidade que abrem",
