@@ -79,7 +79,16 @@ class Rig:
             act = bpy.data.actions.get(nome + "_" + name)
             if e.animation_data is None:
                 e.animation_data_create()
+            slot = None
+            if act is None:
+                # Blender 5: uma ação só por animação, com um "slot" por objeto
+                junta = bpy.data.actions.get(nome)
+                if junta:
+                    slot = next((s for s in junta.slots if s.identifier == "OB" + name), None)
+                    act = junta if slot else None
             e.animation_data.action = act
+            if slot:
+                e.animation_data.action_slot = slot
             if act:
                 fim = max(fim, int(act.frame_range[1]))
         return fim

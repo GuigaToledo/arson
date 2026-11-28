@@ -114,15 +114,28 @@ if ESTILO != "base":
     a = vl.aovs.add()
     a.name = "acc"
     a.type = "VALUE"
-    sc.use_nodes = True
-    nt = sc.node_tree
+    NOVO = not hasattr(sc, "node_tree")  # Blender 5: compositor virou um grupo de nós
+    if NOVO:
+        nt = bpy.data.node_groups.new("comp", "CompositorNodeTree")
+        sc.compositing_node_group = nt
+    else:
+        sc.use_nodes = True
+        nt = sc.node_tree
     for n in list(nt.nodes):
         nt.nodes.remove(n)
     rl = nt.nodes.new("CompositorNodeRLayers")
-    comp = nt.nodes.new("CompositorNodeComposite")
-    nt.links.new(rl.outputs["Image"], comp.inputs["Image"])
-    nt.links.new(rl.outputs["Alpha"], comp.inputs["Alpha"])
+    if NOVO:
+        nt.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
+        comp = nt.nodes.new("NodeGroupOutput")
+        nt.links.new(rl.outputs["Image"], comp.inputs["Image"])
+    else:
+        comp = nt.nodes.new("CompositorNodeComposite")
+        nt.links.new(rl.outputs["Image"], comp.inputs["Image"])
+        nt.links.new(rl.outputs["Alpha"], comp.inputs["Alpha"])
     fo = nt.nodes.new("CompositorNodeOutputFile")
+    if NOVO:
+        fo.format.media_type = "IMAGE"
+        fo.file_output_items.new("FLOAT", "acc")
     fo.format.file_format = "PNG"
     fo.format.color_mode = "BW"
     fo.format.color_depth = "8"
@@ -179,8 +192,12 @@ for item in SPEC.split(","):
             nomeq = "%s_%s_%02d" % (jogo, d, k)
             sc.render.filepath = os.path.join(OUT, nomeq + ".png")
             if fo:
-                fo.base_path = OUT
-                fo.file_slots[0].path = nomeq + "_acc_"
+                if NOVO:
+                    fo.directory = OUT
+                    fo.file_name = nomeq + "_acc_"
+                else:
+                    fo.base_path = OUT
+                    fo.file_slots[0].path = nomeq + "_acc_"
             bpy.ops.render.render(write_still=True)
             if fo:
                 for f in glob.glob(os.path.join(OUT, nomeq + "_acc_*.png")):
